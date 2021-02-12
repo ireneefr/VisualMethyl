@@ -1,61 +1,80 @@
 
 library(shiny)
+source("utils_analysis.R")
+source("utils_graphs.R")
+source("utils_download.R")
+library(ggplot2)
 
 shinyServer(function(input, output, session) {
+    
+    # INITIALIZE REACTIVE VARIABLES
+    rval_generated_limma_model <- reactiveVal(value = FALSE)
+    rval_analysis_finished <- reactiveVal(value = FALSE)
+    rval_filteredlist2heatmap_valid <- reactiveVal(value = FALSE)
+    rval_filteredmcsea2heatmap_valid <- reactiveVal(value = FALSE)
+    rval_dmrs_finished <- reactiveVal(value = FALSE)
+    rval_dmrs_ready2heatmap <- reactiveVal(value = FALSE)
+    rval_dmrs_ready2mcsea <- reactiveVal(value = FALSE)
+    
     
     # Max size
     options(shiny.maxRequestSize = 8000 * 1024^2) # 5MB getShinyOption("shiny.maxRequestSize") | 30*1024^2 = 30MB
     
-    # Reaction of home action buttons
+    # Reaction of data action buttons
     observeEvent(input$b_qc, {
         newtab <- switch(input$menu,
-                         "home" = "qc",
-                         "qc" = "home")
+                         "analysis" = "qc",
+                         "qc" = "analysis")
         updateTabItems(session, "menu", newtab)
         })
     observeEvent(input$b_exploratory_analysis, {
         newtab <- switch(input$menu,
-                         "home" = "exploratory_analysis",
-                         "exploratory_analysis" = "home")
+                         "analysis" = "exploratory_analysis",
+                         "exploratory_analysis" = "analysis")
         updateTabItems(session, "menu", newtab)
     })
     observeEvent(input$b_dmp_dmr, {
         newtab <- switch(input$menu,
-                         "home" = "dmp_dmr",
-                         "dmp_dmr" = "home")
+                         "analysis" = "dmp_dmr",
+                         "dmp_dmr" = "analysis")
         updateTabItems(session, "menu", newtab)
     })
     observeEvent(input$b_functional_enrichment, {
         newtab <- switch(input$menu,
-                         "home" = "functional_enrichment",
-                         "functional_enrichment" = "home")
+                         "analysis" = "functional_enrichment",
+                         "functional_enrichment" = "analysis")
         updateTabItems(session, "menu", newtab)
     })
     observeEvent(input$b_survival, {
         newtab <- switch(input$menu,
-                         "home" = "survival",
-                         "survival" = "home")
+                         "analysis" = "survival",
+                         "survival" = "analysis")
         updateTabItems(session, "menu", newtab)
     })
     observeEvent(input$b_predicted_models, {
         newtab <- switch(input$menu,
-                         "home" = "predicted_models",
-                         "predicted_models" = "home")
+                         "analysis" = "predicted_models",
+                         "predicted_models" = "analysis")
         updateTabItems(session, "menu", newtab)
     })
     observeEvent(input$b_external_sources, {
         newtab <- switch(input$menu,
-                         "home" = "external_sources",
-                         "external_sources" = "home")
+                         "analysis" = "external_sources",
+                         "external_sources" = "analysis")
         updateTabItems(session, "menu", newtab)
     })
     observeEvent(input$b_genome_browser, {
         newtab <- switch(input$menu,
-                         "home" = "genome_browser",
-                         "genome_browser" = "home")
+                         "analysis" = "genome_browser",
+                         "genome_browser" = "analysis")
         updateTabItems(session, "menu", newtab)
     })
-
+    observeEvent(input$button_input_next, {
+        newtab <- switch(input$menu,
+                         "data" = "analysis",
+                         "analysis" = "data")
+        updateTabItems(session, "menu", newtab)
+    })
     
     # Input button
     output$ui_input_data <- renderUI({
@@ -74,7 +93,7 @@ shinyServer(function(input, output, session) {
     
     # When you press button_input_load, the data is unzipped and the metharray sheet is loaded
     rval_sheet <- eventReactive(input$b_input_data, {
-        print("OK")
+
         # Check if updated file is .zip
         validate(need(tools::file_ext(input$input_data$datapath) == "zip", "File extension should be .zip"))
         
@@ -159,6 +178,7 @@ shinyServer(function(input, output, session) {
         
         
         shinyjs::enable("button_input_next") # Enable button continue
+
     })
     
     
@@ -200,7 +220,7 @@ shinyServer(function(input, output, session) {
     
     # rval_rgset loads RGSet using read.metharray.exp and the sample sheet (rval_sheet())
     rval_rgset <- eventReactive(input$button_input_next, ignoreNULL = FALSE, {
-        validate(need(input$fileinput_input != "", "Data has not been uploaded yet"))
+        validate(need(input$input_data != "", "Data has not been uploaded yet"))
         
         # Prior check to test variable selection
         if (anyDuplicated(rval_sheet_target()[, input$select_input_samplenamevar]) > 0 |
@@ -366,9 +386,375 @@ shinyServer(function(input, output, session) {
         )
         
         shinyjs::enable("button_minfi_select")
-        #updateTabItems(session, "menu", "normalization")
     })
     
+    
+    ########## rval_gset() NORMALIZATION ##########
+    
+    rval_gset <- eventReactive(input$button_minfi_select, {
+        validate(need(
+            !is.null(rval_rgset()),
+            "Raw data has not been loaded yet."
+        ))
+        
+        shinyjs::disable("button_minfi_select") # disable button to avoid repeat clicking
+        
+        withProgress(
+            message = "Normalization in progress...",
+            value = 1,
+            max = 4,
+            {
+                try({
+                    gset <- normalize_rgset(
+                        rgset = rval_rgset(), normalization_mode = input$select_minfi_norm,
+                        detectP = 0.01, dropSNPs = input$select_minfi_dropsnps, maf = input$slider_minfi_maf,
+                        dropCpHs = input$select_minfi_dropcphs, dropSex = input$select_minfi_chromosomes
+                    )
+                })
+                
+                # check if normalization has worked
+                
+                if (!exists("gset", inherits = FALSE)) {
+                    showModal(
+                        modalDialog(
+                            title = "Normalization failure",
+                            "An unexpected error has occurred during minfi normalization. Please, notify the error to the package maintainer.",
+                            easyClose = TRUE,
+                            footer = NULL
+                        )
+                    )
+                    shinyjs::enable("button_minfi_select")
+                }
+                
+                validate(
+                    need(
+                        exists("gset", inherits = FALSE),
+                        "An unexpected error has occurred during minfi normalization. Please, notify the error to the package maintainer."
+                    )
+                )
+                
+                # enable button
+                shinyjs::enable("button_minfi_select")
+                
+                # return gset
+                gset
+            }
+        )
+    })
+    
+    
+    
+    # filtered probes info
+    
+    rval_gsetprobes <- eventReactive(input$button_minfi_select, {
+        req(rval_gset())
+        length(minfi::featureNames(rval_gset()))
+    })
+    
+    output$text_minfi_probes <- renderText(paste(rval_gsetprobes(), "positions after normalization"))
+    
+    ########## B & M VALUES ######################
+    
+    rval_rgset_getBeta <- eventReactive(rval_rgset(), {
+        bvalues <- as.data.frame(minfi::getBeta(rval_rgset()))
+        colnames(bvalues) <- rval_sheet_target()[[input$select_input_samplenamevar]]
+        bvalues
+    })
+    
+    rval_gset_getBeta <- eventReactive(rval_gset(), {
+        bvalues <- as.data.frame(minfi::getBeta(rval_gset()))
+        colnames(bvalues) <- rval_sheet_target()[[input$select_input_samplenamevar]]
+        bvalues
+    })
+    
+    rval_gset_getM <- reactive({
+        mvalues <- minfi::getM(rval_gset())
+        colnames(mvalues) <- rval_sheet_target()[[input$select_input_samplenamevar]]
+        mvalues
+    }) 
+    
+    
+    ########## FAILURE RATE PLOT ##########
+    
+    beta_pvalue <- function(rgset, betas){
+        pval <- as.matrix(minfi::detectionP(rgset))
+        beta_pval <- as.matrix(betas)
+        beta_pval[pval>=0.01] <- NA
+        fail <- as.data.frame(cbind(sort((apply(beta_pval,2,function(x) sum(is.na(x)))/nrow(beta_pval)*100))))
+        colnames(fail)[1] <- "probe_failure_rate"
+        
+        plotly::ggplotly(ggplot(fail, aes(x = rownames(fail), y = probe_failure_rate)) +
+                             geom_bar(stat = "identity", fill = "steelblue") +
+                             scale_y_continuous(expand = c(0, 0), limits = c(0, 100), breaks = seq(0, 100, 5)) +  ###max(fail$probe_failure_rate) + 0.5
+                             geom_hline(yintercept = 5, linetype = "dashed", color = "red", size = 0.5) + 
+                             geom_hline(yintercept = 10, linetype = "dashed", color = "red", size = 0.5) +
+                             xlab("Sample Name") + ylab("% Probe Failure Rate") + 
+                             coord_flip() +
+                             annotation_logticks(base = 2, sides = "bl") +
+                             theme_bw())
+    }
+    
+    failure_plot <- reactive(beta_pvalue(rval_rgset(), rval_rgset_getBeta()))
+    output$failure_rate_plot <- plotly::renderPlotly(failure_plot())
+    
+    ########## CONTROL TYPE PLOTS ##########
+    
+    output$controlTypePlotGreen <- renderPlot({
+        if (!is.null(input$controlType)){
+            
+            groupNames <- rval_sheet_target()$Sample_Group
+            sampleNames <- rval_sheet_target()$Samples_Name #sampleNames(shinyMethylSet1())
+            
+            if (input$controlType %in% c("BISULFITE CONVERSION I", "BISULFITE CONVERSION II", "HYBRIDIZATION", "SPECIFICITY I",
+                                         "SPECIFICITY II", "TARGET REMOVAL")){
+                threshold <- 1
+            } else if (input$controlType %in% c("EXTENSION", "STAINING", "NON-POLYMORPHIC")){
+                threshold <- 5 # you can increase the threshold
+                
+            } else {threshold <- 0}
+            
+            green <- getGreen(rval_rgset())
+            ctrlAddress <- getControlAddress(rval_rgset(), controlType = input$controlType)
+            
+            green_control <- log2(green[ctrlAddress, ,drop = FALSE])
+            
+            slide <- input$select_slide
+            title <- paste("-", slide)
+            
+            subset <- reshape2::melt(green_control)
+            subset2 <- subset[grepl(slide, subset$Var2), ]
+            
+            ggplot(data=as.data.frame(subset2), aes(x=Var2, y=value)) +
+                geom_point(color="darkgreen", size=1.5) + scale_y_continuous(limits = c(-1, 20)) +
+                theme(axis.text.x = element_text(hjust = 1, angle=45)) +
+                geom_hline(yintercept =threshold, linetype="dashed") + ylab("Log2 Intensity") +
+                scale_x_discrete(labels=groupNames) + xlab("Samples") + ggtitle(paste("Green Channel", title))
+        }
+    })
+    
+    output$controlTypePlotRed <- renderPlot({
+        if (!is.null(input$controlType)){
+            groupNames <- rval_sheet_target()$Sample_Group
+            sampleNames <- rval_sheet_target()$Samples_Name
+            
+            if (input$controlType %in% c("BISULFITE CONVERSION I", "BISULFITE CONVERSION II", "HYBRIDIZATION", "SPECIFICITY I",
+                                         "SPECIFICITY II", "TARGET REMOVAL")){
+                threshold <- 1
+            } else if (input$controlType %in% c("EXTENSION", "STAINING", "NON-POLYMORPHIC")){
+                threshold <- 5 # you can increase the threshold
+                
+            } else {threshold <- 0}
+            
+            red <- getRed(rval_rgset())
+            ctrlAddress <- getControlAddress(rval_rgset(), controlType = input$controlType)
+            
+            red_control <- log2(red[ctrlAddress, ,drop = FALSE])
+            
+            slide <- input$select_slide
+            title <- paste("-", slide)
+            
+            subset <- reshape2::melt(red_control)
+            subset2 <- subset[grepl(slide, subset$Var2), ]
+            
+            ggplot(data=as.data.frame(subset2), aes(x=Var2, y=value)) +
+                geom_point(color="red", size=1.5) + scale_y_continuous(limits = c(-1, 20)) +
+                theme(axis.text.x = element_text(hjust = 1, angle=45)) +
+                geom_hline(yintercept =threshold, linetype="dashed") + ylab("Log2 Intensity") +
+                scale_x_discrete(labels=groupNames) + xlab("Samples") + ggtitle(paste("Red Channel", title))
+        } })
+    
+    
+    ###### SEX PREDICTION #####
+    
+    # Sex prediction
+    
+    rval_plot_sexprediction <- reactive({
+        req(rval_gset())
+        if(input$select_input_sex == "None"){
+            create_pred_sexplot(rval_gset(), rval_sheet_target()[, input$select_input_samplenamevar])
+            
+        }
+        else{
+            create_sexplot(rval_gset(), rval_sheet_target()[, input$select_input_samplenamevar], rval_sheet_target()[, input$select_input_sex])
+        }
+    })
+    
+    rval_plot_sextable <- reactive({
+        req(rval_gset())
+        if(input$select_input_sex == "None"){
+            data.frame(name = rval_sheet_target()[[input$select_input_samplenamevar]], preditedSex = as.data.frame(minfi::pData(rval_gset()))[["predictedSex"]])
+        }
+        else{
+        data.frame(name = rval_sheet_target()[[input$select_input_samplenamevar]], sex = rval_sheet_target()[[input$select_input_sex]], preditedSex = as.data.frame(minfi::pData(rval_gset()))[["predictedSex"]])
+        }   
+    })
+    
+    output$graph_minfi_sex <- plotly::renderPlotly(rval_plot_sexprediction())
+    
+    output$table_minfi_sex <- DT::renderDT(
+        rval_plot_sextable(),
+        rownames = FALSE,
+        selection = "single",
+        style = "bootstrap",
+        caption = "Predicted sex:",
+        options = list(
+            pageLength = 10,
+            scrollX = TRUE,
+            autoWidth = TRUE
+        )
+    )
+    
+    ########## DENSITY PLOT #####################
+    
+    channel <- reactive(getProbeInfo(rval_rgset(), type = input$probeType)[, "Name"])
+    
+    beta_raw <- reactive(subset(rval_rgset_getBeta(), rownames(rval_rgset_getBeta()) %in% channel()))
+    n_raw <- reactive(ifelse(nrow(beta_raw()) < 20000, nrow(beta_raw()), 20000))
+    rval_plot_densityplotraw <- reactive(create_densityplot(beta_raw(), n_raw()))
+    
+    beta_normalized <- reactive(rval_gset_getBeta()[rownames(rval_gset_getBeta()) %in% channel(),])
+    n_normalized <- reactive(ifelse(nrow(beta_normalized()) < 20000, nrow(beta_normalized()), 20000))
+    rval_plot_densityplot <- reactive(create_densityplot(beta_normalized(), n_normalized()))
+    
+    # Density plots
+    #rval_plot_densityplotraw <- reactive(create_densityplot(rval_rgset_getBeta(), 200000))
+    #rval_plot_densityplot <- reactive(create_densityplot(rval_gset_getBeta(), 200000))
+    
+    output$graph_minfi_densityplotraw <- plotly::renderPlotly(rval_plot_densityplotraw())
+    output$graph_minfi_densityplot <- plotly::renderPlotly(rval_plot_densityplot())
+    ##### SNP HEATMAP #####
+    rval_plot_snpheatmap <- reactive(
+        create_snpheatmap(
+            minfi::getSnpBeta(rval_rgset()),
+            rval_sheet_target()[, input$select_input_samplenamevar],
+            rval_sheet_target()[, input$select_input_donorvar]
+        )
+    )
+    
+    output$graph_minfi_snps <- plotly::renderPlotly(rval_plot_snpheatmap())
+    
+    ##### BATCH EFECTS #####
+    rval_plot_corrplot <- reactive(
+        create_corrplot(
+            rval_gset_getBeta(),
+            rval_clean_sheet_target(),
+            rval_sheet_target(),
+            p.value = input$select_minfi_typecorrplot == "p.value"
+        )
+    )
+    
+    output$graph_minfi_corrplot <- plotly::renderPlotly(rval_plot_corrplot()[["graph"]])
+    output$table_minfi_corrplot <- DT::renderDT(rval_plot_corrplot()[["info"]],
+                                                rownames = FALSE,
+                                                selection = "single",
+                                                style = "bootstrap",
+                                                caption = "Autodetected variable types:",
+                                                options = list(pageLength = 10, autoWidth = TRUE)
+    )
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    # Markdown Report
+    output$download_export_markdown <- downloadHandler(
+        filename = "Report.Rmd",
+        content = function(file) {
+            #tempReport <- file.path(tempdir(), "Report.Rmd")
+            #print(tempReport)
+            #file.copy("report.Rmd", getwd(), overwrite = TRUE)
+            shinyjs::disable("download_export_markdown")
+            withProgress(
+                message = "Generating Report...",
+                value = 1,
+                max = 3,
+                {
+                    params <- list(
+                        rval_sheet = rval_sheet(),
+                        rval_sheet_target = rval_sheet_target(),
+                        name_var = input$select_input_samplenamevar,
+                        grouping_var = input$select_input_groupingvar,
+                        donor_var = input$select_input_donorvar,
+                        normalization_mode = input$select_minfi_norm,
+                        dropsnps = input$select_minfi_dropsnps,
+                        dropcphs = input$select_minfi_dropcphs,
+                        dropsex = input$select_minfi_chromosomes,
+                        maf = input$slider_minfi_maf,
+                        probes = rval_gsetprobes(),
+                        #limma_voi = input$select_limma_voi,
+                        #limma_covar = input$checkbox_limma_covariables,
+                        #limma_inter = input$checkbox_limma_interactions,
+                        #limma_arrayweights = input$select_limma_weights,
+                        #limma_ebayes_trend = input$select_limma_trend,
+                        #limma_ebayes_robust = input$select_limma_robust,
+                        #rval_design = rval_design(),
+                        #rval_contrasts = rval_contrasts(),
+                        #rval_voi = rval_voi(),
+                        #rval_dendrogram = rval_dendrogram(),
+                        #min_deltabeta = input$slider_limma_deltab,
+                        #max_fdr = input$slider_limma_adjpvalue,
+                        #max_pvalue = input$slider_limma_pvalue,
+                        #clusteralg = input$select_limma_clusteralg,
+                        #grups2plot = input$select_limma_groups2plot,
+                        #contrasts2plot = input$select_limma_contrasts2plot,
+                        #Colv = input$select_limma_colv,
+                        #distance = input$select_limma_clusterdist,
+                        #scale = input$select_limma_scale,
+                        #removebatch = input$select_limma_removebatch,
+                        plot_densityplotraw = rval_plot_densityplotraw(),
+                        plot_densityplot = rval_plot_densityplot(),
+                        #plot_pcaplot = rval_plot_pca()[["graph"]],
+                        plot_corrplot = rval_plot_corrplot()[["graph"]],
+                        #plot_boxplotraw = rval_plot_boxplotraw(),
+                        #plot_boxplot = rval_plot_boxplot(),
+                        #plot_qcraw = rval_plot_qcraw(),
+                        #plot_bisulfiterawII = rval_plot_bisulfiterawII(),
+                        plot_sexprediction = rval_plot_sexprediction(),
+                        plot_snpheatmap = rval_plot_snpheatmap(),
+                        #plot_plotSA = rval_plot_plotSA(),
+                        #table_pcaplot = rval_plot_pca()[["info"]],
+                        table_corrplot = rval_plot_corrplot()[["info"]],
+                        data_sexprediction = as.data.frame(minfi::pData(rval_gset()))[["predictedSex"]]
+                        #table_dmps = make_table(),
+                        #filteredlist2heatmap = rval_filteredlist2heatmap()
+                    )
+                    
+                    
+                    newenv <- new.env(parent = globalenv())
+                    #newenv$create_heatmap <- create_heatmap
+                    print(newenv)
+                    print(params)
+                    
+                    render_file <- rmarkdown::render(
+                        #tempReport,
+                        input = system.file("report.Rmd", package = getwd()),
+                        output_file = file,
+                        run_pandoc = TRUE,
+                        params = params,
+                        envir = newenv
+                    )
+                    
+                    shinyjs::enable("download_export_markdown")
+                }
+            )
+        }
+    )
     
     
     
