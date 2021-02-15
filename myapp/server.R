@@ -652,8 +652,68 @@ shinyServer(function(input, output, session) {
                                                 options = list(pageLength = 10, autoWidth = TRUE)
     )
     
+    ########## VIOLIN PLOT #####################
+    
+    create_violinplot <- function(Bvalues, n = 200000) {
+        # Creating density plot using a sample of n CpGs
+        
+        Bvalues[sample(seq_len(nrow(Bvalues)), n), ] %>%
+            tidyr::pivot_longer(
+                cols = seq_len(ncol(Bvalues)),
+                names_to = "sample",
+                values_to = "Bvalues"
+            ) %>% 
+            ggplot2::ggplot(ggplot2::aes(
+                x = .data$Bvalues, y = .data$sample, color = .data$sample
+            )) +
+            ggplot2::geom_violin() +
+            ggplot2::geom_vline(xintercept = 0.5, 
+                                linetype = "dashed", 
+                                alpha = 0.5) +
+            ggplot2::stat_summary(fun = mean, 
+                                  geom = "crossbar") +
+            ggplot2::xlab("Beta") +
+            ggplot2::ylab("") +
+            ggplot2::theme_bw() +
+            ggplot2::theme(legend.position = "none",
+                           panel.grid.major = ggplot2::element_blank(),
+                           panel.grid.minor = ggplot2::element_blank())
+    }
+    
+    rval_plot_violin <- reactive(create_violinplot(rval_rgset_getBeta(), nrow(rval_rgset_getBeta())))
+    output$graph_violin <- renderPlot(rval_plot_violin())
     
     
+    ########## PCA PLOT ##########
+    
+    rval_plot_pca <- eventReactive(
+        list(input$button_pca_update, input$button_minfi_select),
+        create_pca(
+            Bvalues = rval_gset_getBeta(),
+            pheno_info = as.data.frame(minfi::pData(rval_gset())),
+            group = input$select_input_samplenamevar,
+            pc_x = input$select_minfi_pcaplot_pcx,
+            pc_y = input$select_minfi_pcaplot_pcy,
+            color = input$select_minfi_pcaplot_color
+        )
+    )
+    
+    output$graph_minfi_pcaplot <- plotly::renderPlotly(rval_plot_pca()[["graph"]])
+    
+    output$table_minfi_pcaplot <- DT::renderDT(
+        format(rval_plot_pca()[["info"]], digits = 2),
+        rownames = TRUE,
+        selection = "single",
+        style = "bootstrap",
+        options = list(
+            autoWidth = TRUE,
+            paging = FALSE,
+            scrollX = TRUE,
+            lengthChange = FALSE,
+            searching = FALSE,
+            info = FALSE
+        )
+    )
     
     
     
@@ -674,11 +734,15 @@ shinyServer(function(input, output, session) {
     
     # Markdown Report
     output$download_export_markdown <- downloadHandler(
-        filename = "Report.Rmd",
+        filename = "Report.html",
         content = function(file) {
             #tempReport <- file.path(tempdir(), "Report.Rmd")
             #print(tempReport)
             #file.copy("report.Rmd", getwd(), overwrite = TRUE)
+            src <- normalizePath('report.Rmd')
+            owd <- setwd(tempdir())
+            on.exit(setwd(owd))
+            file.copy(src, 'report.Rmd', overwrite = TRUE)
             shinyjs::disable("download_export_markdown")
             withProgress(
                 message = "Generating Report...",
@@ -743,7 +807,7 @@ shinyServer(function(input, output, session) {
                     
                     render_file <- rmarkdown::render(
                         #tempReport,
-                        input = system.file("report.Rmd", package = getwd()),
+                        input = "report.Rmd",
                         output_file = file,
                         run_pandoc = TRUE,
                         params = params,

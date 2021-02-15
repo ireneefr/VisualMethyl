@@ -240,11 +240,132 @@ shinyUI(
             ),
             tabItem(
                 tabName = "exploratory_analysis",
-                fluidPage(h1("Exploratory Analysis"))
+                fluidPage(
+                    sidebarPanel(
+                        width = 3,
+                        h1("OPTIONS")
+                    ),
+                    mainPanel(
+                        widh = 9,
+                        verticalLayout(
+                            boxPlus(title = "DENSITY PLOT", width = "100%", closable = FALSE, collapsible = TRUE, collapsed = TRUE
+                            ),
+                            boxPlus(title = "VIOLIN PLOT", width = "100%", closable = FALSE, collapsible = TRUE, collapsed = TRUE,
+                                    withSpinner(plotOutput("graph_violin"))
+                            ),
+                            boxPlus(title = "PRINCIPAL COMPONENT ANALYSIS", width = "100%", closable = FALSE, collapsible = TRUE, collapsed = TRUE,
+                                    withSpinner(plotly::plotlyOutput("graph_minfi_pcaplot")),
+                                    withSpinner(DT::DTOutput("table_minfi_pcaplot")),
+                                    column(
+                                        6,
+                                        selectInput(
+                                            inputId = "select_minfi_pcaplot_pcx",
+                                            choices = c(),
+                                            label = "Select x variable"
+                                        ),
+                                        
+                                        selectInput(
+                                            inputId = "select_minfi_pcaplot_color",
+                                            choices = c(),
+                                            label = "Select color variable"
+                                        )
+                                    ),
+                                    column(
+                                        6,
+                                        selectInput(
+                                            inputId = "select_minfi_pcaplot_pcy",
+                                            choices = c(),
+                                            label = "Select y variable"
+                                        )
+                                    ),
+                                    actionButton("button_pca_update", "Update")
+                            ),
+                            boxPlus(title = "HEATMAP", width = "100%", closable = FALSE, collapsible = TRUE, collapsed = TRUE,
+                                    h1("heatmap")
+                            ),
+                            boxPlus(title = "DECONVOLUTION", width = "100%", closable = FALSE, collapsible = TRUE, collapsed = TRUE,
+                                    h1("deconvolution")
+                            ),
+                            boxPlus(title = "AGE METH", width = "100%", closable = FALSE, collapsible = TRUE, collapsed = TRUE,
+                                    h1("age meth")
+                            ),
+                            boxPlus(title = "GENOME ANALYSIS PLOT", width = "100%", closable = FALSE, collapsible = TRUE, collapsed = TRUE,
+                                    h1("genome analysis plot")
+                            ),
+                            boxPlus(title = "HYPO/HYPER", width = "100%", closable = FALSE, collapsible = TRUE, collapsed = TRUE,
+                                    h1("hypo/hyper based on betas")
+                            ),
+                            boxPlus(title = "CIRCOS", width = "100%", closable = FALSE, collapsible = TRUE, collapsed = TRUE,
+                                    h1("circos")
+                            )
+                        )
+                    )
+                )
             ),
             tabItem(
                 tabName = "dmp_dmr",
-                fluidPage(h1("DMPs/DMRs"))
+                fluidPage(
+                    tabsetPanel(
+                        tabPanel("DMPs", sidebarLayout(
+                            sidebarPanel(
+                                width = 3,
+                                h4("Linear Model Options"),
+                                
+                                pickerInput(
+                                    inputId = "select_limma_voi",
+                                    label = "Select Variable of Interest",
+                                    choices = c(),
+                                    multiple = FALSE
+                                ),
+                                
+                                pickerInput(
+                                    inputId = "checkbox_limma_covariables",
+                                    label = "Select linear model covariables",
+                                    choices = c(),
+                                    multiple = TRUE,
+                                    options = list(
+                                        `actions-box` = TRUE,
+                                        size = 10,
+                                        `selected-text-format` = "count > 3"
+                                    )
+                                ),
+                                
+                                pickerInput(
+                                    inputId = "checkbox_limma_interactions",
+                                    label = "Select linear model interactions",
+                                    choices = c(),
+                                    multiple = TRUE,
+                                    options = list(
+                                        `actions-box` = TRUE,
+                                        size = 10,
+                                        `selected-text-format` = "count > 3"
+                                    )
+                                ),
+                                
+                                switchInput(
+                                    inputId = "select_limma_weights",
+                                    label = "Array Weights",
+                                    labelWidth = "80px",
+                                    value = FALSE
+                                ),
+                                
+                                
+                                shinyjs::disabled(
+                                    actionButton("button_limma_calculatemodel", "Generate Model")
+                                ),
+                                tags$br(),
+                                uiOutput("button_limma_calculatedifs_container")
+                            ),
+                            mainPanel(
+                                width = 9,
+                                boxPlus(title = "DMP TABLE", width = "100%", closable = TRUE, collapsible = TRUE, collapsed = TRUE
+                                        
+                                )
+                            )
+                        )),
+                        tabPanel("DMRs", fluidPage())
+                    )
+                )
             ),
             tabItem(
                 tabName = "functional_enrichment",
