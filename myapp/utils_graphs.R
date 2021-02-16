@@ -333,7 +333,8 @@ create_densityplot <- function(Bvalues, n = 200000) {
       ggplot2::theme(
         panel.grid.major = ggplot2::element_blank(),
         panel.grid.minor = ggplot2::element_blank()
-      )
+      ) +
+      ggplot2::xlim(0, 1)
   ) %>%
     plotly_config() # %>% plotly::toWebGL()
 }
@@ -540,41 +541,18 @@ create_pred_sexplot <- function(gset, sample_names) {
       sex_info,
       ggplot2::aes_string(x = "xMed", y = "yMed", color = "predictedSex")
     ) +
-      ggplot2::geom_point(size = 4) + 
+      ggplot2::geom_point(size = 2) + 
       ggplot2::geom_abline(
         intercept = -2,
         slope = 1,
         color = "darkgrey",
         linetype = "dashed"
       ) +
-      ggplot2::theme_bw()
+      ggplot2::theme_bw() +
+      ggplot2::xlim(0, NA) + ggplot2::ylim(0, NA)
   ) %>% plotly_config()
 }
 
-
-create_sexplot <- function(gset, sample_names, sample_sex) {
-  sex_info <- as.data.frame(minfi::pData(gset)[, c("xMed", "yMed", "predictedSex")])
-  sex_info$sample <- sample_names
-  sex_info$sex <- sample_sex
-  
-  plotly::ggplotly(
-    ggplot2::ggplot(
-      sex_info,
-      ggplot2::aes_string(x = "xMed", y = "yMed", color = "predictedSex", label = "sex")
-    ) +
-      ggplot2::geom_point(size = 4) + 
-      ggplot2::geom_text(aes(label = sex_info$sex, fontface = 2), 
-                         #color = ifelse(sex_info$sex == "M", "#F8766D", "#00BFC4")
-                         color = "black") +
-      ggplot2::geom_abline(
-        intercept = -2,
-        slope = 1,
-        color = "darkgrey",
-        linetype = "dashed"
-      ) +
-      ggplot2::theme_bw()
-  ) %>% plotly_config()
-}
 
 create_plotSA <- function(fit) {
   plot_data <- data.frame(Amean = fit$Amean, sigma = sqrt(fit$sigma))
