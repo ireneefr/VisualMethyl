@@ -474,6 +474,27 @@ shinyServer(function(input, output, session) {
     }) 
     
     
+    ##### INTENSITIES BOXPLOTS #####
+    green_intensities <- reactive(stack(as.data.frame(getGreen(rval_rgset()))))
+    red_intensities <- reactive(stack(as.data.frame(getRed(rval_rgset()))))
+    
+    green_intensities_graph <- reactive(ggplot2::ggplot(green_intensities(), ggplot2::aes(x = green_intensities()$ind, y = green_intensities()$values)) +
+                         ggplot2::geom_boxplot(fill = "darkgreen", outlier.shape = NA, show.legend = FALSE) +
+                         ggplot2::ylim(boxplot.stats(green_intensities()$values)$stats[1], boxplot.stats(green_intensities()$values)$stats[5]) +
+                         ggplot2::theme_bw() +
+                         ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90), 
+                                        axis.title.x = ggplot2::element_blank(), axis.title.y = ggplot2::element_blank()))
+    
+    red_intensities_graph <- reactive(ggplot2::ggplot(red_intensities(), ggplot2::aes(x = red_intensities()$ind, y = red_intensities()$values)) +
+        ggplot2::geom_boxplot(fill = "red", outlier.shape = NA, show.legend = FALSE) +
+        ggplot2::ylim(boxplot.stats(red_intensities()$values)$stats[1], boxplot.stats(red_intensities()$values)$stats[5]) +
+        ggplot2::theme_bw() +
+        ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90), 
+                       axis.title.x = ggplot2::element_blank(), axis.title.y = ggplot2::element_blank()))
+    
+    output$green_intensities_plot <- renderPlot(green_intensities_graph())
+    output$red_intensities_plot <- renderPlot(red_intensities_graph())
+    
     ########## FAILURE RATE PLOT ##########
     
     beta_pvalue <- function(rgset, betas){
@@ -483,18 +504,22 @@ shinyServer(function(input, output, session) {
         fail <- as.data.frame(cbind(sort((apply(beta_pval,2,function(x) sum(is.na(x)))/nrow(beta_pval)*100))))
         colnames(fail)[1] <- "probe_failure_rate"
         
-        plotly::ggplotly(ggplot(fail, aes(x = rownames(fail), y = probe_failure_rate)) +
-                             geom_bar(stat = "identity", fill = "steelblue") +
-                             scale_y_continuous(expand = c(0, 0), limits = c(0, 100), breaks = seq(0, 100, 5)) +  ###max(fail$probe_failure_rate) + 0.5
-                             geom_hline(yintercept = 5, linetype = "dashed", color = "red", size = 0.5) + 
-                             geom_hline(yintercept = 10, linetype = "dashed", color = "red", size = 0.5) +
-                             xlab("Sample Name") + ylab("% Probe Failure Rate") + 
-                             coord_flip() +
-                             annotation_logticks(base = 2, sides = "bl") +
-                             theme_bw())
+        fail
     }
     
-    failure_plot <- reactive(beta_pvalue(rval_rgset(), rval_rgset_getBeta()))
+    failed_beta <- reactive(beta_pvalue(rval_rgset(), rval_rgset_getBeta()))
+    
+    failure_graph <- reactive(plotly::ggplotly(ggplot(failed_beta(), aes(x = rownames(failed_beta()), y = failed_beta()$probe_failure_rate)) +
+                         geom_bar(stat = "identity", fill = "steelblue") +
+                         scale_y_continuous(expand = c(0, 0), limits = c(0, 100), breaks = seq(0, 100, 5)) +  ###max(fail$probe_failure_rate) + 0.5
+                         geom_hline(yintercept = 5, linetype = "dashed", color = "red", size = 0.5) + 
+                         geom_hline(yintercept = 10, linetype = "dashed", color = "red", size = 0.5) +
+                         xlab("Sample Name") + ylab("% Probe Failure Rate") + 
+                         coord_flip() +
+                         annotation_logticks(base = 2, sides = "bl") +
+                         theme_bw()))
+    
+    failure_plot <- reactive(failure_graph())
     output$failure_rate_plot <- plotly::renderPlotly(failure_plot())
     
     ########## CONTROL TYPE PLOTS ##########
@@ -570,22 +595,16 @@ shinyServer(function(input, output, session) {
     
     rval_plot_sexprediction <- reactive({
         req(rval_gset())
-        if(input$select_input_sex == "None"){
-            create_pred_sexplot(rval_gset(), rval_sheet_target()[, input$select_input_samplenamevar])
-            
-        }
-        else{
-            create_sexplot(rval_gset(), rval_sheet_target()[, input$select_input_samplenamevar], rval_sheet_target()[, input$select_input_sex])
-        }
+        create_pred_sexplot(rval_gset(), rval_sheet_target()[, input$select_input_samplenamevar])
     })
     
     rval_plot_sextable <- reactive({
         req(rval_gset())
         if(input$select_input_sex == "None"){
-            data.frame(name = rval_sheet_target()[[input$select_input_samplenamevar]], preditedSex = as.data.frame(minfi::pData(rval_gset()))[["predictedSex"]])
+            data.frame(name = rval_sheet_target()[[input$select_input_samplenamevar]], predictedSex = as.data.frame(minfi::pData(rval_gset()))[["predictedSex"]])
         }
         else{
-        data.frame(name = rval_sheet_target()[[input$select_input_samplenamevar]], sex = rval_sheet_target()[[input$select_input_sex]], preditedSex = as.data.frame(minfi::pData(rval_gset()))[["predictedSex"]])
+        data.frame(name = rval_sheet_target()[[input$select_input_samplenamevar]], sex = rval_sheet_target()[[input$select_input_sex]], predictedSex = as.data.frame(minfi::pData(rval_gset()))[["predictedSex"]])
         }   
     })
     
@@ -607,6 +626,38 @@ shinyServer(function(input, output, session) {
     ########## DENSITY PLOT #####################
     
     channel <- reactive(getProbeInfo(rval_rgset(), type = input$probeType)[, "Name"])
+    
+    ###
+    channel_green <- reactive(getProbeInfo(rval_rgset(), type = "I-Green")[, "Name"])
+    channel_red <- reactive(getProbeInfo(rval_rgset(), type = "I-Red")[, "Name"])
+    channel_II <- reactive(getProbeInfo(rval_rgset(), type = "II")[, "Name"])
+    #
+    beta_raw_green <- reactive(subset(rval_rgset_getBeta(), rownames(rval_rgset_getBeta()) %in% channel_green()))
+    beta_raw_red <- reactive(subset(rval_rgset_getBeta(), rownames(rval_rgset_getBeta()) %in% channel_red()))
+    beta_raw_II <- reactive(subset(rval_rgset_getBeta(), rownames(rval_rgset_getBeta()) %in% channel_II()))
+    n_raw_green <- reactive(ifelse(nrow(beta_raw_green()) < 20000, nrow(beta_raw_green()), 20000))
+    n_raw_red <- reactive(ifelse(nrow(beta_raw_red()) < 20000, nrow(beta_raw_red()), 20000))
+    n_raw_II <- reactive(ifelse(nrow(beta_raw_II()) < 20000, nrow(beta_raw_II()), 20000))
+    rval_plot_densityplotraw_green <- reactive(create_densityplot(beta_raw_green(), n_raw_green()))
+    rval_plot_densityplotraw_red <- reactive(create_densityplot(beta_raw_red(), n_raw_red()))
+    rval_plot_densityplotraw_II <- reactive(create_densityplot(beta_raw_II(), n_raw_II()))
+    #
+    beta_normalized_green <- reactive(rval_gset_getBeta()[rownames(rval_gset_getBeta()) %in% channel_green(),])
+    beta_normalized_red <- reactive(rval_gset_getBeta()[rownames(rval_gset_getBeta()) %in% channel_red(),])
+    beta_normalized_II <- reactive(rval_gset_getBeta()[rownames(rval_gset_getBeta()) %in% channel_II(),])
+    n_normalized_green <- reactive(ifelse(nrow(beta_normalized_green()) < 20000, nrow(beta_normalized_green()), 20000))
+    n_normalized_red <- reactive(ifelse(nrow(beta_normalized_red()) < 20000, nrow(beta_normalized_red()), 20000))
+    n_normalized_II <- reactive(ifelse(nrow(beta_normalized_II()) < 20000, nrow(beta_normalized_II()), 20000))
+    rval_plot_densityplot_green <- reactive(create_densityplot(beta_normalized_green(), n_normalized_green()))
+    rval_plot_densityplot_red <- reactive(create_densityplot(beta_normalized_red(), n_normalized_red()))
+    rval_plot_densityplot_II <- reactive(create_densityplot(beta_normalized_II(), n_normalized_II()))
+    ###
+    n_raw_all <- reactive(ifelse(nrow(rval_rgset_getBeta()) < 20000, nrow(rval_rgset_getBeta()), 20000))
+    rval_plot_densityplotraw_all <- reactive(create_densityplot(rval_rgset_getBeta(), n_raw_all()))
+    n_normalized_all <- reactive(ifelse(nrow(rval_gset_getBeta()) < 20000, nrow(rval_gset_getBeta()), 20000))
+    rval_plot_densityplot_all <- reactive(create_densityplot(rval_gset_getBeta(), n_normalized()))
+    ###
+    
     
     beta_raw <- reactive(subset(rval_rgset_getBeta(), rownames(rval_rgset_getBeta()) %in% channel()))
     n_raw <- reactive(ifelse(nrow(beta_raw()) < 20000, nrow(beta_raw()), 20000))
@@ -718,32 +769,18 @@ shinyServer(function(input, output, session) {
     
     
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
     # Markdown Report
-    output$download_export_markdown <- downloadHandler(
+    output$download_html <- downloadHandler(
         filename = "Report.html",
         content = function(file) {
             #tempReport <- file.path(tempdir(), "Report.Rmd")
             #print(tempReport)
             #file.copy("report.Rmd", getwd(), overwrite = TRUE)
-            src <- normalizePath('report.Rmd')
+            src <- normalizePath('report_html.Rmd')
             owd <- setwd(tempdir())
             on.exit(setwd(owd))
-            file.copy(src, 'report.Rmd', overwrite = TRUE)
-            shinyjs::disable("download_export_markdown")
+            file.copy(src, 'report_html.Rmd', overwrite = TRUE)
+            shinyjs::disable("download_html")
             withProgress(
                 message = "Generating Report...",
                 value = 1,
@@ -781,8 +818,19 @@ shinyServer(function(input, output, session) {
                         #distance = input$select_limma_clusterdist,
                         #scale = input$select_limma_scale,
                         #removebatch = input$select_limma_removebatch,
+                        plot_green_intensities = green_intensities_graph(),
+                        plot_red_intensities = red_intensities_graph(),
+                        plot_failed_probes = failure_plot(),
                         plot_densityplotraw = rval_plot_densityplotraw(),
+                        plot_densityplotraw_green = rval_plot_densityplotraw_green(),
+                        plot_densityplotraw_red = rval_plot_densityplotraw_red(),
+                        plot_densityplotraw_II = rval_plot_densityplotraw_II(),
+                        plot_densityplotraw_all = rval_plot_densityplotraw_all(),
                         plot_densityplot = rval_plot_densityplot(),
+                        plot_densityplot_green = rval_plot_densityplot_green(),
+                        plot_densityplot_red = rval_plot_densityplot_red(),
+                        plot_densityplot_II = rval_plot_densityplot_II(),
+                        plot_densityplot_all = rval_plot_densityplot_all(),
                         #plot_pcaplot = rval_plot_pca()[["graph"]],
                         plot_corrplot = rval_plot_corrplot()[["graph"]],
                         #plot_boxplotraw = rval_plot_boxplotraw(),
@@ -807,19 +855,118 @@ shinyServer(function(input, output, session) {
                     
                     render_file <- rmarkdown::render(
                         #tempReport,
-                        input = "report.Rmd",
+                        input = "report_html.Rmd",
                         output_file = file,
                         run_pandoc = TRUE,
                         params = params,
                         envir = newenv
                     )
                     
-                    shinyjs::enable("download_export_markdown")
+                    shinyjs::enable("download_html")
                 }
             )
         }
     )
+   
     
+    
+    output$download_pdf <- downloadHandler(
+        filename = "Report.pdf",
+        content = function(file) {
+            #tempReport <- file.path(tempdir(), "Report.Rmd")
+            #print(tempReport)
+            #file.copy("report.Rmd", getwd(), overwrite = TRUE)
+            src <- normalizePath('report_pdf.Rmd')
+            owd <- setwd(tempdir())
+            on.exit(setwd(owd))
+            file.copy(src, 'report_pdf.Rmd', overwrite = TRUE)
+            shinyjs::disable("download_pdf")
+            withProgress(
+                message = "Generating Report...",
+                value = 1,
+                max = 3,
+                {
+                    params <- list(
+                        rval_sheet = rval_sheet(),
+                        rval_sheet_target = rval_sheet_target(),
+                        name_var = input$select_input_samplenamevar,
+                        grouping_var = input$select_input_groupingvar,
+                        donor_var = input$select_input_donorvar,
+                        normalization_mode = input$select_minfi_norm,
+                        dropsnps = input$select_minfi_dropsnps,
+                        dropcphs = input$select_minfi_dropcphs,
+                        dropsex = input$select_minfi_chromosomes,
+                        maf = input$slider_minfi_maf,
+                        probes = rval_gsetprobes(),
+                        #limma_voi = input$select_limma_voi,
+                        #limma_covar = input$checkbox_limma_covariables,
+                        #limma_inter = input$checkbox_limma_interactions,
+                        #limma_arrayweights = input$select_limma_weights,
+                        #limma_ebayes_trend = input$select_limma_trend,
+                        #limma_ebayes_robust = input$select_limma_robust,
+                        #rval_design = rval_design(),
+                        #rval_contrasts = rval_contrasts(),
+                        #rval_voi = rval_voi(),
+                        #rval_dendrogram = rval_dendrogram(),
+                        #min_deltabeta = input$slider_limma_deltab,
+                        #max_fdr = input$slider_limma_adjpvalue,
+                        #max_pvalue = input$slider_limma_pvalue,
+                        #clusteralg = input$select_limma_clusteralg,
+                        #grups2plot = input$select_limma_groups2plot,
+                        #contrasts2plot = input$select_limma_contrasts2plot,
+                        #Colv = input$select_limma_colv,
+                        #distance = input$select_limma_clusterdist,
+                        #scale = input$select_limma_scale,
+                        #removebatch = input$select_limma_removebatch,
+                        plot_green_intensities = green_intensities_graph(),
+                        plot_red_intensities = red_intensities_graph(),
+                        plot_failed_probes = failure_plot(),
+                        plot_densityplotraw = rval_plot_densityplotraw(),
+                        plot_densityplotraw_green = rval_plot_densityplotraw_green(),
+                        plot_densityplotraw_red = rval_plot_densityplotraw_red(),
+                        plot_densityplotraw_II = rval_plot_densityplotraw_II(),
+                        plot_densityplotraw_all = rval_plot_densityplotraw_all(),
+                        plot_densityplot = rval_plot_densityplot(),
+                        plot_densityplot_green = rval_plot_densityplot_green(),
+                        plot_densityplot_red = rval_plot_densityplot_red(),
+                        plot_densityplot_II = rval_plot_densityplot_II(),
+                        plot_densityplot_all = rval_plot_densityplot_all(),
+                        #plot_pcaplot = rval_plot_pca()[["graph"]],
+                        plot_corrplot = rval_plot_corrplot()[["graph"]],
+                        #plot_boxplotraw = rval_plot_boxplotraw(),
+                        #plot_boxplot = rval_plot_boxplot(),
+                        #plot_qcraw = rval_plot_qcraw(),
+                        #plot_bisulfiterawII = rval_plot_bisulfiterawII(),
+                        plot_sexprediction = rval_plot_sexprediction(),
+                        plot_snpheatmap = rval_plot_snpheatmap(),
+                        #plot_plotSA = rval_plot_plotSA(),
+                        #table_pcaplot = rval_plot_pca()[["info"]],
+                        table_corrplot = rval_plot_corrplot()[["info"]],
+                        data_sexprediction = as.data.frame(minfi::pData(rval_gset()))[["predictedSex"]]
+                        #table_dmps = make_table(),
+                        #filteredlist2heatmap = rval_filteredlist2heatmap()
+                    )
+                    
+                    
+                    newenv <- new.env(parent = globalenv())
+                    #newenv$create_heatmap <- create_heatmap
+                    print(newenv)
+                    print(params)
+                    
+                    render_file <- rmarkdown::render(
+                        #tempReport,
+                        input = "report_pdf.Rmd",
+                        output_file = file,
+                        run_pandoc = TRUE,
+                        params = params,
+                        envir = newenv
+                    )
+                    
+                    shinyjs::enable("download_pdf")
+                }
+            )
+        }
+    ) 
     
     
     

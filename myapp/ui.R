@@ -182,13 +182,19 @@ shinyUI(
                         shinyjs::disabled(actionButton("button_minfi_select", "Select")),
                         h4(),
                         textOutput("text_minfi_probes"),
-                        downloadButton("download_export_markdown")
+                        downloadButton("download_html", label = "Download HTML"),
+                        downloadButton("download_pdf", label = "Download PDF")
                     ),
-                    
                     
                     mainPanel(
                         width = 9,
                         verticalLayout(
+                        boxPlus(title = "INTENSITIES BOXPLOTS", width = "100%", closable = FALSE, collapsible = TRUE, collapsed = TRUE,
+                                h4("Green channel intensities"), 
+                                withSpinner(plotOutput("green_intensities_plot")),
+                                h4("Red channel intensities"), 
+                                withSpinner(plotOutput("red_intensities_plot"))
+                        ),
                         boxPlus(title = "FAILED PROBES", width = "100%", closable = FALSE, collapsible = TRUE, collapsed = TRUE,
                                 h4("Failure Rate Plot"), 
                                 withSpinner(plotly::plotlyOutput("failure_rate_plot"))
