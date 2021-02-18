@@ -295,7 +295,7 @@ shinyUI(
                                     h1("heatmap")
                             ),
                             box(title = "DECONVOLUTION", width = "100%", collapsible = TRUE, collapsed = TRUE,
-                                    h1("deconvolution")
+                                    withSpinner(plotOutput("deconvolution_heatmap"))
                             ),
                             box(title = "AGE METH", width = "100%", collapsible = TRUE, collapsed = TRUE,
                                     h1("age meth")

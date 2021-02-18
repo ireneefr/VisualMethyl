@@ -766,6 +766,13 @@ shinyServer(function(input, output, session) {
         )
     )
     
+    ##### DECONVOLUTION #####
+    deconvolution <- reactive(estimateCellCounts(rval_rgset()))
+    
+    graph_deconvolution <- reactive(pheatmap::pheatmap(deconvolution()))
+    
+    output$deconvolution_heatmap <- renderPlot(graph_deconvolution())
+     
     
     
     
