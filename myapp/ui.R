@@ -47,6 +47,7 @@ library(shinydashboardPlus)
 library(shinyWidgets)
 library(shinycssloaders)
 
+
 shinyUI(
     dashboardPage( 
 
@@ -55,8 +56,8 @@ shinyUI(
     dashboardSidebar(
         
         sidebarMenu(id = "menu",
-                    menuItem("Data", tabName = "data"),
-                    convertMenuItem(menuItem("Analysis", tabName = "analysis", startExpanded = TRUE,
+                    menuItem(strong("Data"), tabName = "data"),
+                    convertMenuItem(menuItem(strong("Analysis"), tabName = "analysis", startExpanded = TRUE,
                     menuSubItem("QC", tabName = "qc"),
                     menuSubItem("Exploratory Analysis", tabName = "exploratory_analysis"),
                     menuSubItem("DMPs/DMRs", tabName = "dmp_dmr"),
@@ -65,19 +66,19 @@ shinyUI(
                     menuSubItem("Predicted Models", tabName = "predicted_models"),
                     menuSubItem("External Sources", tabName = "external_sources"),
                     menuSubItem("Genome Browser", tabName = "genome_browser")), "analysis"),
-                    menuItem("Export", tabName = "export"),
-                    menuItem("Help", tabName = "help")
+                    menuItem(strong("Export"), tabName = "export"),
+                    menuItem(strong("Help"), tabName = "help")
         )
     ),
     
-    dashboardBody(includeCSS("www/style.css"),
+    dashboardBody(includeCSS("www/style.css"), 
         
         tabItems(
             
             tabItem(
                 tabName = "data",
                 verticalLayout( 
-                    box(title = "INPUT DATA", width = 12, collapsible = TRUE, 
+                    box(title = "INPUT DATA", width = 12, collapsible = FALSE, 
                             fileInput("input_data", "Upload input data (.zip)", multiple = FALSE, accept = ".zip"),
                             uiOutput("ui_input_data")
                     ),
@@ -85,7 +86,7 @@ shinyUI(
                     conditionalPanel(
                         "input.b_input_data > 0",
                         box(title = "SELECTION OPTIONS", id = "selection_options",
-                                collapsible = TRUE,
+                                collapsible = FALSE,
                             width = 3,
                             selectInput("select_input_samplenamevar", "", c()),
                             selectInput("select_input_groupingvar", "", c()),
@@ -109,7 +110,7 @@ shinyUI(
                     # Box 2: Table
                     conditionalPanel(
                         "input.b_input_data > 0", box(title = "SAMPLES TABLE",
-                                                          collapsible = TRUE,
+                                                          collapsible = FALSE,
                         width = 9,
                         withSpinner(DT::DTOutput("samples_table"))
                         
@@ -201,23 +202,16 @@ shinyUI(
                                 withSpinner(plotOutput("red_intensities_plot"))
                         ),
                         box(title = "FAILED PROBES", width = "100%", collapsible = TRUE, collapsed = TRUE,
+                            column(width = 9,
                                 h4("Failure Rate Plot"), 
-                                withSpinner(plotly::plotlyOutput("failure_rate_plot"))
+                                withSpinner(plotly::plotlyOutput("failure_rate_plot"))),
+                            column(width = 3,
+                                h4("Failure Rate Table"), 
+                                withSpinner(DT::DTOutput("failure_rate_table")))
                         ),
                         box(title = "CONTROL TYPES", width = "100%", collapsible = TRUE, collapsed = TRUE,
                                 selectInput("controlType", "Choose a control type:",
-                                            choices = c(
-                                                "BISULFITE CONVERSION I",
-                                                "BISULFITE CONVERSION II",
-                                                "HYBRIDIZATION",
-                                                "SPECIFICITY I",
-                                                "SPECIFICITY II",
-                                                "TARGET REMOVAL",
-                                                "BISULFITE CONVERSION I",
-                                                "EXTENSION",
-                                                "STAINING",
-                                                "NON-POLYMORPHIC"
-                                            ), selected = 1),
+                                            choices = controlNames, selected = 1),
                                 selectInput("select_slide", "Select slide:", choices = c()),
                                 withSpinner(plotOutput("controlTypePlotGreen")),
                                 withSpinner(plotOutput("controlTypePlotRed"))
@@ -259,10 +253,11 @@ shinyUI(
                     mainPanel(
                         widh = 9,
                         verticalLayout(
-                            box(title = "DENSITY PLOT", width = "100%", collapsible = TRUE, collapsed = TRUE
-                            ),
                             box(title = "VIOLIN PLOT", width = "100%", collapsible = TRUE, collapsed = TRUE,
-                                    withSpinner(plotOutput("graph_violin"))
+                                    h4("Raw"),
+                                    withSpinner(plotOutput("graph_violin_raw")),
+                                    h4("Normalized"),
+                                    withSpinner(plotOutput("graph_violin_normalized"))
                             ),
                             box(title = "PRINCIPAL COMPONENT ANALYSIS", width = "100%", collapsible = TRUE, collapsed = TRUE,
                                     withSpinner(plotly::plotlyOutput("graph_minfi_pcaplot")),

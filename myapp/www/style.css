@@ -1,21 +1,21 @@
 
 /* sidebar: logo */
 .skin-blue .main-header .logo {
-  background:#69BF41;
+  background:linear-gradient(180deg, rgba(42,190,231,1) 0%, rgba(21,145,176,1) 100%);
 }
 /* sidebar: logo hover */
 .skin-blue .main-header .logo:hover {
-  background:#69BF41;
+  background:linear-gradient(180deg, rgba(42,190,231,1) 0%, rgba(21,145,176,1) 100%);
 }
 /* sidebar: collapse button  */
 .skin-blue .main-header .navbar .sidebar-toggle {
-  background:linear-gradient(180deg, rgba(21,145,176,1) 0%, rgba(42,190,231,1) 51%, rgba(21,145,176,1) 100%);
+  background:linear-gradient(180deg, rgba(42,190,231,1) 0%, rgba(21,145,176,1) 100%);
   color:#495057;
 }
 /* sidebar: collapse button hover */
 .skin-blue .main-header .navbar .sidebar-toggle:hover {
   background:#495057;
-  color:#7BD154;
+  color:#2abee7;
 }
 /* header */
 .skin-blue .main-header .navbar {
@@ -24,7 +24,7 @@
 }
 /* sidebar*/
 .skin-blue .main-sidebar {
-  background:#495057;
+  background:#162326;
   /*box-shadow: ', sidebarShadowRadius, " ", sidebarShadowColor, ';*/
   /*padding-left: ', sidebarPadding, 'px;*/
   /*padding-right: ', sidebarPadding, 'px;*/
@@ -33,7 +33,7 @@
 /* sidebar menu */
 .main-sidebar .user-panel, .sidebar-menu, .sidebar-menu>li.header {
   white-space: nowrap;
-  background:#495057;
+  background:#162326;
   /*padding: ', sidebarMenuPadding, 'px;*/
   border-radius:0px;
 }

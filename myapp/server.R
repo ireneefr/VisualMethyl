@@ -475,118 +475,21 @@ shinyServer(function(input, output, session) {
     
     
     ##### INTENSITIES BOXPLOTS #####
-    green_intensities <- reactive(stack(as.data.frame(getGreen(rval_rgset()))))
-    red_intensities <- reactive(stack(as.data.frame(getRed(rval_rgset()))))
-    
-    green_intensities_graph <- reactive(ggplot2::ggplot(green_intensities(), ggplot2::aes(x = green_intensities()$ind, y = green_intensities()$values)) +
-                         ggplot2::geom_boxplot(fill = "darkgreen", outlier.shape = NA, show.legend = FALSE) +
-                         ggplot2::ylim(boxplot.stats(green_intensities()$values)$stats[1], boxplot.stats(green_intensities()$values)$stats[5]) +
-                         ggplot2::theme_bw() +
-                         ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90), 
-                                        axis.title.x = ggplot2::element_blank(), axis.title.y = ggplot2::element_blank()))
-    
-    red_intensities_graph <- reactive(ggplot2::ggplot(red_intensities(), ggplot2::aes(x = red_intensities()$ind, y = red_intensities()$values)) +
-        ggplot2::geom_boxplot(fill = "red", outlier.shape = NA, show.legend = FALSE) +
-        ggplot2::ylim(boxplot.stats(red_intensities()$values)$stats[1], boxplot.stats(red_intensities()$values)$stats[5]) +
-        ggplot2::theme_bw() +
-        ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90), 
-                       axis.title.x = ggplot2::element_blank(), axis.title.y = ggplot2::element_blank()))
-    
-    output$green_intensities_plot <- renderPlot(green_intensities_graph())
-    output$red_intensities_plot <- renderPlot(red_intensities_graph())
+
+    output$green_intensities_plot <- renderPlot(create_boxplot_intensities_green(rval_rgset()))
+    output$red_intensities_plot <- renderPlot(create_boxplot_intensities_red(rval_rgset()))
     
     ########## FAILURE RATE PLOT ##########
     
-    beta_pvalue <- function(rgset, betas){
-        pval <- as.matrix(minfi::detectionP(rgset))
-        beta_pval <- as.matrix(betas)
-        beta_pval[pval>=0.01] <- NA
-        fail <- as.data.frame(cbind(sort((apply(beta_pval,2,function(x) sum(is.na(x)))/nrow(beta_pval)*100))))
-        colnames(fail)[1] <- "probe_failure_rate"
-        
-        fail
-    }
-    
-    failed_beta <- reactive(beta_pvalue(rval_rgset(), rval_rgset_getBeta()))
-    
-    failure_graph <- reactive(plotly::ggplotly(ggplot(failed_beta(), aes(x = rownames(failed_beta()), y = failed_beta()$probe_failure_rate)) +
-                         geom_bar(stat = "identity", fill = "steelblue") +
-                         scale_y_continuous(expand = c(0, 0), limits = c(0, 100), breaks = seq(0, 100, 5)) +  ###max(fail$probe_failure_rate) + 0.5
-                         geom_hline(yintercept = 5, linetype = "dashed", color = "red", size = 0.5) + 
-                         geom_hline(yintercept = 10, linetype = "dashed", color = "red", size = 0.5) +
-                         xlab("Sample Name") + ylab("% Probe Failure Rate") + 
-                         coord_flip() +
-                         annotation_logticks(base = 2, sides = "bl") +
-                         theme_bw()))
-    
-    failure_plot <- reactive(failure_graph())
-    output$failure_rate_plot <- plotly::renderPlotly(failure_plot())
+    failure_plot <- reactive(create_failure(rval_rgset(), rval_rgset_getBeta()))
+    output$failure_rate_plot <- plotly::renderPlotly(failure_plot()[["graph"]])
+    output$failure_rate_table <- DT::renderDT(failure_plot()[["info"]])
     
     ########## CONTROL TYPE PLOTS ##########
     
-    output$controlTypePlotGreen <- renderPlot({
-        if (!is.null(input$controlType)){
-            
-            groupNames <- rval_sheet_target()$Sample_Group
-            sampleNames <- rval_sheet_target()$Samples_Name #sampleNames(shinyMethylSet1())
-            
-            if (input$controlType %in% c("BISULFITE CONVERSION I", "BISULFITE CONVERSION II", "HYBRIDIZATION", "SPECIFICITY I",
-                                         "SPECIFICITY II", "TARGET REMOVAL")){
-                threshold <- 1
-            } else if (input$controlType %in% c("EXTENSION", "STAINING", "NON-POLYMORPHIC")){
-                threshold <- 5 # you can increase the threshold
-                
-            } else {threshold <- 0}
-            
-            green <- getGreen(rval_rgset())
-            ctrlAddress <- getControlAddress(rval_rgset(), controlType = input$controlType)
-            
-            green_control <- log2(green[ctrlAddress, ,drop = FALSE])
-            
-            slide <- input$select_slide
-            title <- paste("-", slide)
-            
-            subset <- reshape2::melt(green_control)
-            subset2 <- subset[grepl(slide, subset$Var2), ]
-            
-            ggplot(data=as.data.frame(subset2), aes(x=Var2, y=value)) +
-                geom_point(color="darkgreen", size=1.5) + scale_y_continuous(limits = c(-1, 20)) +
-                theme(axis.text.x = element_text(hjust = 1, angle=45)) +
-                geom_hline(yintercept =threshold, linetype="dashed") + ylab("Log2 Intensity") +
-                scale_x_discrete(labels=groupNames) + xlab("Samples") + ggtitle(paste("Green Channel", title))
-        }
-    })
-    
-    output$controlTypePlotRed <- renderPlot({
-        if (!is.null(input$controlType)){
-            groupNames <- rval_sheet_target()$Sample_Group
-            sampleNames <- rval_sheet_target()$Samples_Name
-            
-            if (input$controlType %in% c("BISULFITE CONVERSION I", "BISULFITE CONVERSION II", "HYBRIDIZATION", "SPECIFICITY I",
-                                         "SPECIFICITY II", "TARGET REMOVAL")){
-                threshold <- 1
-            } else if (input$controlType %in% c("EXTENSION", "STAINING", "NON-POLYMORPHIC")){
-                threshold <- 5 # you can increase the threshold
-                
-            } else {threshold <- 0}
-            
-            red <- getRed(rval_rgset())
-            ctrlAddress <- getControlAddress(rval_rgset(), controlType = input$controlType)
-            
-            red_control <- log2(red[ctrlAddress, ,drop = FALSE])
-            
-            slide <- input$select_slide
-            title <- paste("-", slide)
-            
-            subset <- reshape2::melt(red_control)
-            subset2 <- subset[grepl(slide, subset$Var2), ]
-            
-            ggplot(data=as.data.frame(subset2), aes(x=Var2, y=value)) +
-                geom_point(color="red", size=1.5) + scale_y_continuous(limits = c(-1, 20)) +
-                theme(axis.text.x = element_text(hjust = 1, angle=45)) +
-                geom_hline(yintercept =threshold, linetype="dashed") + ylab("Log2 Intensity") +
-                scale_x_discrete(labels=groupNames) + xlab("Samples") + ggtitle(paste("Red Channel", title))
-        } })
+    control_type <- reactive(create_control_type(rval_rgset, rval_sheet_target, input$controlType, input$select_slide))
+    output$controlTypePlotGreen <- renderPlot(control_type()[["green"]])
+    output$controlTypePlotRed <- renderPlot(control_type()[["red"]])
     
     
     ###### SEX PREDICTION #####
@@ -731,8 +634,11 @@ shinyServer(function(input, output, session) {
                            panel.grid.minor = ggplot2::element_blank())
     }
     
-    rval_plot_violin <- reactive(create_violinplot(rval_rgset_getBeta(), nrow(rval_rgset_getBeta())))
-    output$graph_violin <- renderPlot(rval_plot_violin())
+    rval_plot_violin_raw <- reactive(create_violinplot(rval_rgset_getBeta(), nrow(rval_rgset_getBeta())))
+    output$graph_violin_raw <- renderPlot(rval_plot_violin_raw())
+    
+    rval_plot_violin_normalized <- reactive(create_violinplot(rval_gset_getBeta(), nrow(rval_gset_getBeta())))
+    output$graph_violin_normalized <- renderPlot(rval_plot_violin_normalized())
     
     
     ########## PCA PLOT ##########

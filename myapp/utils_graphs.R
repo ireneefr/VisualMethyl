@@ -1,5 +1,94 @@
 library(dplyr)
 # GRAPHIC FUNCTIONS
+# GREEN INTENSITIES BOXPLOTS
+create_boxplot_intensities_green <- function(rgset){
+  green_intensities <- stack(as.data.frame(getGreen(rgset)))
+  
+  ggplot2::ggplot(green_intensities, ggplot2::aes(x = ind, y = values)) +
+                                        ggplot2::geom_boxplot(fill = "darkgreen", outlier.shape = NA, show.legend = FALSE) +
+                                        ggplot2::ylim(boxplot.stats(green_intensities$values)$stats[1], boxplot.stats(green_intensities$values)$stats[5]) +
+                                        ggplot2::theme_bw() +
+                                        ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90), 
+                                                       axis.title.x = ggplot2::element_blank(), axis.title.y = ggplot2::element_blank())
+}
+# RED INTENSITIES BOXPLOTS
+create_boxplot_intensities_red <- function(rgset){
+  red_intensities <- stack(as.data.frame(getRed(rgset)))
+  ggplot2::ggplot(red_intensities, ggplot2::aes(x = ind, y = values)) +
+                                      ggplot2::geom_boxplot(fill = "red", outlier.shape = NA, show.legend = FALSE) +
+                                      ggplot2::ylim(boxplot.stats(red_intensities$values)$stats[1], boxplot.stats(red_intensities$values)$stats[5]) +
+                                      ggplot2::theme_bw() +
+                                      ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90), 
+                                                     axis.title.x = ggplot2::element_blank(), axis.title.y = ggplot2::element_blank())
+}
+
+# FAILURE RATE PLOT
+create_failure <- function(rgset, betas){
+  pval <- as.matrix(minfi::detectionP(rgset))
+  beta_pval <- as.matrix(betas)
+  beta_pval[pval>=0.01] <- NA
+  fail <- as.data.frame(cbind(sort((apply(beta_pval,2,function(x) sum(is.na(x)))/nrow(beta_pval)*100))))
+  colnames(fail)[1] <- "probe_failure_rate"
+  
+  fail$probe_failure_rate <- round(fail$probe_failure_rate, digits = 3)
+  failure_info <- fail
+  
+  failure_graph <- plotly::ggplotly(ggplot(fail, aes(x = rownames(fail), y = probe_failure_rate)) +
+                        geom_bar(stat = "identity", fill = "steelblue") +
+                        scale_y_continuous(expand = c(0, 0), limits = c(0, 100), breaks = seq(0, 100, 5)) +  ###max(fail$probe_failure_rate) + 0.5
+                        geom_hline(yintercept = 5, linetype = "dashed", color = "red", size = 0.5) + 
+                        geom_hline(yintercept = 10, linetype = "dashed", color = "red", size = 0.5) +
+                        xlab("Sample Name") + ylab("% Probe Failure Rate") + 
+                        coord_flip() +
+                        annotation_logticks(base = 2, sides = "bl") +
+                        theme_bw())
+  
+  return(list(info = failure_info, graph = failure_graph))
+}
+
+# CONTROL TYPES
+
+create_control_type <- function(rgset, targets, control, slide){
+    
+    groupNames <- targets$Sample_Group
+    sampleNames <- targets$Samples_Name
+    title <- paste("-", slide)
+    
+    if (control %in% c("BISULFITE CONVERSION I", "BISULFITE CONVERSION II", "HYBRIDIZATION", "SPECIFICITY I",
+                                 "SPECIFICITY II", "TARGET REMOVAL")){
+      threshold <- 1
+    } else if (control %in% c("EXTENSION", "STAINING", "NON-POLYMORPHIC")){
+      threshold <- 5 # you can increase the threshold
+      
+    } else {threshold <- 0}
+    
+    green <- getGreen(rgset)
+    ctrlAddress_green <- getControlAddress(rgset, controlType = control)
+    subset_green <- reshape2::melt(log2(green[ctrlAddress_green, ,drop = FALSE]))
+    subset_green <- as.data.frame(subset_green[grepl(slide, subset_green$Var2), ])
+    
+    green_plot <- ggplot(data=subset_green, aes(x=Var2, y=value)) +
+      geom_point(color="darkgreen", size=1.5) + scale_y_continuous(limits = c(-1, 20)) +
+      theme(axis.text.x = element_text(hjust = 1, angle=45)) +
+      geom_hline(yintercept =threshold, linetype="dashed") + ylab("Log2 Intensity") +
+      scale_x_discrete(labels=groupNames) + xlab("Samples") + ggtitle(paste("Green Channel", title))
+
+    red <- getRed(rgset)
+    ctrlAddress_red <- getControlAddress(rgset, controlType = control)
+    subset_red <- reshape2::melt(log2(red[ctrlAddress_red, ,drop = FALSE]))
+    subset_red <- as.data.frame(subset_red[grepl(slide, subset_red$Var2), ])
+    
+    red_plot <- ggplot(data=subset_red, aes(x=Var2, y=value)) +
+      geom_point(color="red", size=1.5) + scale_y_continuous(limits = c(-1, 20)) +
+      theme(axis.text.x = element_text(hjust = 1, angle=45)) +
+      geom_hline(yintercept =threshold, linetype="dashed") + ylab("Log2 Intensity") +
+      scale_x_discrete(labels=groupNames) + xlab("Samples") + ggtitle(paste("Red Channel", title))
+    
+    return(list(green = green_plot, red = red_plot))
+}
+
+
+
 create_heatmap <- function(plot_data,
                            factorgroups,
                            groups2plot,
