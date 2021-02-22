@@ -1,4 +1,5 @@
 library(dplyr)
+library(minfi)
 # GRAPHIC FUNCTIONS
 # GREEN INTENSITIES BOXPLOTS
 create_boxplot_intensities_green <- function(rgset){
