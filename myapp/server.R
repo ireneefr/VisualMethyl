@@ -487,7 +487,7 @@ shinyServer(function(input, output, session) {
     
     ########## CONTROL TYPE PLOTS ##########
     
-    control_type <- reactive(create_control_type(rval_rgset, rval_sheet_target, input$controlType, input$select_slide))
+    control_type <- reactive(create_control_type(rval_rgset(), rval_sheet_target(), input$controlType, input$select_slide))
     output$controlTypePlotGreen <- renderPlot(control_type()[["green"]])
     output$controlTypePlotRed <- renderPlot(control_type()[["red"]])
     
