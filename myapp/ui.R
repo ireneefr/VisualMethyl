@@ -122,16 +122,16 @@ shinyUI(
                 tabName = "analysis",
                 verticalLayout(
                 splitLayout(style = "margin-left: 14px; margin-right: 14px;", cellArgs = list(style = "padding: 4px;"),
-                            actionButton("b_qc", width = "100%", label = strong("QC"), class = "btn-primary", style = "color:#fff; padding:50px; font-size:300%", disable = TRUE),
-                            actionButton("b_exploratory_analysis", width = "100%",label = strong(HTML("Exploratory <br/> Analysis")), class = "btn-primary", style = "color:#fff; padding:20px; font-size:300%"),
-                            actionButton("b_dmp_dmr", width = "100%", label = strong("DMPs/DMRs"), class = "btn-primary", style = "color:#fff; padding:50px; font-size:300%"),
-                            actionButton("b_functional_enrichment", width = "90%",label = strong(HTML("Functional <br/> Enrichment")), class = "btn-primary", style = "color:#fff; padding:20px; font-size:300%")
+                            actionButton("b_qc", width = "100%", label = strong("QC"), class = "btn-primary", style = "color:#fff; padding:3.55vw; font-size:2.5vw", disable = TRUE),
+                            actionButton("b_exploratory_analysis", width = "100%",label = strong(HTML("Exploratory <br/> Analysis")), class = "btn-primary", style = "color:#fff; padding:1.75vw; font-size:2.5vw"),
+                            actionButton("b_dmp_dmr", width = "100%", label = strong("DMPs/DMRs"), class = "btn-primary", style = "color:#fff; padding:3.55vw; font-size:2.5vw"),
+                            actionButton("b_functional_enrichment", width = "90%",label = strong(HTML("Functional <br/> Enrichment")), class = "btn-primary", style = "color:#fff; padding:1.75vw; font-size:2.5vw")
                 ),
                 splitLayout(style = "margin-left: 14px; margin-right: 14px", cellArgs = list(style = "padding: 4px;"),
-                            actionButton("b_survival", width = "100%", label = strong("Survival"), class = "btn-primary", style = "color:#fff; padding:50px; font-size:300%"),
-                            actionButton("b_predicted_models", width = "100%", label = strong(HTML("Predicted <br/> Models")), class = "btn-primary", style = "color:#fff; padding:20px; font-size:300%"),
-                            actionButton("b_external_sources", width = "100%", label = strong(HTML("External <br/> Sources")), class = "btn-primary", style = "color:#fff; padding:20px; font-size:300%"),
-                            actionButton("b_genome_browser", width = "90%", label = strong(HTML("Genome <br/> Browser")), class = "btn-primary", style = "color:#fff; padding:20px; font-size:300%")
+                            actionButton("b_survival", width = "100%", label = strong("Survival"), class = "btn-primary", style = "color:#fff; padding:3.55vw; font-size:2.5vw"),
+                            actionButton("b_predicted_models", width = "100%", label = strong(HTML("Predicted <br/> Models")), class = "btn-primary", style = "color:#fff; padding:1.75vw; font-size:2.5vw"),
+                            actionButton("b_external_sources", width = "100%", label = strong(HTML("External <br/> Sources")), class = "btn-primary", style = "color:#fff; padding:1.75vw; font-size:2.5vw"),
+                            actionButton("b_genome_browser", width = "90%", label = strong(HTML("Genome <br/> Browser")), class = "btn-primary", style = "color:#fff; padding:1.75vw; font-size:2.5vw")
                 ))
             ),
             tabItem(
