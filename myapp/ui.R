@@ -246,12 +246,6 @@ shinyUI(
             tabItem(
                 tabName = "exploratory_analysis",
                 fluidPage(
-                    sidebarPanel(
-                        width = 3,
-                        h1("OPTIONS")
-                    ),
-                    mainPanel(
-                        widh = 9,
                         verticalLayout(
                             box(title = "VIOLIN PLOT", width = "100%", collapsible = TRUE, collapsed = TRUE,
                                     h4("Raw"),
@@ -287,7 +281,10 @@ shinyUI(
                                     actionButton("button_pca_update", "Update")
                             ),
                             box(title = "HEATMAP", width = "100%", collapsible = TRUE, collapsed = TRUE,
-                                    h1("heatmap")
+                                    h4("Random 1000 CpGs"),
+                                withSpinner(plotOutput("graph_random_heatmap")),
+                                h4("Top 1000 variable CpGs"),
+                                withSpinner(plotOutput("graph_top_heatmap"))
                             ),
                             box(title = "DECONVOLUTION", width = "100%", collapsible = TRUE, collapsed = TRUE,
                                     withSpinner(plotOutput("deconvolution_heatmap"))
@@ -305,7 +302,7 @@ shinyUI(
                                     h1("circos")
                             )
                         )
-                    )
+                    
                 )
             ),
             tabItem(

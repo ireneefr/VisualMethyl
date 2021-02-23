@@ -678,8 +678,14 @@ shinyServer(function(input, output, session) {
     graph_deconvolution <- reactive(pheatmap::pheatmap(deconvolution()))
     
     output$deconvolution_heatmap <- renderPlot(graph_deconvolution())
-     
     
+    
+    
+    ##### HEATMAP #####
+    
+    graph_heatmap <- reactive(create_cpg_heatmap(rval_rgset_getBeta()))
+    output$graph_random_heatmap <- renderPlot(graph_heatmap()[["random"]]) 
+    output$graph_top_heatmap <- renderPlot(graph_heatmap()[["top"]])
     
     
     # Markdown Report
