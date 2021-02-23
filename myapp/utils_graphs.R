@@ -360,6 +360,17 @@ create_corrplot <- function(Bvalues, clean_sample_sheet, sample_target_sheet, p.
 }
 
 
+create_cpg_heatmap <- function(bvalues) {
+  random1000 <- bvalues[sample(seq_len(nrow(bvalues)), 1000), ]
+  top1000 <- bvalues[order(apply(bvalues, 1, stats::var), decreasing = TRUE)[1:1000],]
+  random_plot <- pheatmap::pheatmap(random1000)
+  top_plot <- pheatmap::pheatmap(top1000)
+  return(list(random = random_plot, top = top_plot))
+}
+
+
+
+
 create_plotqc <- function(rgset, sample_names, badSampleCutoff = 10) {
   plotly::ggplotly(
     as.data.frame(minfi::getQC(minfi::preprocessRaw(rgset))) %>%
