@@ -360,12 +360,46 @@ create_corrplot <- function(Bvalues, clean_sample_sheet, sample_target_sheet, p.
 }
 
 
-create_cpg_heatmap <- function(bvalues) {
+create_random_heatmap <- function(bvalues) {
   random1000 <- bvalues[sample(seq_len(nrow(bvalues)), 1000), ]
+  pheatmap::pheatmap(random1000, show_rownames = FALSE)
+}
+create_top_heatmap <- function(bvalues) {
   top1000 <- bvalues[order(apply(bvalues, 1, stats::var), decreasing = TRUE)[1:1000],]
-  random_plot <- pheatmap::pheatmap(random1000)
-  top_plot <- pheatmap::pheatmap(top1000)
-  return(list(random = random_plot, top = top_plot))
+  pheatmap::pheatmap(top1000, show_rownames = FALSE)
+}
+
+
+create_age <- function(bvalues, targets, samples_age) {
+  cf <- sesameData::sesameDataGet('age.inference')$Horvath353
+  probes <- raster::intersect(rownames(bvalues), cf$CpGmarker[-1])
+  if (samples_age == "None"){
+    print("NONE")
+  age <- data.frame(Samples = colnames(bvalues), PredictedAge = NA)
+  print(age)
+  }
+  else {
+    print("YES")
+    age <- data.frame(Samples = colnames(bvalues), PredictedAge = NA, ObservedAge = targets[[samples_age]], Diff = NA)
+    print(age)
+  }
+  Hv.response2age <- function(x, adult.age=20) {
+    ## anti.trafo
+    ifelse(
+      x<0,
+      (1+adult.age)*exp(x)-1,
+      (1+adult.age)*x+adult.age)
+  }
+  for (i in 1:nrow(age)){
+    age[i,2] <- round(Hv.response2age(cf$CoefficientTraining[1] + cf$CoefficientTraining[match(probes, cf$CpGmarker)] %*% bvalues[probes,i]), 1)
+  }
+  print(age)
+  if (samples_age != "None"){
+    for (i in 1:nrow(age)){
+      age[i,4] <- abs(age[i,2] - age[i,3])
+    }
+  }
+  age
 }
 
 

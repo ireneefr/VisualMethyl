@@ -175,6 +175,12 @@ shinyServer(function(input, output, session) {
             label = "Select Sex Column",
             choices = c("None", colnames(rval_sheet()))
         )
+        updateSelectInput(
+            session,
+            "select_input_age",
+            label = "Select Age Column",
+            choices = c("None", colnames(rval_sheet()))
+        )
         
         
         shinyjs::enable("button_input_next") # Enable button continue
@@ -683,10 +689,18 @@ shinyServer(function(input, output, session) {
     
     ##### HEATMAP #####
     
-    graph_heatmap <- reactive(create_cpg_heatmap(rval_rgset_getBeta()))
-    output$graph_random_heatmap <- renderPlot(graph_heatmap()[["random"]]) 
-    output$graph_top_heatmap <- renderPlot(graph_heatmap()[["top"]])
+    plot_random_heatmap <- reactive(create_random_heatmap(rval_rgset_getBeta()))
+    plot_top_heatmap <- reactive(create_top_heatmap(rval_rgset_getBeta()))
+    output$graph_random_heatmap <- renderPlot(plot_random_heatmap())
+    output$graph_top_heatmap <- renderPlot(plot_top_heatmap())
     
+    
+    ##### AGE #####
+    
+    output$table_age <- DT::renderDT(create_age(rval_rgset_getBeta(), rval_sheet_target(), input$select_input_age))
+    
+    
+    ##### DOWNLOADS #####
     
     # Markdown Report
     output$download_html <- downloadHandler(

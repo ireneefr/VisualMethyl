@@ -103,6 +103,7 @@ shinyUI(
                                 multiple = TRUE
                             ),
                             selectInput("select_input_sex", "", c()),
+                            selectInput("select_input_age", "", c()),
                             actionButton("button_input_next", "Continue to Analysis")
                         )
                     ),
@@ -285,12 +286,13 @@ shinyUI(
                                 withSpinner(plotOutput("graph_random_heatmap")),
                                 h4("Top 1000 variable CpGs"),
                                 withSpinner(plotOutput("graph_top_heatmap"))
+                                
                             ),
                             box(title = "DECONVOLUTION", width = "100%", collapsible = TRUE, collapsed = TRUE,
                                     withSpinner(plotOutput("deconvolution_heatmap"))
                             ),
                             box(title = "AGE METH", width = "100%", collapsible = TRUE, collapsed = TRUE,
-                                    h1("age meth")
+                                    withSpinner(DT::DTOutput("table_age"))
                             ),
                             box(title = "GENOME ANALYSIS PLOT", width = "100%", collapsible = TRUE, collapsed = TRUE,
                                     h1("genome analysis plot")
