@@ -374,12 +374,9 @@ create_age <- function(bvalues, targets, samples_age) {
   cf <- sesameData::sesameDataGet('age.inference')$Horvath353
   probes <- raster::intersect(rownames(bvalues), cf$CpGmarker[-1])
   if (samples_age == "None"){
-    print("NONE")
   age <- data.frame(Samples = colnames(bvalues), PredictedAge = NA)
-  print(age)
   }
   else {
-    print("YES")
     age <- data.frame(Samples = colnames(bvalues), PredictedAge = NA, ObservedAge = targets[[samples_age]], Diff = NA)
     print(age)
   }
@@ -393,7 +390,6 @@ create_age <- function(bvalues, targets, samples_age) {
   for (i in 1:nrow(age)){
     age[i,2] <- round(Hv.response2age(cf$CoefficientTraining[1] + cf$CoefficientTraining[match(probes, cf$CpGmarker)] %*% bvalues[probes,i]), 1)
   }
-  print(age)
   if (samples_age != "None"){
     for (i in 1:nrow(age)){
       age[i,4] <- abs(age[i,2] - age[i,3])
@@ -401,6 +397,33 @@ create_age <- function(bvalues, targets, samples_age) {
   }
   age
 }
+
+
+create_hyper_hypo <- function(rgset, bvalues, b){
+  # bvalues <- bvalues[,colnames(bvalues) %in% rval_sheet_target()[[input$samples]]]
+  annotation <- as.data.frame(getAnnotation(rgset))
+  annotation$chr <- factor(annotation$chr, levels = c("chr1", "chr2", "chr3", "chr4", "chr5", "chr6", "chr7", "chr8", "chr9", "chr10", "chr11", "chr12", "chr13", "chr14", "chr15", "chr16", "chr17", "chr18", "chr19", "chr20", "chr21", "chr22", "chrX", "chrY", "chrM"))
+  c <- cbind(annotation[rownames(bvalues),], beta_median = apply(bvalues, 1, median, na.rm = TRUE))
+  
+  c$beta_median[c$beta_median >= b] <- "Hypermethylated"
+  c$beta_median[c$beta_median < b] <- "Hypomethylated"
+
+  plot_chr <- ggplot(c, aes(x = chr)) +
+    geom_bar(aes(fill = beta_median), position = position_dodge()) + 
+    theme_bw() +
+    theme(legend.title=element_blank())
+
+  plot_relation_to_island <- ggplot(c, aes(x = Relation_to_Island)) +
+    geom_bar(aes(fill = beta_median), position = position_dodge()) +
+    theme_bw() +
+    theme(legend.title=element_blank())
+  
+  return(list(chr = plot_chr, relation_to_island = plot_relation_to_island))
+}
+
+
+
+
 
 
 
