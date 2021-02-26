@@ -5,6 +5,7 @@ source("utils_graphs.R")
 source("utils_download.R")
 library(ggplot2)
 
+
 shinyServer(function(input, output, session) {
     
     # INITIALIZE REACTIVE VARIABLES
@@ -473,9 +474,6 @@ shinyServer(function(input, output, session) {
     rval_rgset_getBeta <- eventReactive(rval_rgset(), {
         bvalues <- as.data.frame(minfi::getBeta(rval_rgset()))
         colnames(bvalues) <- rval_sheet_target()[[input$select_input_samplenamevar]]
-        print(input$select_input_samplenamevar)
-        print(rval_sheet_target()[[input$select_input_samplenamevar]])
-        print(rval_sheet_target())
         bvalues
     })
     
@@ -715,7 +713,7 @@ shinyServer(function(input, output, session) {
     ##### HYPER/HYPO PLOTS #####
     
     
-    graph_hyper_hypo <- reactive(create_hyper_hypo(rval_rgset(), rval_rgset_getBeta(), input$slider_beta))
+    graph_hyper_hypo <- eventReactive(list(input$button_hyper_hypo_update, input$button_input_next), create_hyper_hypo(rval_rgset(), rval_rgset_getBeta(), input$slider_beta, input$selected_samples_h))
     output$plot_chr <- renderPlot(graph_hyper_hypo()[["chr"]])
     output$plot_relation_to_island <- renderPlot(graph_hyper_hypo()[["relation_to_island"]])
     

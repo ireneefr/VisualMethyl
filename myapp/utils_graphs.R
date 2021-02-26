@@ -399,8 +399,9 @@ create_age <- function(bvalues, targets, samples_age) {
 }
 
 
-create_hyper_hypo <- function(rgset, bvalues, b){
-  # bvalues <- bvalues[,colnames(bvalues) %in% rval_sheet_target()[[input$samples]]]
+create_hyper_hypo <- function(rgset, bvalues, b, samples){
+  bvalues <- bvalues[,colnames(bvalues) %in% samples]
+  print(head(bvalues))
   annotation <- as.data.frame(getAnnotation(rgset))
   annotation$chr <- factor(annotation$chr, levels = c("chr1", "chr2", "chr3", "chr4", "chr5", "chr6", "chr7", "chr8", "chr9", "chr10", "chr11", "chr12", "chr13", "chr14", "chr15", "chr16", "chr17", "chr18", "chr19", "chr20", "chr21", "chr22", "chrX", "chrY", "chrM"))
   c <- cbind(annotation[rownames(bvalues),], beta_median = apply(bvalues, 1, median, na.rm = TRUE))

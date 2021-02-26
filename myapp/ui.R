@@ -46,7 +46,7 @@ library(shinydashboard)
 library(shinydashboardPlus)
 library(shinyWidgets)
 library(shinycssloaders)
-
+library(dplyr)
 
 shinyUI(
     dashboardPage( 
@@ -318,6 +318,8 @@ shinyUI(
                                     ),
                                     multiple = TRUE
                                 ),
+                                actionButton("button_hyper_hypo_update", "Update"),
+                                br(),
                                 withSpinner(plotOutput("plot_chr")),
                                 withSpinner(plotOutput("plot_relation_to_island"))
                             ),
