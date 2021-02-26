@@ -703,7 +703,7 @@ shinyServer(function(input, output, session) {
     plot_top_heatmap <- reactive(create_top_heatmap(rval_rgset_getBeta()))
     output$graph_random_heatmap <- renderPlot(plot_random_heatmap())
     output$graph_top_heatmap <- renderPlot(plot_top_heatmap())
-    
+
     
     ##### AGE #####
     
@@ -716,7 +716,7 @@ shinyServer(function(input, output, session) {
     graph_hyper_hypo <- eventReactive(list(input$button_hyper_hypo_update, input$button_input_next), create_hyper_hypo(rval_rgset(), rval_rgset_getBeta(), input$slider_beta, input$selected_samples_h))
     output$plot_chr <- renderPlot(graph_hyper_hypo()[["chr"]])
     output$plot_relation_to_island <- renderPlot(graph_hyper_hypo()[["relation_to_island"]])
-    
+    output$plot_group <- renderPlot(graph_hyper_hypo()[["group"]])
     
     
     

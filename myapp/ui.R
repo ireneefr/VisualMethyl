@@ -321,7 +321,8 @@ shinyUI(
                                 actionButton("button_hyper_hypo_update", "Update"),
                                 br(),
                                 withSpinner(plotOutput("plot_chr")),
-                                withSpinner(plotOutput("plot_relation_to_island"))
+                                withSpinner(plotOutput("plot_relation_to_island")),
+                                withSpinner(plotOutput("plot_group"))
                             ),
                             box(title = "CIRCOS", width = "100%", collapsible = TRUE, collapsed = TRUE,
                                     h1("circos")
