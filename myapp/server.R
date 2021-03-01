@@ -20,6 +20,8 @@ shinyServer(function(input, output, session) {
     
     # Max size
     options(shiny.maxRequestSize = 8000 * 1024^2) # 5MB getShinyOption("shiny.maxRequestSize") | 30*1024^2 = 30MB
+    n_cores <- parallel::detectCores() / 2
+    
     
     # Reaction of data action buttons
     observeEvent(input$b_qc, {
@@ -720,16 +722,433 @@ shinyServer(function(input, output, session) {
     
     
     
+    
+    # Update of next form and move to Limma
+    observeEvent(input$button_minfi_select, {
+        # check if normalization has been performed
+        req(rval_gset())
+        
+        updatePickerInput(
+            session,
+            "select_limma_voi",
+            label = "Select Variable of Interest",
+            choices = colnames(rval_clean_sheet_target())[vapply(rval_clean_sheet_target(), is.factor, logical(1))],
+            selected = input$select_input_groupingvar
+        )
+        
+        updatePickerInput(
+            session,
+            "checkbox_limma_covariables",
+            label = "Select linear model covariables",
+            choices = colnames(rval_clean_sheet_target()),
+            selected = input$select_input_donorvar
+        )
+        
+        # possible interactions of variables:
+        if (length(colnames(rval_clean_sheet_target()) > 2)) {
+            interactions <- utils::combn(colnames(rval_clean_sheet_target()), 2)
+            interactions <- sprintf("%s:%s", interactions[1, ], interactions[2, ])
+        }
+        else {
+            interactions <- c()
+        }
+        
+        
+        updatePickerInput(
+            session,
+            "checkbox_limma_interactions",
+            label = "Select linear model interactions",
+            choices = interactions,
+            selected = input$select_input_donorvar
+        )
+        
+        shinyjs::enable("button_limma_calculatemodel")
+    })
+    
+    
+    # LIMMA
+    
+    # Variable of interest
+    rval_voi <- reactive(factor(make.names(minfi::pData(rval_gset())[, input$select_limma_voi])))
+    
+    # Calculation of contrasts
+    rval_contrasts <- reactive({
+        generate_contrasts(rval_voi())
+    })
+    
+    # Design calculation
+    rval_fit <- eventReactive(input$button_limma_calculatemodel, {
+        print("design")
+        req(input$select_limma_voi) # a variable of interest is required
+        print("design2")
+        # Bulding the design matrix
+        try({
+            design <- generate_design(
+                voi = input$select_limma_voi, sample_name = input$select_input_samplenamevar,
+                covariables = input$checkbox_limma_covariables, interactions = input$checkbox_limma_interactions,
+                sample_sheet = rval_clean_sheet_target()
+            )
+        })
+        
+        validate(
+            need(
+                exists("design", inherits = FALSE),
+                "Design matrix has failed. Please, check your options and try again."
+            ),
+            need(
+                nrow(design) == length(rval_sheet_target()[[input$select_input_samplenamevar]]),
+                "The design matrix contains missing values. Please, check the selected variable and covariables."
+            )
+        )
+        
+        # checking colinearity
+        if (qr(design)$rank < ncol(design)) {
+            showModal(
+                modalDialog(
+                    title = "Colinearity warning",
+                    "The design matrix presents colinear columns. Even though it is possible to try to continue the analysis, checking the selected covariables is recommended.",
+                    easyClose = TRUE,
+                    footer = NULL
+                )
+            )
+        }
+        print(design)
+        
+        
+        print("fit")
+        
+        validate(
+            need(input$input_data != "", "DMP calculation has not been performed or data has not been uploaded.")
+        )
+        print("ok")
+        req(design)
+        
+        print("fit2")
+        
+        shinyjs::disable("button_limma_calculatemodel") # disable button to avoid repeat clicking
+        
+        withProgress(
+            message = "Generating linear model...",
+            value = 3,
+            max = 6,
+            {
+                try({
+                    fit <- generate_limma_fit(
+                        Mvalues = rval_gset_getM(), design = design,
+                        weighting = as.logical(input$select_limma_weights)
+                    )
+                })
+                
+                if (!exists("fit", inherits = FALSE)) {
+                    rval_generated_limma_model(FALSE) # disable contrast button
+                    rval_analysis_finished(FALSE) # disable download buttons
+                    
+                    showModal(
+                        modalDialog(
+                            title = "lmFit error",
+                            "lmFit model has failed. Please, check your options and try again.",
+                            easyClose = TRUE,
+                            footer = NULL
+                        )
+                    )
+                }
+            }
+        )
+        
+        shinyjs::enable("button_limma_calculatemodel") # enable button again to allow repeting calculation
+        
+        validate(need(
+            exists("fit", inherits = FALSE),
+            "lmFit model has failed. Please, check your options and try again."
+        ))
+        print(fit)
+        
+        fit
+    })
+    
 
+    # rval_fit() has NAs, we remove the option to trend or robust in eBayes to prevent failure
+    observeEvent(input$button_limma_calculatemodel, {
+        print("next")
+        if (any(vapply(rval_fit(), function(x) {
+            any(is.na(unlist(x)) |
+                unlist(x) == Inf | unlist(x) == -Inf)
+        }, logical(1)))) {
+            message("NAs or Inf values detected, trend and robust options are disabled.")
+            
+            updateSwitchInput(session,
+                              "select_limma_trend",
+                              value = FALSE,
+                              disabled = TRUE
+            )
+            
+            updateSwitchInput(session,
+                              "select_limma_robust",
+                              value = FALSE,
+                              disabled = TRUE
+            )
+        }
+        
+        else {
+            message("NAs or Inf values not detected, trend and robust options are enabled")
+            
+            updateSwitchInput(session,
+                              "select_limma_trend",
+                              value = FALSE,
+                              disabled = FALSE
+            )
+            
+            updateSwitchInput(session,
+                              "select_limma_robust",
+                              value = FALSE,
+                              disabled = FALSE
+            )
+        }
+        print("final")
+        # Creating calculate differences button
+        rval_generated_limma_model(TRUE)
+    })
+    
+    output$button_limma_calculatedifs_container <- renderUI({
+        if (rval_generated_limma_model()) {
+            return(tagList(
+                br(),
+                
+                h4("Contrasts options"),
+                
+                switchInput(
+                    inputId = "select_limma_trend",
+                    label = "eBayes Trend",
+                    labelWidth = "80px",
+                    value = FALSE
+                ),
+                
+                switchInput(
+                    inputId = "select_limma_robust",
+                    label = "eBayes Robust",
+                    labelWidth = "80px",
+                    value = FALSE
+                ),
+                
+                actionButton("button_limma_calculatedifs", "Calc. Contrasts")
+            ))
+        } else {
+            return()
+        }
+    })
     
     
+    # render of plots and tables
+    
+    rval_plot_plotSA <- reactive(create_plotSA(rval_fit()))
+    output$graph_limma_plotSA <- renderPlot(rval_plot_plotSA())
+    output$table_limma_design <- DT::renderDT(
+        rval_fit()$design,
+        rownames = TRUE,
+        selection = "single",
+        style = "bootstrap",
+        options = list(
+            autoWidth = TRUE,
+            scrollX = TRUE,
+            lengthChange = FALSE,
+            searching = FALSE
+        )
+    )
     
     
+    # Calculation of global difs
+    rval_globaldifs <- eventReactive(input$button_limma_calculatedifs, {
+        print("enter globaldifs")
+        try({
+            globaldifs <- calculate_global_difs(rval_gset_getBeta(), rval_voi(), rval_contrasts(),
+                                                cores = n_cores
+            )
+        })
+        
+        if (!exists("globaldifs", inherits = FALSE)) {
+            showModal(
+                modalDialog(
+                    title = "Global difs calculation error",
+                    "An unexpected error has ocurred during global diffs and means calculation. Please, check your selected samples.",
+                    easyClose = TRUE,
+                    footer = NULL
+                )
+            )
+        }
+        
+        validate(
+            need(
+                exists("globaldifs", inherits = FALSE),
+                "An unexpected error has ocurred during global diffs and means calculation."
+            )
+        )
+        print("globaldifs")
+        print(globaldifs)
+        globaldifs
+    })
     
+    # Calculation of differences (eBayes)
+    rval_finddifcpgs <- eventReactive(input$button_limma_calculatedifs, {
+        try({
+            dif_cpgs <- find_dif_cpgs(
+                design = rval_fit()$design,
+                fit = rval_fit(),
+                contrasts = rval_contrasts(),
+                trend = as.logical(input$select_limma_trend),
+                robust = as.logical(input$select_limma_robust),
+                cores = n_cores
+            )
+        })
+        
+        if (!exists("dif_cpgs", inherits = FALSE)) {
+            showModal(
+                modalDialog(
+                    title = "Contrasts Calculation Error",
+                    "An unexpected error has ocurred during contrasts calculation. Please, generate the model again and check if it is correct.
+        If the problem persists, report the error to the maintainer",
+                    easyn_coresose = TRUE,
+                    footer = NULL
+                )
+            )
+            
+            rval_generated_limma_model(FALSE)
+            rval_analysis_finished(FALSE)
+            shinyjs::disable("button_limma_heatmapcalc")
+        }
+        
+        validate(
+            need(
+                exists("dif_cpgs", inherits = FALSE),
+                "An unexpected error has ocurred during contrasts calculation. Please, generate the model again and check if it is correct.
+        If the problem persists, report the error to the maintainer"
+            )
+        )
+        
+        rval_analysis_finished(TRUE)
+        print("dif_cpgs")
+        print(dif_cpgs)
+        dif_cpgs
+    })
     
+    # Update of heatmap controls
+    observeEvent(input$button_limma_calculatedifs, {
+        updateTabItems(session, "tabset_limma", "differential_cpgs")
+        
+        updateSelectInput(
+            session,
+            "select_limma_groups2plot",
+            label = "Groups to plot",
+            choices = levels(rval_voi()),
+            selected = levels(rval_voi())
+        )
+        
+        updateSelectInput(
+            session,
+            "select_limma_contrasts2plot",
+            label = "Contrasts to plot",
+            choices = rval_contrasts(),
+            selected = rval_contrasts()
+        )
+        
+        updateSelectInput(
+            session,
+            "select_limma_anncontrast",
+            label = "Contrast",
+            choices = rval_contrasts()
+        )
+        
+        updateSelectInput(
+            session,
+            "select_anncontrast",
+            label = "Contrast",
+            choices = rval_contrasts()
+        )
+        
+        # disable button to avoid repeat n_coresicking
+        shinyjs::disable("button_limma_calculatedifs")
+        
+        # force rval_filteredlist
+        rval_filteredlist()
+        
+        # enable or disable removebatch option
+        covariables_design <- as.matrix(rval_fit()$design[, -seq_len(length(unique(rval_voi())))])
+        
+        if (ncol(covariables_design) > 0) {
+            updateSwitchInput(session,
+                              "select_limma_removebatch",
+                              value = FALSE,
+                              disabled = FALSE
+            )
+            updateSwitchInput(session,
+                              "select_dmrs_removebatch",
+                              value = FALSE,
+                              disabled = FALSE
+            )
+        }
+        else {
+            updateSwitchInput(session,
+                              "select_limma_removebatch",
+                              value = FALSE,
+                              disabled = TRUE
+            )
+            updateSwitchInput(session,
+                              "select_dmrs_removebatch",
+                              value = FALSE,
+                              disabled = FALSE
+            )
+        }
+        
+        # enable and n_coresick heatmap button to get default graph
+        shinyjs::enable("button_limma_heatmapcalc")
+        #shinyjs::n_coresick("button_limma_heatmapcalc")
+        
+        # enable again the button to allow repeat calculation
+        shinyjs::enable("button_limma_calculatedifs")
+    })
     
+    # Calculation of filtered list
+    rval_filteredlist <- reactive({
+        withProgress(
+            message = "Performing contrasts calculations...",
+            value = 1,
+            max = 6,
+            {
+                setProgress(message = "Calculating global difs...", value = 1)
+                rval_globaldifs()
+                setProgress(message = "Calculating eBayes...", value = 4)
+                rval_finddifcpgs()
+                setProgress(message = "Calculating filtered list...", value = 5)
+                create_filtered_list(
+                    rval_finddifcpgs(),
+                    rval_globaldifs(),
+                    deltaB = input$slider_limma_deltab,
+                    adjp_max = input$slider_limma_adjpvalue,
+                    p.value = input$slider_limma_pvalue,
+                    cores = n_cores
+                )
+            }
+        )
+    })
     
-    
+    rval_list <- reactive({
+        withProgress(
+            message = "Performing contrasts calculations...",
+            value = 1,
+            max = 6,
+            {
+                setProgress(message = "Calculating global difs...", value = 1)
+                rval_globaldifs()
+                setProgress(message = "Calculating eBayes...", value = 4)
+                rval_finddifcpgs()
+                setProgress(message = "Calculating filtered list...", value = 5)
+                create_list(
+                    rval_finddifcpgs(),
+                    rval_globaldifs(),
+                    cores = n_cores
+                )
+            }
+        )
+    })
     
     
     

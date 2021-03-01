@@ -387,7 +387,11 @@ shinyUI(
                             ),
                             mainPanel(
                                 width = 9,
-                                box(title = "DMP TABLE", width = "100%", closable = TRUE, collapsible = TRUE, collapsed = TRUE
+                                box(title = "DMP TABLE", width = "100%", closable = TRUE, collapsible = TRUE, collapsed = TRUE,
+                                    h4("Sigma vs A plot"),
+                                    plotOutput("graph_limma_plotSA") %>% shinycssloaders::withSpinner(),
+                                    h4("Design matrix"),
+                                    DT::DTOutput("table_limma_design") %>% shinycssloaders::withSpinner()
                                         
                                 ),
                                 box(title = "DMP HEATMAP", width = "100%", closable = TRUE, collapsible = TRUE, collapsed = TRUE,
