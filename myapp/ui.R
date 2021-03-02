@@ -387,24 +387,12 @@ shinyUI(
                             ),
                             mainPanel(
                                 width = 9,
-                                box(title = "DMP TABLE", width = "100%", closable = TRUE, collapsible = TRUE, collapsed = TRUE,
-                                    h4("Sigma vs A plot"),
-                                    plotOutput("graph_limma_plotSA") %>% shinycssloaders::withSpinner(),
-                                    h4("Design matrix"),
-                                    DT::DTOutput("table_limma_design") %>% shinycssloaders::withSpinner()
-                                        
-                                ),
-                                box(title = "DMP HEATMAP", width = "100%", closable = TRUE, collapsible = TRUE, collapsed = TRUE,
-                                    textOutput("text_limma_heatmapcount"),
-                                    uiOutput("graph_limma_heatmapcontainer"),
+                                box(title = "DMP TABLE AND OPTIONS", width = "100%", closable = FALSE, collapsible = FALSE,
                                     h4("DMP counts in each contrast"),
                                     tableOutput("table_limma_difcpgs") %>% shinycssloaders::withSpinner(),
-                                    
                                     fluidRow(
-                                        column(
-                                            6,
+                                        column(6,
                                             h4("Group options"),
-                                            
                                             selectizeInput(
                                                 "select_limma_groups2plot",
                                                 "Groups to plot",
@@ -412,7 +400,6 @@ shinyUI(
                                                 multiple = TRUE,
                                                 options = list(plugins = list("remove_button", "drag_drop"))
                                             ),
-                                            
                                             selectizeInput(
                                                 "select_limma_contrasts2plot",
                                                 "Contrasts to plot",
@@ -422,7 +409,6 @@ shinyUI(
                                             ),
                                             
                                             h4("Data options"),
-                                            
                                             switchInput(
                                                 inputId = "select_limma_removebatch",
                                                 label = "Remove Batch Effect",
@@ -432,14 +418,19 @@ shinyUI(
                                             )
                                         ),
                                         
-                                        column(
-                                            6,
+                                        column(6,
                                             h4("Filtering options"),
                                             sliderInput("slider_limma_deltab", "Min. DeltaBeta", 0, 1, 0.2),
                                             sliderInput("slider_limma_adjpvalue", "Max. FDR", 0, 1, 0.05),
                                             sliderInput("slider_limma_pvalue", "Max. p-value", 0, 1, 1)
-                                        )
-                                    ),
+                                        ),
+                                        actionButton("button_limma_tablecalc", "Update")
+                                    )
+                                        
+                                ),
+                                box(title = "DMP HEATMAP", width = "100%", closable = TRUE, collapsible = TRUE, collapsed = TRUE,
+                                    textOutput("text_limma_heatmapcount"),
+                                    uiOutput("graph_limma_heatmapcontainer"),
                                     
                                     h4("Clustering options",
                                        align =
@@ -447,8 +438,7 @@ shinyUI(
                                     ),
                                     
                                     fluidRow(
-                                        column(
-                                            5,
+                                        column(5,
                                             selectInput(
                                                 "select_limma_clusteralg",
                                                 "Clustering algorithm",
@@ -470,14 +460,14 @@ shinyUI(
                                                 "pearson"
                                             ),
                                             
-                                            selectInput("select_limma_scale", "Scale", c("row", "none"), "row")
-                                            #tags$br()
+                                            selectInput("select_limma_scale", "Scale", c("row", "none"), "row"),
+                                            tags$br()
                                         ),
                                         
                                         column(
                                             3,
                                             offset = 1,
-                                            #tags$br(),
+                                            tags$br(),
                                             
                                             switchInput(
                                                 inputId = "select_limma_graphstatic",
@@ -504,7 +494,7 @@ shinyUI(
                                         column(
                                             3,
                                             
-                                            #tags$br(),
+                                            tags$br(),
                                             
                                             switchInput(
                                                 inputId = "select_limma_rowsidecolors",
@@ -541,13 +531,10 @@ shinyUI(
                                 ),
                                 box(title = "DMP MANHATTAN", width = "100%", closable = TRUE, collapsible = TRUE, collapsed = TRUE,
                                     selectInput(inputId = "select_anncontrast", label = "", choices = "", selected = ""),
-                                    h4("Manhattan Plot"),
-                                    withSpinner(plotOutput("manhattan_plot")),
-                                    h4("Volcano Plot"),
-                                    withSpinner(plotOutput("volcano_plot"))  
+                                    withSpinner(plotOutput("manhattan_plot"))
                                 ),
-                                box(title = "DMP VOLCANO", width = "100%", closable = TRUE, collapsible = TRUE, collapsed = TRUE
-                                        
+                                box(title = "DMP VOLCANO", width = "100%", closable = TRUE, collapsible = TRUE, collapsed = TRUE,
+                                    withSpinner(plotOutput("volcano_plot")) 
                                 )
                             )
                         )),
@@ -781,12 +768,6 @@ shinyUI(
                                     br(),
                                     
                                     actionButton("button_dmrs_graphsingle", "Plot")    
-                                ),
-                                box(title = "DMR MANHATTAN", width = "100%", closable = TRUE, collapsible = TRUE, collapsed = TRUE
-                                        
-                                ),
-                                box(title = "DMR VOLCANO", width = "100%", closable = TRUE, collapsible = TRUE, collapsed = TRUE
-                                        
                                 )
                             )
                         )
@@ -817,7 +798,83 @@ shinyUI(
             ),
             tabItem(
                 tabName = "export",
-                fluidPage(h1("Download Reports"))
+                fluidPage(
+                    shinyjs::useShinyjs(),
+                    h3("Download RObjects"),
+                    pickerInput(
+                        inputId = "select_export_objects2download",
+                        label = "Selected objects",
+                        choices = c("RGSet", "GenomicRatioSet", "fit", "design", "ebayestables", "Bvalues", "Mvalues", "global_difs", "dmr_results"),
+                        selected = c("RGSet", "GenomicRatioSet", "fit", "design", "ebayestables", "Bvalues", "Mvalues", "global_difs"),
+                        options = list(
+                            `actions-box` = TRUE,
+                            size = 10,
+                            `selected-text-format` = "count > 3"
+                        ),
+                        multiple = TRUE
+                    ),
+                    downloadButton("download_export_robjects"),
+                    p(
+                        "Press to download the R objects used for the analysis (RGSet, GenomicRatioSet, Bvalues, Mvalues, etc.)"
+                    ),
+                    h3("Download filtered bed files"),
+                    
+                    fluidPage(
+                        div(
+                            style = "display:inline-block",
+                            selectInput(
+                                "select_export_analysistype",
+                                "Analysis type",
+                                c("DMPs", "DMRs"),
+                                selected = "by contrast"
+                            )
+                        ),
+                        div(
+                            style = "display:inline-block",
+                            selectInput(
+                                "select_export_bedtype",
+                                "Subsetting mode",
+                                c("by contrasts", "by heatmap cluster"),
+                                selected = "by contrasts"
+                            )
+                        ),
+                        div(
+                            style = "display:inline-block",
+                            selectInput(
+                                "select_export_genometype",
+                                "Genome version",
+                                c("hg19", "hg38"),
+                                selected = "hg19"
+                            )
+                        )
+                    ),
+                    
+                    
+                    downloadButton("download_export_filteredbeds"),
+                    p(
+                        "Press to download the created filtered lists of contrasts, or heatmap clusters,
+        with the chosen criteria, in BED format."
+                    ),
+                    h3("Download Workflow Report"),
+                    downloadButton("download_export_markdown"),
+                    p(
+                        "Press to download the report of all the steps follow and selected in the pipeline, and the results."
+                    ),
+                    h3("Download Custom R Script"),
+                    downloadButton("download_export_script"),
+                    p(
+                        "Press to download an R script with the main parameters and steps follow in the DMP/DMR pipeline, to reproduce the results later outside the shiny application."
+                    ),
+                    h3("Download Heatmap"),
+                    selectInput(
+                        "select_export_heatmaptype",
+                        label = "Heatmap type",
+                        choices = c("DMPs", "DMRs"),
+                        selected = "DMPs"
+                    ),
+                    downloadButton("download_export_heatmaps"),
+                    p("Press to download the custom heatmap in the gplots::heatmap.2 version.")
+                )
             ),
             tabItem(
                 tabName = "help",
