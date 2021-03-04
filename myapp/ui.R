@@ -56,8 +56,8 @@ shinyUI(
     dashboardSidebar(
         
         sidebarMenu(id = "menu",
-                    menuItem(strong("Data"), tabName = "data"),
-                    convertMenuItem(menuItem(strong("Analysis"), tabName = "analysis", startExpanded = TRUE,
+                    menuItem("Data", tabName = "data"),
+                    convertMenuItem(menuItem("Analysis", tabName = "analysis", startExpanded = TRUE,
                     menuSubItem("QC", tabName = "qc"),
                     menuSubItem("Exploratory Analysis", tabName = "exploratory_analysis"),
                     menuSubItem("DMPs/DMRs", tabName = "dmp_dmr"),
@@ -66,8 +66,8 @@ shinyUI(
                     menuSubItem("Predicted Models", tabName = "predicted_models"),
                     menuSubItem("External Sources", tabName = "external_sources"),
                     menuSubItem("Genome Browser", tabName = "genome_browser")), "analysis"),
-                    menuItem(strong("Export"), tabName = "export"),
-                    menuItem(strong("Help"), tabName = "help")
+                    menuItem("Export", tabName = "export"),
+                    menuItem("Help", tabName = "help")
         )
     ),
     
@@ -123,16 +123,16 @@ shinyUI(
                 tabName = "analysis",
                 verticalLayout(
                 splitLayout(style = "margin-left: 14px; margin-right: 14px;", cellArgs = list(style = "padding: 4px;"),
-                            actionButton("b_qc", width = "100%", label = strong("QC"), class = "btn-primary", style = "color:#fff; padding:3.55vw; font-size:2.5vw", disable = TRUE),
-                            actionButton("b_exploratory_analysis", width = "100%",label = strong(HTML("Exploratory <br/> Analysis")), class = "btn-primary", style = "color:#fff; padding:1.75vw; font-size:2.5vw"),
-                            actionButton("b_dmp_dmr", width = "100%", label = strong("DMPs/DMRs"), class = "btn-primary", style = "color:#fff; padding:3.55vw; font-size:2.5vw"),
-                            actionButton("b_functional_enrichment", width = "90%",label = strong(HTML("Functional <br/> Enrichment")), class = "btn-primary", style = "color:#fff; padding:1.75vw; font-size:2.5vw")
+                            actionButton("b_qc", width = "100%", label = "QC", class = "btn-info", style = "padding:3.55vw;", disable = TRUE),
+                            actionButton("b_exploratory_analysis", width = "100%",label = HTML("Exploratory <br/> Analysis"), class = "btn-info", style = "padding:1.75vw;"),
+                            actionButton("b_dmp_dmr", width = "100%", label = "DMPs/DMRs", class = "btn-info", style = "padding:3.55vw;"),
+                            actionButton("b_functional_enrichment", width = "90%",label = HTML("Functional <br/> Enrichment"), class = "btn-info", style = "padding:1.75vw;")
                 ),
                 splitLayout(style = "margin-left: 14px; margin-right: 14px", cellArgs = list(style = "padding: 4px;"),
-                            actionButton("b_survival", width = "100%", label = strong("Survival"), class = "btn-primary", style = "color:#fff; padding:3.55vw; font-size:2.5vw"),
-                            actionButton("b_predicted_models", width = "100%", label = strong(HTML("Predicted <br/> Models")), class = "btn-primary", style = "color:#fff; padding:1.75vw; font-size:2.5vw"),
-                            actionButton("b_external_sources", width = "100%", label = strong(HTML("External <br/> Sources")), class = "btn-primary", style = "color:#fff; padding:1.75vw; font-size:2.5vw"),
-                            actionButton("b_genome_browser", width = "90%", label = strong(HTML("Genome <br/> Browser")), class = "btn-primary", style = "color:#fff; padding:1.75vw; font-size:2.5vw")
+                            actionButton("b_survival", width = "100%", label = "Survival", class = "btn-info", style = "padding:3.55vw;"),
+                            actionButton("b_predicted_models", width = "100%", label = HTML("Predicted <br/> Models"), class = "btn-info", style = "padding:1.75vw;"),
+                            actionButton("b_external_sources", width = "100%", label = HTML("External <br/> Sources"), class = "btn-info", style = "padding:1.75vw;"),
+                            actionButton("b_genome_browser", width = "90%", label = HTML("Genome <br/> Browser"), class = "btn-info", style = "padding:1.75vw;")
                 ))
             ),
             tabItem(

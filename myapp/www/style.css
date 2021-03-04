@@ -5,7 +5,6 @@
   font-weight: bold;
   font-size: 30px;
   text-shadow: 2px 0 5px #000000;
-
 }
 
 
@@ -38,8 +37,11 @@
 }
 /* sidebar*/
 .skin-blue .main-sidebar {
-  background:#162326;
-  /*box-shadow: ', sidebarShadowRadius, " ", sidebarShadowColor, ';*/
+  position: fixed;
+  background: linear-gradient(90deg, rgba(0,0,0,1) 0%, rgba(17,114,139,1) 91%, rgba(21,145,176,1) 100%);
+  font-size: 15px;
+  font-weight: bold;
+  box-shadow: 0 0 5px 2px rgba(0,0,0,0.2);
   /*padding-left: ', sidebarPadding, 'px;*/
   /*padding-right: ', sidebarPadding, 'px;*/
   /* padding-top: 60px; */
@@ -47,14 +49,34 @@
 /* sidebar menu */
 .main-sidebar .user-panel, .sidebar-menu, .sidebar-menu> .header {
   white-space: nowrap;
-  background:#162326;
-  /*padding: ', sidebarMenuPadding, 'px;*/
+  background: transparent;
+  /*padding: 10px;*/
 }
+.skin-blue .sidebar a {
+  color: #b8c7ce;
+}
+
 
 .skin-blue .sidebar-menu > li.active > a,
 .skin-blue .sidebar-menu > li:hover > a {
   border-left-color: #1dabd2;
 }
+.skin-blue .sidebar-menu > li > .treeview-menu {
+  background: transparent;
+}
+.skin-blue .treeview-menu > li > a {
+  color: #b8c7ce;
+  font-size: 15px;
+  font-weight: normal;
+}
+.skin-blue .treeview-menu > li.active > a,
+.skin-blue .treeview-menu > li:hover > a{
+  border-right-color: #1dabd2;
+  background-color: #1dabd2;
+  color: #FFFFFF;
+}
+
+
 
 
 /* tabs 
@@ -130,5 +152,14 @@
 
 
 /* buttons */
-
-
+.btn-info {
+  font-weight: bold;
+  color: #FFFFFF;
+  font-size:2.5vw;
+  background-color: #1591b0;
+  box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+}
+.btn-info li:hover {
+  background-color: #1dabd2;
+  box-shadow: 0 12px 24px 0 rgba(0,0,0,0.2);
+}
