@@ -1059,7 +1059,14 @@ shinyServer(function(input, output, session) {
         
         updateSelectInput(
             session,
-            "select_anncontrast",
+            "select_anncontrast_manhattan",
+            label = "Contrast",
+            choices = rval_contrasts()
+        )
+        
+        updateSelectInput(
+            session,
+            "select_anncontrast_volcano",
             label = "Contrast",
             choices = rval_contrasts()
         )
@@ -1374,21 +1381,21 @@ shinyServer(function(input, output, session) {
     
     ########## MANHATTAN PLOT ##########
     
-    table_annotation2 <- eventReactive(input$select_anncontrast, {
+    table_annotation_manhattan <- eventReactive(input$select_anncontrast_manhattan, {
         req(rval_list())
         
         dif_target <- paste("dif",
-                            limma::strsplit2(input$select_anncontrast, "-")[1],
-                            limma::strsplit2(input$select_anncontrast, "-")[2],
+                            limma::strsplit2(input$select_anncontrast_manhattan, "-")[1],
+                            limma::strsplit2(input$select_anncontrast_manhattan, "-")[2],
                             sep = "_"
         )
         
-        temp <- rval_annotation()[row.names(rval_annotation()) %in% rval_list()[[input$select_anncontrast]]$cpg, ]
+        temp <- rval_annotation()[row.names(rval_annotation()) %in% rval_list()[[input$select_anncontrast_manhattan]]$cpg, ]
         temp$dif_beta <- rval_globaldifs()[[dif_target]][rval_globaldifs()[["cpg"]] %in% row.names(temp)]
         
-        temp$fdr <- rval_list()[[input$select_anncontrast]][["adj.P.Val"]][rval_list()[[input$select_anncontrast]][["cpg"]] %in% row.names(temp)]
+        temp$fdr <- rval_list()[[input$select_anncontrast_manhattan]][["adj.P.Val"]][rval_list()[[input$select_anncontrast_manhattan]][["cpg"]] %in% row.names(temp)]
         
-        temp$pvalue <- rval_list()[[input$select_anncontrast]][["P.Value"]][rval_list()[[input$select_anncontrast]][["cpg"]] %in% row.names(temp)]
+        temp$pvalue <- rval_list()[[input$select_anncontrast_manhattan]][["P.Value"]][rval_list()[[input$select_anncontrast_manhattan]][["cpg"]] %in% row.names(temp)]
         
         temp$chr[temp$chr == "chrX"] <- 23
         temp$chr[temp$chr == "chrY"] <- 24
@@ -1407,10 +1414,44 @@ shinyServer(function(input, output, session) {
         temp
     })
     
-    volcano_data <- eventReactive(table_annotation2(), {
-        pval <- table_annotation2()$pvalue
-        fc <- table_annotation2()$dif_beta
-        names <- table_annotation2()$gene
+    table_annotation_volcano <- eventReactive(input$select_anncontrast_volcano, {
+        req(rval_list())
+        
+        dif_target <- paste("dif",
+                            limma::strsplit2(input$select_anncontrast_volcano, "-")[1],
+                            limma::strsplit2(input$select_anncontrast_volcano, "-")[2],
+                            sep = "_"
+        )
+        
+        temp <- rval_annotation()[row.names(rval_annotation()) %in% rval_list()[[input$select_anncontrast_volcano]]$cpg, ]
+        temp$dif_beta <- rval_globaldifs()[[dif_target]][rval_globaldifs()[["cpg"]] %in% row.names(temp)]
+        
+        temp$fdr <- rval_list()[[input$select_anncontrast_volcano]][["adj.P.Val"]][rval_list()[[input$select_anncontrast_volcano]][["cpg"]] %in% row.names(temp)]
+        
+        temp$pvalue <- rval_list()[[input$select_anncontrast_volcano]][["P.Value"]][rval_list()[[input$select_anncontrast_volcano]][["cpg"]] %in% row.names(temp)]
+        
+        temp$chr[temp$chr == "chrX"] <- 23
+        temp$chr[temp$chr == "chrY"] <- 24
+        #temp$chr[temp$chr == "chrM"] <- 25
+        
+        
+        
+        print(unique(temp$chr))
+        
+        
+        temp$chr <- as.numeric(as.character(gsub("chr", "", temp$chr)))
+        gene <- vapply(strsplit(temp$UCSC_RefGene_Name,";"), `[`, 1, FUN.VALUE=character(1))
+        gene[is.na(gene)]<-""
+        temp$gene <- gene
+        
+        temp
+    })
+    
+    
+    volcano_data <- eventReactive(table_annotation_volcano(), {
+        pval <- table_annotation_volcano()$pvalue
+        fc <- table_annotation_volcano()$dif_beta
+        names <- table_annotation_volcano()$gene
         tFC <- 0.2
         show.labels <- T
         dta <- data.frame(P.Value = pval, FC = fc, names, clr = "gray87", alp = 0.5, stringsAsFactors = FALSE)
@@ -1452,10 +1493,10 @@ shinyServer(function(input, output, session) {
     #ggplot2::geom_vline(xintercept=tFC,
     #                    linetype="dotdash", color="gray69", size=0.75)))
     #))
-    manhattan_graph <- reactive(qqman::manhattan(table_annotation2(), chr = "chr", bp = "pos", snp = "gene", p = "pvalue",
+    manhattan_graph <- reactive(qqman::manhattan(table_annotation_manhattan(), chr = "chr", bp = "pos", snp = "gene", p = "pvalue",
                                                  annotatePval = 1, suggestiveline = T, genomewideline = T, annotateTop = T))
-    volcano_graph <- reactive(MultiDataSet::volcano_plot(pval = table_annotation2()$pvalue, fc = table_annotation2()$dif_beta,
-                                                         table_annotation2()$gene, tFC = 0.2, show.labels = T))
+    volcano_graph <- reactive(MultiDataSet::volcano_plot(pval = table_annotation_volcano()$pvalue, fc = table_annotation_volcano()$dif_beta,
+                                                         table_annotation_volcano()$gene, tFC = 0.2, show.labels = T))
     
     
     output$manhattan_plot <- renderPlot(manhattan_graph())
@@ -1624,7 +1665,7 @@ shinyServer(function(input, output, session) {
         dmrs_result
     })
     
-    rval_filteredmcsea <- eventReactive(list(input$button_dmrs_calculate, input$button_dmrs_heatmapcalc), {
+    rval_filteredmcsea <- eventReactive(list(input$button_dmrs_calculate, input$button_dmrs_tablecalc), {
         req(rval_mcsea())
         
         filter_dmrs(
@@ -1684,7 +1725,7 @@ shinyServer(function(input, output, session) {
         
         validate(
             need(
-                input$fileinput_input != "",
+                input$input_data != "",
                 "DMR calculation has not been performed or data has not been uploaded."
             ),
             need(

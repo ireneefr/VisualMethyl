@@ -1,4 +1,16 @@
 
+/* header */
+.main-header .logo {
+  font-family: "Georgia", Times, "Times New Roman", serif;
+  font-weight: bold;
+  font-size: 30px;
+  text-shadow: 2px 0 5px #000000;
+
+}
+
+
+
+
 /* sidebar: logo */
 .skin-blue .main-header .logo {
   background:linear-gradient(180deg, rgba(42,190,231,1) 0%, rgba(21,145,176,1) 100%);
@@ -11,6 +23,7 @@
 .skin-blue .main-header .navbar .sidebar-toggle {
   background:linear-gradient(180deg, rgba(42,190,231,1) 0%, rgba(21,145,176,1) 100%);
   color:#495057;
+
 }
 /* sidebar: collapse button hover */
 .skin-blue .main-header .navbar .sidebar-toggle:hover {
@@ -21,6 +34,7 @@
 .skin-blue .main-header .navbar {
   background:linear-gradient(180deg, rgba(42,190,231,1) 0%, rgba(21,145,176,1) 100%);
   /*box-shadow: ', headerBoxShadowSize, ' ', headerBoxShadowColor, ';*/
+  box-shadow: 0 2px 4px 0 rgba(0,0,0,0.2);
 }
 /* sidebar*/
 .skin-blue .main-sidebar {
@@ -31,14 +45,39 @@
   /* padding-top: 60px; */
 }
 /* sidebar menu */
-.main-sidebar .user-panel, .sidebar-menu, .sidebar-menu>li.header {
+.main-sidebar .user-panel, .sidebar-menu, .sidebar-menu> .header {
   white-space: nowrap;
   background:#162326;
   /*padding: ', sidebarMenuPadding, 'px;*/
-  border-radius:0px;
+}
+
+.skin-blue .sidebar-menu > li.active > a,
+.skin-blue .sidebar-menu > li:hover > a {
+  border-left-color: #1dabd2;
 }
 
 
+/* tabs 
+.nav-tabs li.active:hover a {
+     background-color: #1dabd2;
+     border-color: transparent;
+}
+
+.nav-tabs a {
+     background-color: red;
+     border-color: transparent;
+}
+
+.nav-tabs li.active a {
+     color: #1dabd2;
+       font-weight: bold;
+  font-size: 30px;
+     border-color: transparent;
+}
+.nav-tabs li{
+  background-color:red;
+}
+*/
 
 
 
@@ -57,13 +96,18 @@
 .box.box-solid>.box-header, .box>.box-header {
   color:#000000;
 }
-.box.box-solid>.box-header {
-  border-radius:0px;
-}
+
 .box.box-solid, .box {
   border-radius:5px;
   border-top-color:#7DC9F5;
   border-color:#7DC9F5;
+  box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+}
+.box.box-solid, .box:hover {
+  border-radius:5px;
+  border-top-color:#7DC9F5;
+  border-color:#7DC9F5;
+  box-shadow: 0 12px 24px 0 rgba(0,0,0,0.2);
 }
 
 /* box: primary color */
@@ -81,3 +125,10 @@
   border-top-color:#7DC9F5;
   border-radius:5px;
 }
+
+
+
+
+/* buttons */
+
+

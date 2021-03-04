@@ -51,7 +51,7 @@ library(dplyr)
 shinyUI(
     dashboardPage( 
 
-    dashboardHeader(title = "APP"),
+    dashboardHeader(title = "VisualMethyl"),
 
     dashboardSidebar(
         
@@ -238,7 +238,7 @@ shinyUI(
                         box(title = "BATCH EFFECTS", width = "100%", collapsible = TRUE, collapsed = TRUE,
                                 h4("Normalized"),
                                 withSpinner(plotly::plotlyOutput("graph_minfi_corrplot")),
-                                selectInput("select_minfi_typecorrplot", "Select data to plot", choices = c("p.value", "correlation value"), selected = "correlation value"),
+                                selectInput("select_minfi_typecorrplot", "Select data to plot", choices = c("p.value", "correlation value"), selected = "p.value"),
                                 withSpinner(DT::DTOutput("table_minfi_corrplot"))
                         ))
                     )
@@ -294,9 +294,9 @@ shinyUI(
                             box(title = "AGE METH", width = "100%", collapsible = TRUE, collapsed = TRUE,
                                     withSpinner(DT::DTOutput("table_age"))
                             ),
-                            box(title = "GENOME ANALYSIS PLOT", width = "100%", collapsible = TRUE, collapsed = TRUE,
-                                    h1("genome analysis plot")
-                            ),
+                            #box(title = "GENOME ANALYSIS PLOT", width = "100%", collapsible = TRUE, collapsed = TRUE,
+                            #        h1("genome analysis plot")
+                            #),
                             box(title = "HYPO/HYPER", width = "100%", collapsible = TRUE, collapsed = TRUE,
                                 sliderInput(
                                     inputId = "slider_beta",
@@ -323,9 +323,9 @@ shinyUI(
                                 withSpinner(plotOutput("plot_chr")),
                                 withSpinner(plotOutput("plot_relation_to_island")),
                                 withSpinner(plotOutput("plot_group"))
-                            ),
-                            box(title = "CIRCOS", width = "100%", collapsible = TRUE, collapsed = TRUE,
-                                    h1("circos")
+                            #),
+                            #box(title = "CIRCOS", width = "100%", collapsible = TRUE, collapsed = TRUE,
+                            #        h1("circos")
                             )
                         )
                     
@@ -335,7 +335,7 @@ shinyUI(
                 tabName = "dmp_dmr",
                 fluidPage(
                     tabsetPanel(
-                        tabPanel("DMPs", sidebarLayout(
+                        tabPanel("DMPs", style = "margin-top: 10px;", sidebarLayout(
                             sidebarPanel(
                                 width = 3,
                                 h4("Linear Model Options"),
@@ -530,15 +530,16 @@ shinyUI(
                                     actionButton(inputId = "button_limma_indboxplotcalc", label = "Plot")   
                                 ),
                                 box(title = "DMP MANHATTAN", width = "100%", closable = TRUE, collapsible = TRUE, collapsed = TRUE,
-                                    selectInput(inputId = "select_anncontrast", label = "", choices = "", selected = ""),
+                                    selectInput(inputId = "select_anncontrast_manhattan", label = "", choices = "", selected = ""),
                                     withSpinner(plotOutput("manhattan_plot"))
                                 ),
                                 box(title = "DMP VOLCANO", width = "100%", closable = TRUE, collapsible = TRUE, collapsed = TRUE,
+                                    selectInput(inputId = "select_anncontrast_volcano", label = "", choices = "", selected = ""),
                                     withSpinner(plotOutput("volcano_plot")) 
                                 )
                             )
                         )),
-                        tabPanel("DMRs", sidebarLayout(
+                        tabPanel("DMRs", style = "margin-top: 10px;", sidebarLayout(
                             sidebarPanel(
                                 width = 3,
                                 
@@ -595,13 +596,9 @@ shinyUI(
                             ),
                             mainPanel(
                                 width = 9,
-                                box(title = "DMR HEATMAP", width = "100%", closable = TRUE, collapsible = TRUE, collapsed = TRUE,
-                                    h4("DMRs Heatmap"),
-                                    textOutput("text_dmrs_heatmapcount"),
-                                    uiOutput("graph_dmrs_heatmapcontainer"),
+                                box(title = "DMR TABLE AND OPTIONS", width = "100%", closable = FALSE, collapsible = FALSE,
                                     h4("DMRs counts in each contrast"),
                                     tableOutput("table_dmrs_count") %>% shinycssloaders::withSpinner(),
-                                    
                                     fluidRow(
                                         column(
                                             6,
@@ -648,8 +645,15 @@ shinyUI(
                                             sliderInput("slider_dmrs_deltab", "Min. DeltaBeta", 0, 1, 0),
                                             sliderInput("slider_dmrs_adjpvalue", "Max. FDR", 0, 1, 0.05),
                                             sliderInput("slider_dmrs_pvalue", "Max. p-value", 0, 1, 1)
-                                        )
-                                    ),
+                                        ),
+                                        actionButton("button_dmrs_tablecalc", "Update")
+                                    )
+                                    
+                                ),
+                                box(title = "DMR HEATMAP", width = "100%", closable = TRUE, collapsible = TRUE, collapsed = TRUE,
+                                    h4("DMRs Heatmap"),
+                                    textOutput("text_dmrs_heatmapcount"),
+                                    uiOutput("graph_dmrs_heatmapcontainer"),
                                     
                                     h4("Clustering options",
                                        align =
