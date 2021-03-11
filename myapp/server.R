@@ -1352,6 +1352,86 @@ shinyServer(function(input, output, session) {
         temp
     })
     
+    
+    functional_enrich <- eventReactive(table_annotation(), {
+        print("FUNCTIONAL ENRICHMENT")
+        testgenes <- unique(as.character(table_annotation()$gene))
+        testgenes <- testgenes[!testgenes == ""]
+        eg <- clusterProfiler::bitr(testgenes, fromType = "SYMBOL", toType = "ENTREZID", OrgDb = "org.Hs.eg.db")
+        print(eg)
+        kk <- clusterProfiler::enrichKEGG(gene = eg$ENTREZID, organism = 'hsa', pvalueCutoff = 0.05)
+        print(kk)
+        
+        egomf <- clusterProfiler::enrichGO(gene = eg$ENTREZID, OrgDb = org.Hs.eg.db, ont = "MF", pAdjustMethod = "BH", pvalueCutoff  = 0.01, qvalueCutoff = 0.05, readable = TRUE)
+        
+        egobp <- clusterProfiler::enrichGO(gene = eg$ENTREZID, OrgDb = org.Hs.eg.db, ont = "BP", pAdjustMethod = "BH", pvalueCutoff  = 0.01, qvalueCutoff = 0.05, readable = TRUE)
+        
+        egocc <- clusterProfiler::enrichGO(gene = eg$ENTREZID, OrgDb = org.Hs.eg.db, ont = "CC", pAdjustMethod = "BH", pvalueCutoff  = 0.01, qvalueCutoff = 0.05, readable = TRUE)
+
+        react <- clusterProfiler::enrichPathway(eg$ENTREZID)
+        
+        gmtfile <- "/illumina/databases/references/gsea_db/c5.bp.v6.2.entrez.gmt"
+        c5 <- read.gmt(gmtfile)
+        egmtbp <- clusterProfiler::enricher(eg$ENTREZID, TERM2GENE=c5)
+        #write.table(as.data.frame(egmtbp),"msigdb_bp.csv",col.names=T,row.names=F,sep="\t",quote=F)
+        
+        gmtfile <- "/illumina/databases/references/gsea_db/c5.mf.v6.2.entrez.gmt"
+        c5 <- read.gmt(gmtfile)
+        egmtmf <- clusterProfiler::enricher(eg$ENTREZID, TERM2GENE=c5)
+        #write.table(as.data.frame(egmtmf),"msigdb_mf.csv",col.names=T,row.names=F,sep="\t",quote=F)
+        
+        gmtfile <- "/illumina/databases/references/gsea_db/c5.cc.v6.2.entrez.gmt"
+        c5 <- read.gmt(gmtfile)
+        egmtcc <- clusterProfiler::enricher(eg$ENTREZID, TERM2GENE=c5)
+        #write.table(as.data.frame(egmtcc),"msigdb_cc.csv",col.names=T,row.names=F,sep="\t",quote=F)
+        
+        gmtfile <- "/illumina/databases/references/gsea_db/c2.cp.kegg.v6.2.entrez.gmt"
+        c5 <- read.gmt(gmtfile)
+        egmtkk <- clusterProfiler::enricher(eg$ENTREZID, TERM2GENE=c5)
+        #write.table(as.data.frame(egmtkk),"msigdb_kegg.csv",col.names=T,row.names=F,sep="\t",quote=F)
+        
+        return(list(kegg = kk, go_mf = egomf, go_bp = egobp, go_cc = egocc, reactome = react, gmt_kegg = egmtkk, gmt_go_mf = egmtmf, gmt_go_bp = egmtbp, gmt_go_cc = egmtcc))
+    })
+    
+    cluster_profiler <- eventReactive(table_annotation(), {
+        testgenes <- unique(as.character(table_annotation()$gene))
+        testgenes <- testgenes[!testgenes == ""]
+        eg <- clusterProfiler::bitr(testgenes, fromType = "SYMBOL", toType = "ENTREZID", OrgDb = "org.Hs.eg.db")
+        eg
+    })
+    
+    kegg <- eventReactive(cluster_profiler(), {
+        kegg <- clusterProfiler::enrichKEGG(gene = cluster_profiler()$ENTREZID, organism = 'hsa', pvalueCutoff = 0.05)
+        kegg
+    })
+    reactome <- eventReactive(cluster_profiler(), {
+        reactome <- ReactomePA::enrichPathway(cluster_profiler()$ENTREZID)
+        reactome
+    })
+    go_mf <- eventReactive(cluster_profiler(), {
+        mf <- clusterProfiler::enrichGO(gene = cluster_profiler()$ENTREZID, OrgDb = org.Hs.eg.db, ont = "MF", pAdjustMethod = "BH", pvalueCutoff = 0.01, qvalueCutoff = 0.05, readable = TRUE)
+        mf
+    })
+    go_bp <- eventReactive(cluster_profiler(), {
+        bp <- clusterProfiler::enrichGO(gene = cluster_profiler()$ENTREZID, OrgDb = org.Hs.eg.db, ont = "BP", pAdjustMethod = "BH", pvalueCutoff = 0.01, qvalueCutoff = 0.05, readable = TRUE)
+        bp
+    })
+    go_cc <- eventReactive(cluster_profiler(), {
+        cc <- clusterProfiler::enrichGO(gene = cluster_profiler()$ENTREZID, OrgDb = org.Hs.eg.db, ont = "CC", pAdjustMethod = "BH", pvalueCutoff = 0.01, qvalueCutoff = 0.05, readable = TRUE)
+        cc
+    })
+    
+    output$plot_kegg <- renderPlot(enrichplot::dotplot(kegg(), font.size = 12, title = "KEGG"))
+    output$plot_go_mf <- renderPlot(enrichplot::dotplot(go_mf(), font.size = 12, title = "GO - Molecular Function"))
+    output$plot_go_bp <- renderPlot(enrichplot::dotplot(go_bp(), font.size = 12, title = "GO - Biological Process"))
+    output$plot_go_cc <- renderPlot(enrichplot::dotplot(go_cc(), font.size = 12, title = "GO - Cellular Component"))
+    output$plot_reactome <- renderPlot(enrichplot::dotplot(reactome(), font.size = 12, title = "REACTOME"))
+    #output$plot_gmt_kegg <- renderPlot(enrichplot::dotplot(functional_enrich()$gmt_kegg, font.size = 8, title = "MSigDB KEGG"))
+    #output$plot_gmt_go_mf <- renderPlot(enrichplot::dotplot(functional_enrich()$gmt_go_mf, font.size = 8, title = "MSigDB GO-MF"))
+    #output$plot_gmt_go_bp <- renderPlot(enrichplot::dotplot(functional_enrich_gmt_go_bp(), font.size = 8, title = "MSigDB GO-BP"))
+    #output$plot_gmt_go_cc <- renderPlot(enrichplot::dotplot(functional_enrich()$gmt_go_cc, font.size = 8, title = "MSigDB GO-CC"))
+
+    
     output$table_limma_ann <- DT::renderDT(
         table_annotation(),
         extensions = "Buttons",

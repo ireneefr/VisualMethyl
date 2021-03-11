@@ -78,7 +78,7 @@ shinyUI(
             tabItem(
                 tabName = "data",
                 verticalLayout( 
-                    box(title = "INPUT DATA", width = 12, collapsible = FALSE, 
+                    box(title = "INPUT DATA", width = 12, collapsible = FALSE, status = "primary",
                             fileInput("input_data", "Upload input data (.zip)", multiple = FALSE, accept = ".zip"),
                             uiOutput("ui_input_data")
                     ),
@@ -86,7 +86,7 @@ shinyUI(
                     conditionalPanel(
                         "input.b_input_data > 0",
                         box(title = "SELECTION OPTIONS", id = "selection_options",
-                                collapsible = FALSE,
+                                collapsible = FALSE, status = "primary",
                             width = 3,
                             selectInput("select_input_samplenamevar", "", c()),
                             selectInput("select_input_groupingvar", "", c()),
@@ -111,7 +111,7 @@ shinyUI(
                     # Box 2: Table
                     conditionalPanel(
                         "input.b_input_data > 0", box(title = "SAMPLES TABLE",
-                                                          collapsible = FALSE,
+                                                          collapsible = FALSE, status = "primary",
                         width = 9,
                         withSpinner(DT::DTOutput("samples_table"))
                         
@@ -196,13 +196,13 @@ shinyUI(
                     mainPanel(
                         width = 9,
                         verticalLayout(
-                        box(title = "INTENSITIES BOXPLOTS", width = "100%", collapsible = TRUE, collapsed = TRUE,
+                        box(title = "INTENSITIES BOXPLOTS", width = 12, collapsible = TRUE, collapsed = TRUE, status = "primary",
                                 h4("Green channel intensities"), 
                                 withSpinner(plotOutput("green_intensities_plot")),
                                 h4("Red channel intensities"), 
                                 withSpinner(plotOutput("red_intensities_plot"))
                         ),
-                        box(title = "FAILED PROBES", width = "100%", collapsible = TRUE, collapsed = TRUE,
+                        box(title = "FAILED PROBES", width = 12, collapsible = TRUE, collapsed = TRUE, status = "primary",
                             column(width = 9,
                                 h4("Failure Rate Plot"), 
                                 withSpinner(plotly::plotlyOutput("failure_rate_plot"))),
@@ -210,19 +210,19 @@ shinyUI(
                                 h4("Failure Rate Table"), 
                                 withSpinner(DT::DTOutput("failure_rate_table")))
                         ),
-                        box(title = "CONTROL TYPES", width = "100%", collapsible = TRUE, collapsed = TRUE,
+                        box(title = "CONTROL TYPES", width = 12, collapsible = TRUE, collapsed = TRUE, status = "primary",
                                 selectInput("controlType", "Choose a control type:",
                                             choices = controlNames, selected = 1),
                                 selectInput("select_slide", "Select slide:", choices = c()),
                                 withSpinner(plotOutput("controlTypePlotGreen")),
                                 withSpinner(plotOutput("controlTypePlotRed"))
                         ),
-                        box(title = "PREDICTED SEX", width = "100%", collapsible = TRUE, collapsed = TRUE,
+                        box(title = "PREDICTED SEX", width = 12, collapsible = TRUE, collapsed = TRUE, status = "primary",
                                 h4("X vs Y chromosomes signal plot"),
                                 withSpinner(plotly::plotlyOutput("graph_minfi_sex")),
                                 withSpinner(DT::DTOutput("table_minfi_sex"))
                         ),
-                        box(title = "DENSITY PLOT", width = "100%", collapsible = TRUE, collapsed = TRUE,
+                        box(title = "DENSITY PLOT", width = 12, collapsible = TRUE, collapsed = TRUE, status = "primary",
                                 selectInput("probeType", "Choose a probe type for the density curves:",
                                             choices = c("I-Green","I-Red","II"),
                                             selected="I-Green"),
@@ -231,11 +231,11 @@ shinyUI(
                                 h4("Normalized"),
                                 withSpinner(plotly::plotlyOutput("graph_minfi_densityplot"))
                         ),
-                        box(title = "SNP ANALYSIS", width = "100%", collapsible = TRUE, collapsed = TRUE,
+                        box(title = "SNP ANALYSIS", width = 12, collapsible = TRUE, collapsed = TRUE, status = "primary",
                                 h4("SNPs beta-values (Raw)"),
                                 withSpinner(plotly::plotlyOutput("graph_minfi_snps"))
                         ),
-                        box(title = "BATCH EFFECTS", width = "100%", collapsible = TRUE, collapsed = TRUE,
+                        box(title = "BATCH EFFECTS", width = 12, collapsible = TRUE, collapsed = TRUE, status = "primary",
                                 h4("Normalized"),
                                 withSpinner(plotly::plotlyOutput("graph_minfi_corrplot")),
                                 selectInput("select_minfi_typecorrplot", "Select data to plot", choices = c("p.value", "correlation value"), selected = "p.value"),
@@ -248,13 +248,13 @@ shinyUI(
                 tabName = "exploratory_analysis",
                 fluidPage(
                         verticalLayout(
-                            box(title = "VIOLIN PLOT", width = "100%", collapsible = TRUE, collapsed = TRUE,
+                            box(title = "VIOLIN PLOT", width = 12, collapsible = TRUE, collapsed = TRUE, status = "primary",
                                     h4("Raw"),
                                     withSpinner(plotOutput("graph_violin_raw")),
                                     h4("Normalized"),
                                     withSpinner(plotOutput("graph_violin_normalized"))
                             ),
-                            box(title = "PRINCIPAL COMPONENT ANALYSIS", width = "100%", collapsible = TRUE, collapsed = TRUE,
+                            box(title = "PRINCIPAL COMPONENT ANALYSIS", width = 12, collapsible = TRUE, collapsed = TRUE, status = "primary",
                                     withSpinner(plotly::plotlyOutput("graph_minfi_pcaplot")),
                                     withSpinner(DT::DTOutput("table_minfi_pcaplot")),
                                     column(
@@ -281,23 +281,23 @@ shinyUI(
                                     ),
                                     actionButton("button_pca_update", "Update")
                             ),
-                            box(title = "HEATMAP", width = "100%", collapsible = TRUE, collapsed = TRUE,
+                            box(title = "HEATMAP", width = 12, collapsible = TRUE, collapsed = TRUE, status = "primary",
                                     h4("Random 1000 CpGs"),
                                 withSpinner(plotOutput("graph_random_heatmap")),
                                 h4("Top 1000 variable CpGs"),
                                 withSpinner(plotOutput("graph_top_heatmap"))
                                 
                             ),
-                            box(title = "DECONVOLUTION", width = "100%", collapsible = TRUE, collapsed = TRUE,
+                            box(title = "DECONVOLUTION", width = 12, collapsible = TRUE, collapsed = TRUE, status = "primary",
                                     withSpinner(plotOutput("deconvolution_heatmap"))
                             ),
-                            box(title = "AGE METH", width = "100%", collapsible = TRUE, collapsed = TRUE,
+                            box(title = "AGE METH", width = 12, collapsible = TRUE, collapsed = TRUE, status = "primary",
                                     withSpinner(DT::DTOutput("table_age"))
                             ),
-                            #box(title = "GENOME ANALYSIS PLOT", width = "100%", collapsible = TRUE, collapsed = TRUE,
+                            #box(title = "GENOME ANALYSIS PLOT", collapsible = TRUE, collapsed = TRUE, status = "primary",
                             #        h1("genome analysis plot")
                             #),
-                            box(title = "HYPO/HYPER", width = "100%", collapsible = TRUE, collapsed = TRUE,
+                            box(title = "HYPO/HYPER", width = 12, collapsible = TRUE, collapsed = TRUE, status = "primary",
                                 sliderInput(
                                     inputId = "slider_beta",
                                     label = "Beta threshold",
@@ -324,7 +324,7 @@ shinyUI(
                                 withSpinner(plotOutput("plot_relation_to_island")),
                                 withSpinner(plotOutput("plot_group"))
                             #),
-                            #box(title = "CIRCOS", width = "100%", collapsible = TRUE, collapsed = TRUE,
+                            #box(title = "CIRCOS", collapsible = TRUE, collapsed = TRUE, status = "primary",
                             #        h1("circos")
                             )
                         )
@@ -387,7 +387,7 @@ shinyUI(
                             ),
                             mainPanel(
                                 width = 9,
-                                box(title = "DMP TABLE AND OPTIONS", width = "100%", closable = FALSE, collapsible = FALSE,
+                                box(title = "DMP TABLE AND OPTIONS", width = 12, closable = FALSE, collapsible = FALSE, status = "primary",
                                     h4("DMP counts in each contrast"),
                                     tableOutput("table_limma_difcpgs") %>% shinycssloaders::withSpinner(),
                                     fluidRow(
@@ -428,7 +428,7 @@ shinyUI(
                                     )
                                         
                                 ),
-                                box(title = "DMP HEATMAP", width = "100%", closable = TRUE, collapsible = TRUE, collapsed = TRUE,
+                                box(title = "DMP HEATMAP", width = 12, closable = TRUE, collapsible = TRUE, collapsed = TRUE,  status = "primary",
                                     textOutput("text_limma_heatmapcount"),
                                     uiOutput("graph_limma_heatmapcontainer"),
                                     
@@ -520,20 +520,20 @@ shinyUI(
                                         )
                                     )   
                                 ),
-                                box(title = "DMPs ANNOTATION", width = "100%", closable = TRUE, collapsible = TRUE, collapsed = TRUE,
+                                box(title = "DMPs ANNOTATION", width = 12, closable = TRUE, collapsible = TRUE, collapsed = TRUE, status = "primary",
                                     h4("DMP Boxplot"),
                                     plotOutput("graph_limma_indboxplot") %>% shinycssloaders::withSpinner(),
                                     h4("DMPs Annotation"),
                                     br(),
                                     DT::DTOutput("table_limma_ann") %>% shinycssloaders::withSpinner(),
                                     selectInput(inputId = "select_limma_anncontrast", label = "", choices = "", selected = ""),
-                                    actionButton(inputId = "button_limma_indboxplotcalc", label = "Plot")   
+                                    actionButton(inputId = "button_limma_indboxplotcalc", label = "Plot")
                                 ),
-                                box(title = "DMP MANHATTAN", width = "100%", closable = TRUE, collapsible = TRUE, collapsed = TRUE,
+                                box(title = "DMP MANHATTAN", width = 12, closable = TRUE, collapsible = TRUE, collapsed = TRUE, status = "primary",
                                     selectInput(inputId = "select_anncontrast_manhattan", label = "", choices = "", selected = ""),
                                     withSpinner(plotOutput("manhattan_plot"))
                                 ),
-                                box(title = "DMP VOLCANO", width = "100%", closable = TRUE, collapsible = TRUE, collapsed = TRUE,
+                                box(title = "DMP VOLCANO", width = 12, closable = TRUE, collapsible = TRUE, collapsed = TRUE, status = "primary",
                                     selectInput(inputId = "select_anncontrast_volcano", label = "", choices = "", selected = ""),
                                     withSpinner(plotOutput("volcano_plot")) 
                                 )
@@ -596,7 +596,7 @@ shinyUI(
                             ),
                             mainPanel(
                                 width = 9,
-                                box(title = "DMR TABLE AND OPTIONS", width = "100%", closable = FALSE, collapsible = FALSE,
+                                box(title = "DMR TABLE AND OPTIONS", width = 12, closable = FALSE, collapsible = FALSE,
                                     h4("DMRs counts in each contrast"),
                                     tableOutput("table_dmrs_count") %>% shinycssloaders::withSpinner(),
                                     fluidRow(
@@ -650,7 +650,7 @@ shinyUI(
                                     )
                                     
                                 ),
-                                box(title = "DMR HEATMAP", width = "100%", closable = TRUE, collapsible = TRUE, collapsed = TRUE,
+                                box(title = "DMR HEATMAP", width = 12, closable = TRUE, collapsible = TRUE, collapsed = TRUE, status = "primary",
                                     h4("DMRs Heatmap"),
                                     textOutput("text_dmrs_heatmapcount"),
                                     uiOutput("graph_dmrs_heatmapcontainer"),
@@ -743,7 +743,7 @@ shinyUI(
                                         )
                                     )
                                 ),
-                                box(title = "DMR ANNOTATION", width = "100%", closable = TRUE, collapsible = TRUE, collapsed = TRUE,
+                                box(title = "DMR ANNOTATION", width = 12, closable = TRUE, collapsible = TRUE, collapsed = TRUE, status = "primary",
                                     h4("Genomic graph"),
                                     plotOutput("graph_dmrs_singledmr") %>% shinycssloaders::withSpinner(),
                                     # h4("GSEA graph"),
@@ -782,7 +782,19 @@ shinyUI(
             ),
             tabItem(
                 tabName = "functional_enrichment",
-                fluidPage(h1("Functional Enrichment"))
+                fluidPage(
+                    box(title = "KEGG", width = 12, closable = FALSE, collapsible = TRUE, collapsed = TRUE, status = "primary",
+                        withSpinner(plotOutput("plot_kegg"))
+                    ),
+                    box(title = "Gene Ontology (GO)", width = 12, closable = FALSE, collapsible = TRUE, collapsed = TRUE, status = "primary",
+                        withSpinner(plotOutput("plot_go_mf")),
+                        withSpinner(plotOutput("plot_go_bp")),
+                        withSpinner(plotOutput("plot_go_cc"))
+                    ),
+                    box(title = "REACTOME", width = 12, closable = FALSE, collapsible = TRUE, collapsed = TRUE, status = "primary",
+                        withSpinner(plotOutput("plot_reactome"))
+                    )
+                )
             ),
             tabItem(
                 tabName = "survival",
