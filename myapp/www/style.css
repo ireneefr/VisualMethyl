@@ -129,6 +129,15 @@
 }
 
 
+/*
+.btn-file {
+  background-color:red;
+  border-color:blue;
+}
+*/
+.progress-bar {
+  background: linear-gradient(180deg, rgba(42,190,231,1) 0%, rgba(21,145,176,1) 100%);
+}
 
 
 
@@ -147,4 +156,68 @@
   color: #1dabd2;
   box-shadow: 0 12px 24px 0 rgba(0,0,0,0.2);
   border-width: 3px;
+}
+
+
+
+
+.btn-primary {
+  position: relative;
+  display: inline-block;
+  color: #FFFFFF;
+  letter-spacing: 1px;
+  text-shadow: 0 0 5px #000000;
+  background: #23b0d6;
+  border: 1px solid #242424;
+  border-radius: 4px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.25),
+    0 1px 0 rgba(255, 255, 255, 0.25) inset,
+    0 0 0 rgba(0, 0, 0, 0.5) inset,
+    0 1.25rem 0 rgba(255, 255, 255, 0.08) inset,
+    0 -1.25rem 1.25rem rgba(0, 0, 0, 0.2) inset,
+    0 1.25rem 1.25rem rgba(255, 255, 255, 0.1) inset;
+  transition: all 0.2s linear 0s;
+  text-align: center;
+}
+.btn-primary:hover,
+.btn-primary:focus {
+  background: #23b0d6;
+  box-shadow:
+    0 2px 5px rgba(0, 0, 0, 0.5),
+    0 1px 0 rgba(255, 255, 255, 0.25) inset,
+    0 0 0 rgba(0, 0, 0, 0.25) inset,
+    0 20px 0 rgba(255, 255, 255, 0.03) inset,
+    0 -20px 20px rgba(0, 0, 0, 0.15) inset,
+    0 20px 20px rgba(255, 255, 255, 0.05) inset;
+}
+.btn-primary:active {
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.25),
+    0 1px 0 rgba(255, 255, 255, 0) inset,
+    0 0 5px rgba(0, 0, 0, 0.5) inset,
+    0 20px 0 rgba(255, 255, 255, 0.03) inset,
+    0 -20px 20px rgba(0, 0, 0, 0.15) inset,
+    0 20px 20px rgba(255, 255, 255, 0.05) inset;
+}
+.btn-primary::before {
+  content: "";
+  display: block;
+  position: absolute;
+  background:-moz-linear-gradient(left, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 50%, rgba(255,255,255,0) 100%);
+  background:-webkit-gradient(linear, left top, right top, color-stop(0%,rgba(255,255,255,0)), color-stop(50%,rgba(255,255,255,1)), color-stop(100%,rgba(255,255,255,0)));
+  background:-webkit-linear-gradient(left, rgba(255,255,255,0) 0%,rgba(255,255,255,1) 50%,rgba(255,255,255,0) 100%);
+  background:linear-gradient(left, rgba(255,255,255,0) 0%,rgba(255,255,255,1) 50%,rgba(255,255,255,0) 100%);
+  top: 0;
+  left: 15%;
+  height: 1px;
+  width: 40%;
+  box-shadow: 0 1px 5px rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease-in-out 0s;
+}
+.btn-primary:active::before {
+  opacity: 0;
+}
+.btn-primary:hover::before {
+  left: 45%;
 }

@@ -266,8 +266,7 @@ shinyServer(function(input, output, session) {
             max = 5,
             {
                 try({
-                    RGSet <- read_idats(
-                        targets = rval_sheet_target())
+                    RGSet <- minfi::read.metharray.exp(targets = rval_sheet_target(), verbose = TRUE, force = TRUE) #Read idats
                 })
                 
                 if (!exists("RGSet", inherits = FALSE)) {
@@ -1420,16 +1419,47 @@ shinyServer(function(input, output, session) {
         cc <- clusterProfiler::enrichGO(gene = cluster_profiler()$ENTREZID, OrgDb = org.Hs.eg.db, ont = "CC", pAdjustMethod = "BH", pvalueCutoff = 0.01, qvalueCutoff = 0.05, readable = TRUE)
         cc
     })
+    gmt_kegg <- eventReactive(cluster_profiler(), {
+        print("GMT")
+        gmtfile <- "gsea/c2.cp.kegg.v7.2.entrez.gmt"
+        print("file")
+        print(gmtfile)
+        c5 <- suppressWarnings(qusage::read.gmt(gmtfile))
+        print("file")
+        print(head(c5))
+        egmtkegg <- clusterProfiler::enricher(cluster_profiler()$ENTREZID, TERM2GENE=c5)
+        print("file")
+        print(egmtkegg)
+        write.table(as.data.frame(egmtkegg),"msigdb_kegg.csv",col.names=T,row.names=F,sep="\t",quote=F)
+    })
+    gmt_go_mf <- eventReactive(cluster_profiler(), {
+        gmtfile <- "gsea/c5.go.mf.v7.2.entrez.xls"
+        c5 <- qusage::read.gmt(gmtfile)
+        egmtmf <- clusterProfiler::enricher(cluster_profiler()$ENTREZID, TERM2GENE=c5)
+        egmtmf
+    })
+    gmt_go_bp <- eventReactive(cluster_profiler(), {
+        gmtfile <- "gsea/c5.go.bp.v7.2.entrez.xls"
+        c5 <- qusage::read.gmt(gmtfile)
+        egmtbp <- clusterProfiler::enricher(cluster_profiler()$ENTREZID, TERM2GENE=c5)
+        egmtbp
+    })
+    gmt_go_cc <- eventReactive(cluster_profiler(), {
+        gmtfile <- "gsea/c5.go.cc.v7.2.entrez.xls"
+        c5 <- qusage::read.gmt(gmtfile)
+        egmtcc <- clusterProfiler::enricher(cluster_profiler()$ENTREZID, TERM2GENE=c5)
+        egmtcc
+    })
     
     output$plot_kegg <- renderPlot(enrichplot::dotplot(kegg(), font.size = 12, title = "KEGG"))
     output$plot_go_mf <- renderPlot(enrichplot::dotplot(go_mf(), font.size = 12, title = "GO - Molecular Function"))
     output$plot_go_bp <- renderPlot(enrichplot::dotplot(go_bp(), font.size = 12, title = "GO - Biological Process"))
     output$plot_go_cc <- renderPlot(enrichplot::dotplot(go_cc(), font.size = 12, title = "GO - Cellular Component"))
     output$plot_reactome <- renderPlot(enrichplot::dotplot(reactome(), font.size = 12, title = "REACTOME"))
-    #output$plot_gmt_kegg <- renderPlot(enrichplot::dotplot(functional_enrich()$gmt_kegg, font.size = 8, title = "MSigDB KEGG"))
-    #output$plot_gmt_go_mf <- renderPlot(enrichplot::dotplot(functional_enrich()$gmt_go_mf, font.size = 8, title = "MSigDB GO-MF"))
-    #output$plot_gmt_go_bp <- renderPlot(enrichplot::dotplot(functional_enrich_gmt_go_bp(), font.size = 8, title = "MSigDB GO-BP"))
-    #output$plot_gmt_go_cc <- renderPlot(enrichplot::dotplot(functional_enrich()$gmt_go_cc, font.size = 8, title = "MSigDB GO-CC"))
+    output$plot_gmt_kegg <- renderPlot(enrichplot::dotplot(gmt_kegg(), font.size = 12, title = "MSigDB KEGG"))
+    output$plot_gmt_go_mf <- renderPlot(enrichplot::dotplot(gmt_go_mf(), font.size = 12, title = "MSigDB GO - Molecular Function"))
+    output$plot_gmt_go_bp <- renderPlot(enrichplot::dotplot(gmt_go_bp(), font.size = 12, title = "MSigDB GO - Biological Process"))
+    output$plot_gmt_go_cc <- renderPlot(enrichplot::dotplot(gmt_go_cc(), font.size = 12, title = "MSigDB GO - Cellular Component"))
 
     
     output$table_limma_ann <- DT::renderDT(
