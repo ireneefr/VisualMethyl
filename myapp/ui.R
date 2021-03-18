@@ -40,7 +40,7 @@ convertMenuItem <- function(mi, tabName) {
   mi
 }
 
-
+library(waiter)
 library(shiny)
 library(shinydashboard)
 library(shinydashboardPlus)
@@ -74,7 +74,9 @@ shinyUI(
 
     dashboardBody(
       includeCSS("www/style.css"),
-
+      use_waitress(),
+      use_waiter(),
+      waiter_show_on_load(spin_fading_circles()),
       tabItems(
         tabItem(
           tabName = "data",
@@ -188,7 +190,7 @@ shinyUI(
                 value = FALSE
               ),
 
-              shinyjs::disabled(actionButton("button_minfi_select", "Select")),
+              shinyjs::disabled(actionButton("button_minfi_select", "Run Normalization", class = "btn-primary")),
               h4(),
               textOutput("text_minfi_probes"),
               conditionalPanel(
@@ -859,80 +861,77 @@ shinyUI(
           tabName = "export",
           fluidPage(
             shinyjs::useShinyjs(),
-            h3("Download RObjects"),
-            pickerInput(
-              inputId = "select_export_objects2download",
-              label = "Selected objects",
-              choices = c("RGSet", "GenomicRatioSet", "fit", "design", "ebayestables", "Bvalues", "Mvalues", "global_difs", "dmr_results"),
-              selected = c("RGSet", "GenomicRatioSet", "fit", "design", "ebayestables", "Bvalues", "Mvalues", "global_difs"),
-              options = list(
-                `actions-box` = TRUE,
-                size = 10,
-                `selected-text-format` = "count > 3"
-              ),
-              multiple = TRUE
+            h3("Download Report"),
+            column(2,
+            checkboxInput(
+              "check_qc",
+              strong("QC"),
+              value = FALSE
             ),
-            downloadButton("download_export_robjects"),
-            p(
-              "Press to download the R objects used for the analysis (RGSet, GenomicRatioSet, Bvalues, Mvalues, etc.)"
+            checkboxGroupInput(
+              "check_group_qc",
+              label = NULL,
+              choices = c(),
+              selected = c()
             ),
-            h3("Download filtered bed files"),
-
-            fluidPage(
-              div(
-                style = "display:inline-block",
-                selectInput(
-                  "select_export_analysistype",
-                  "Analysis type",
-                  c("DMPs", "DMRs"),
-                  selected = "by contrast"
-                )
-              ),
-              div(
-                style = "display:inline-block",
-                selectInput(
-                  "select_export_bedtype",
-                  "Subsetting mode",
-                  c("by contrasts", "by heatmap cluster"),
-                  selected = "by contrasts"
-                )
-              ),
-              div(
-                style = "display:inline-block",
-                selectInput(
-                  "select_export_genometype",
-                  "Genome version",
-                  c("hg19", "hg38"),
-                  selected = "hg19"
-                )
-              )
+            br(),
+            downloadButton("complete_report_html", label = "Download Report")),
+            column(2,
+            checkboxInput(
+              "check_exploratory_analysis",
+              strong("Exploratory analysis"),
+              value = FALSE
             ),
-
-
-            downloadButton("download_export_filteredbeds"),
-            p(
-              "Press to download the created filtered lists of contrasts, or heatmap clusters,
-        with the chosen criteria, in BED format."
+            checkboxGroupInput(
+              "check_group_exploratory_analysis",
+              label = NULL,
+              choices = c(),
+              selected = c()
+            )),
+            column(2,
+            checkboxInput(
+              "check_dmps",
+              strong("DMPs"),
+              value = FALSE
             ),
-            h3("Download Workflow Report"),
-            downloadButton("download_export_markdown"),
-            p(
-              "Press to download the report of all the steps follow and selected in the pipeline, and the results."
+            checkboxGroupInput(
+              "check_group_dmps",
+              label = NULL,
+              choices = list("Table",
+                             "Heatmap",
+                             "Annotation",
+                             "Manhattan plot",
+                             "Volcano plot"),
+              selected = NULL
+            )),
+            column(2,
+            checkboxInput(
+              "check_dmrs",
+              strong("DMRs"),
+              value = FALSE
             ),
-            h3("Download Custom R Script"),
-            downloadButton("download_export_script"),
-            p(
-              "Press to download an R script with the main parameters and steps follow in the DMP/DMR pipeline, to reproduce the results later outside the shiny application."
+            checkboxGroupInput(
+              "check_group_dmrs",
+              label = NULL,
+              choices = list("Table",
+                             "Heatmap",
+                             "Annotation"),
+              selected = NULL
+            )),
+            column(2,
+            checkboxInput(
+              "check_functional_enrichment",
+              strong("Functional enrichment"),
+              value = FALSE
             ),
-            h3("Download Heatmap"),
-            selectInput(
-              "select_export_heatmaptype",
-              label = "Heatmap type",
-              choices = c("DMPs", "DMRs"),
-              selected = "DMPs"
-            ),
-            downloadButton("download_export_heatmaps"),
-            p("Press to download the custom heatmap in the gplots::heatmap.2 version.")
+            checkboxGroupInput(
+              "check_group_functional_enrichment",
+              label = NULL,
+              choices = list("Kegg",
+                             "Gene Ontology (GO)",
+                             "Reactome"),
+              selected = NULL
+            ))
           )
         ),
         tabItem(

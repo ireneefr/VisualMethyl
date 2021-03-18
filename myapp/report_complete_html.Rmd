@@ -24,6 +24,18 @@ params:
   maf: NA
   probes: NA
   
+  #exploratory analysis
+  plot_violin_raw: NULL
+  plot_violin_normalized: NULL
+  plot_pca: NULL
+  table_age: NULL
+  plot_random_heatmap: NULL
+  plot_top_heatmap: NULL
+  plot_deconvolution: NULL
+  plot_hyper_hypo_chr: NULL
+  plot_hyper_hypo_relation_to_island: NULL
+  plot_hyper_hypo_group: NULL
+  
   #DMP 
   limma_voi: NA
   limma_covar: NA
@@ -250,15 +262,64 @@ DT::datatable(params$table_corrplot, extensions = 'Buttons',
 
 ***
 
-## DMPs and DMRs
+## Exploratory Analysis
 
-### Linear Model
+### Violin plot
 
-The linear model was generated using __`r params$limma_voi`__ as variable of interest,  __`r if(length(params$limma_covar) == 0) "None" else paste(params$limma_covar, collapse=", ")`__ as covariable(s), and __`r if(length(params$limma_inter) == 0) "None" else paste(params$limma_inter, collapse=", ")`__ as interaction(s). 
+```{r violin, echo = FALSE, warning = FALSE, message = FALSE}
+params$plot_violin_raw
+params$plot_violin_normalized
+```
 
-The resulting design matrix was:
+### Principal Component Analysis
 
-```{r design, echo=FALSE, warning=FALSE, message = FALSE}
+``` {r pca, echo = FALSE, warnimg = FALSE, message = FALSE}
+params$plot_pca
+```
+
+### Heatmaps
+
+``` {r heatmaps_random, echo = FALSE, warning = FALSE, message = FALSE}
+params$plot_random_heatmap
+```
+``` {r heatmaps_top, echo = FALSE, warning = FALSE, message = FALSE}
+params$plot_top_heatmap
+```
+
+### Age methylation
+
+```{r age_meth, echo = FALSE, warning =FALSE, message = FALSE}
+DT::datatable(params$table_age)
+```
+
+### Deconvolution
+
+```{r deconvolution, echo = FALSE, warning = FALSE, message = FALSE}
+params$plot_deconvolution
+```
+
+### Hypo/Hyper plots
+
+```{r hypo_hyper, echo = FALSE, warning = FALSE, message = FALSE}
+params$plot_hyper_hypo_chr
+params$plot_hyper_hypo_relation_to_island
+params$plot_hyper_hypo_group
+```
+
+***
+
+```{r linear_model, echo = FALSE, eval = !is.null(params$rval_dendrogram), results = "asis"}
+cat("\n## DMPs and DMRs")
+
+cat("\n### Linear Model")
+
+cat("\nThe linear model was generated using ", params$limma_voi, " as variable of interest, ", if(length(params$limma_covar) == 0) "None" else paste(params$limma_covar, collapse=", "), " as covariable(s), and ", if(length(params$limma_inter) == 0) "None" else paste(params$limma_inter, collapse=", "), " as interaction(s).") 
+
+cat("\nThe resulting design matrix was:")
+```
+
+```{r design, echo=FALSE, warning=FALSE, message = FALSE, eval = !is.null(params$rval_dendrogram)}
+if (!is.na(params$rval_design)){
 DT::datatable(
   params$rval_design,
   selection = "single",
@@ -269,12 +330,15 @@ DT::datatable(
     lengthChange = FALSE,
     searching = FALSE
   ))
-)
+)}
 ```
 
-Optionally, ArrayWeights can be activated to weight the value of each sample depending on their adjust to the linear model:
+```{r array_weights, echo = FALSE, eval = !is.null(params$rval_dendrogram), results = "asis"}
+cat("\nOptionally, ArrayWeights can be activated to weight the value of each sample depending on their adjust to the linear model:")
+```
 
-```{r limma, echo=TRUE, eval=FALSE}
+```{r limma, echo=!is.null(params$rval_dendrogram), eval=FALSE}
+ 
       if (weights_option){
         try({weights = limma::arrayWeights(MValues, design = design})
       }
@@ -283,56 +347,61 @@ Optionally, ArrayWeights can be activated to weight the value of each sample dep
       fit = limma::lmFit(MValues, design, weights = weights)
 ```
 
-Where `weights` is the option specified in the form. In this case, weights is  __`r params$limma_arrayweights`__ .
+```{r array_weights_option, echo = FALSE, eval = !is.null(params$rval_dendrogram), results = "asis"}
+cat("\nWhere `weights` is the option specified in the form. In this case, weights is ", params$limma_arrayweights)
+```
 
-
-With the sample groups selected, the possible contrasts were:
-
-```{r contrasts, echo=FALSE, warning=FALSE, message = FALSE, comment = NA}
+```{r contrasts, echo = FALSE, eval = !is.null(params$rval_dendrogram), results = "asis"}
+cat("\nWith the sample groups selected, the possible contrasts were:\n")
 cat(params$rval_contrasts, sep = "\n")
 ```
 
-Using the calculated model, the t-statistics and p.values are obtained automatically for each contrast:
+```{r contrasts_statistics, echo = FALSE, eval = !is.null(params$rval_dendrogram),results='asis'}
+cat("\nUsing the calculated model, the t-statistics and p.values are obtained automatically for each contrast:")
+```
 
-```{r ebayes, eval=FALSE, echo=TRUE}
+```{r ebayes, eval=FALSE, echo=!is.null(params$rval_dendrogram)}
   mcontrast = makeContrasts(contrasts=contrast, levels = design)
   fitting = contrasts.fit(fit, mcontrast)
   fitting = eBayes(fitting, trend=trend, robust=robust)
   toptable = topTable(fitting, coef= 1,  adjust.method = "fdr", number =  Inf)
 ```
 
-Where `trend` and `robust` are the options specified in the form. In this case, trend is  __`r params$limma_ebayes_trend`__ and robust is __`r params$limma_ebayes_robust`__ .
-
-### DMPs
-
-#### Options (DMPs)
-
-For each contrast ( __`r paste(params$dmrs_contrasts, collapse=", ")`__ ) , the statistics for each CpG were generated and, after, filtered with these criteria:
-
-* Max. FDR: __`r params$max_fdr`__
-* Min. Δβ:   __`r params$min_deltabeta`__
-* Max. pvalue:   __`r params$max_pvalue`__
-
-
-#### Table with all contrasts (DMPs)
-
-```{r filtered_table_all,echo=FALSE,message=FALSE, warning=FALSE}
-knitr::kable(params$table_dmps)
+```{r ebayes_options, echo = FALSE, eval = !is.null(params$rval_dendrogram), results = "asis"}
+cat("\nWhere `trend` and `robust` are the options specified in the form. In this case, trend is ", params$limma_ebayes_trend, " and robust is ", params$limma_ebayes_robust)
 ```
 
-#### Custom heatmap (DMPs)
+<br>
 
-* Column dendogram:  __`r params$Colv`__
-* Scale: __`r params$scale`__
-* Cluster Algorithm: __`r params$clusteralg`__
-* Distance: __`r params$distance`__
+```{r dmp_options, echo = FALSE, eval = !is.null(params$rval_dendrogram), results = "asis"}
+cat("\n### DMPs")
+cat("\n#### Options (DMPs)")
+cat("\nFor each contrast (", paste(params$rval_contrasts, collapse=", "), " ), the statistics for each CpG were generated and, after, filtered with these criteria:")
+cat("\n* Max. FDR: ", params$max_fdr,
+"\n* Min. Δβ: ", params$min_deltabeta,
+"\n* Max. pvalue: ", params$max_pvalue)
 
-The data used for the representation are  __`r if(!params$removebatch) "the normalized beta values" else "the normalized beta values after removing covariable effects on the data (with the limma removeBatchEffect function), preserving the variable of interest"`__.
+cat("\n#### Table with all contrasts (DMPs)")
+```
 
-In the custom heatmap the selected contrasts to plot were: __`r paste(params$contrasts2plot, collapse=", ")`__ and the groups were: __`r paste(params$groups2plot, collapse=", ")`__ .
+```{r filtered_table_all,echo=FALSE,message=FALSE, warning=FALSE}
+if(!is.null(params$rval_dendrogram)) knitr::kable(params$table_dmps)
+```
 
-```{r heatmap_dmps,echo=FALSE,message=FALSE, warning=FALSE, fig.width = 9, fig.height = 12}
-    if(!is.null(params$filteredlist2heatmap)){
+```{r dmp_custom_heatmap, echo = FALSE, eval = !is.null(params$rval_dendrogram), results = "asis"}
+cat("\n#### Custom heatmap (DMPs)")
+cat("\n* Column dendogram: ", params$Colv,
+"\n* Scale: ", params$scale,
+"\n* Cluster Algorithm: ", params$clusteralg,
+"\n* Distance: ", params$distance)
+
+cat("\nThe data used for the representation are ", if(params$removebatch == FALSE) "the normalized beta values" else "the normalized beta values after removing covariable effects on the data (with the limma removeBatchEffect function), preserving the variable of interest")
+
+cat("\nIn the custom heatmap the selected contrasts to plot were: ", paste(params$contrasts2plot, collapse=", "), " and the groups were: ", paste(params$groups2plot, collapse=", "))
+```
+
+```{r heatmap_dmps,echo=FALSE,message=FALSE, warning=FALSE, fig.width = 9, fig.height = 12, eval = !is.null(params$rval_dendrogram)}
+    if(!is.null(params$rval_dendrogram)){
       create_heatmap(params$filteredlist2heatmap, 
                      factorgroups = factor(params$rval_voi[params$rval_voi %in% params$groups2plot], levels = params$groups2plot), 
                      groups2plot = params$rval_voi %in% params$groups2plot, 
@@ -349,30 +418,29 @@ In the custom heatmap the selected contrasts to plot were: __`r paste(params$con
   
 ```
 
-DMPs in heatmap:  __`r if(is.null(nrow(params$filteredlist2heatmap))) "None" else nrow(params$filteredlist2heatmap)`__ 
+```{r num_dmps_heatmap, echo = FALSE, eval = !is.null(params$filteredlist2heatmap), results = "asis"}
+cat("\nDMPs in heatmap: ", nrow(params$filteredlist2heatmap))
+```
 
 <br>
-
 
 ```{r filt_res, echo=FALSE, eval=!is.null(params$dmrs_contrasts), results="asis"}
 
 cat("\n### DMRs")
 cat("\n#### Options (DMRs)")
 cat("\nFor each contrast (", paste(params$rval_contrasts, collapse=", "))
-cat(") the statistics for each CpG were generated and, after, filtered with these criteria: \n
-* Max. FDR: **", params$dmrs_max_fdr, "** \n* Min. Δβ: **", params$dmrs_min_deltabeta, "** \n* Max. pvalue: **", params$dmrs_max_pvalue, "**")
-
-
+cat(" ) the statistics for each CpG were generated and, after, filtered with these criteria: \n
+* Max. FDR: ", params$dmrs_max_fdr, "\n* Min. Δβ: ", params$dmrs_min_deltabeta, "\n* Max. pvalue: ", params$dmrs_max_pvalue)
 cat("\n#### Table with all contrasts (DMRs)")
 ```
 
 ```{r filtered_table_all_dmrs,echo=FALSE,message=FALSE, warning=FALSE}
-if(!is.null(params$dmrs_contrasts)) knitr::kable(params$table_dmrs) else cat("DMRs were not calculated in this analysis.")
+if(!is.null(params$dmrs_contrasts)) knitr::kable(params$table_dmrs)
 ```
 
 
 ```{r custom_heatmap, echo=FALSE, eval=!is.null(params$dmrs_contrasts), results="asis"}
-cat("\n### Custom heatmap (DMRs)")
+cat("\n#### Custom heatmap (DMRs)")
 cat("\n* Column dendogram:", params$dmrs_Colv,
 "\n* Scale:", params$dmrs_scale,
 "\n* Cluster Algorithm:", params$dmrs_clusteralg,
@@ -394,15 +462,13 @@ if(!is.null(params$filteredmcsea2heatmap) & !is.null(params$dmrs_contrasts)){
                  static=TRUE,
                  ColSideColors = TRUE,
                  RowSideColors = params$dmrs_rval_dendrogram)
-  } else {
-    cat("Differences are not in the plotting range (<12000, >1)")
   }
   
 ```
 
-
-DMRs in heatmap:  __`r if(is.null(nrow(params$filteredmcsea2heatmap))) "None" else nrow(params$filteredmcsea2heatmap)`__ 
-
+```{r num_heatmap_dmrs, echo = FALSE, eval = !is.null(params$filteredmcsea2heatmap), results = "asis"}
+cat("\nDMRs in heatmap: ", nrow(params$filteredmcsea2heatmap))
+```
 
 ***
 

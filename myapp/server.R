@@ -7,7 +7,7 @@ library(ggplot2)
 
 
 shinyServer(function(input, output, session) {
-    
+    waiter_hide()
     # INITIALIZE REACTIVE VARIABLES
     rval_generated_limma_model <- reactiveVal(value = FALSE)
     rval_analysis_finished <- reactiveVal(value = FALSE)
@@ -22,6 +22,60 @@ shinyServer(function(input, output, session) {
     options(shiny.maxRequestSize = 8000 * 1024^2) # 5MB getShinyOption("shiny.maxRequestSize") | 30*1024^2 = 30MB
     n_cores <- parallel::detectCores() / 2
     
+    observe({
+        shinyjs::disable("check_qc")
+        shinyjs::disable("check_group_qc")
+        shinyjs::disable("check_exploratory_analysis")
+        shinyjs::disable("check_group_exploratory_analysis")
+        shinyjs::disable("check_dmps")
+        shinyjs::disable("check_group_dmps")
+        })
+    eventReactive(rval_gset(), {
+        shinyjs::enable("check_qc")
+        shinyjs::enable("check_exploratory_analysis")
+        updateCheckboxInput(session, "check_qc", value = TRUE)
+        updateCheckboxInput(session, "check_exploratory_analysis", value = TRUE)
+        })
+    observe({
+        req(rval_gset())
+        if(input$check_qc){
+            updateCheckboxGroupInput(session, "check_group_qc",choices = list("Intensities boxplots" = 1,
+                                                                              "Failed probes" = 2,
+                                                                              "Density plots" = 3,
+                                                                              "SNPs heatmap" = 4,
+                                                                              "Sex prediction" = 5,
+                                                                              "Batch effects" = 6),  selected = c(1:6))
+            shinyjs::enable("check_group_qc")
+        } else{shinyjs::disable("check_group_qc")
+            updateCheckboxGroupInput(session, "check_group_qc",choices = list("Intensities boxplots" = 1,
+                                                                              "Failed probes" = 2,
+                                                                              "Density plots" = 3,
+                                                                              "SNPs heatmap" = 4,
+                                                                              "Sex prediction" = 5,
+                                                                              "Batch effects" = 6), selected = c())
+        }
+        if(input$check_exploratory_analysis){
+            updateCheckboxGroupInput(session, "check_group_exploratory_analysis",choices = list("Violin plots",
+                                                                                                "Principal Component Analysis",
+                                                                                                "Heatmaps",
+                                                                                                "Deconvolution",
+                                                                                                "Age methylation",
+                                                                                                "Hypo/Hyper (chr)",
+                                                                                                "Hypo/Hyper (relation to island)",
+                                                                                                "Hypo/Hyper (group)"), selected = c(1:8))
+            shinyjs::enable("check_group_exploratory_analysis")
+        } else{
+            updateCheckboxGroupInput(session, "check_group_exploratory_analysis",choices = list("Violin plots",
+                                                                                                "Principal Component Analysis",
+                                                                                                "Heatmaps",
+                                                                                                "Deconvolution",
+                                                                                                "Age methylation",
+                                                                                                "Hypo/Hyper (chr)",
+                                                                                                "Hypo/Hyper (relation to island)",
+                                                                                                "Hypo/Hyper (group)"), selected = c())
+            shinyjs::disable("check_group_exploratory_analysis")
+        }
+    })
     
     # Reaction of data action buttons
     observeEvent(input$b_qc, {
@@ -149,8 +203,6 @@ shinyServer(function(input, output, session) {
     })
     
     
-    
-    
     # When you press button_input_load, the form options are updated
     observeEvent(input$b_input_data, {
         updateSelectInput(
@@ -187,7 +239,6 @@ shinyServer(function(input, output, session) {
         
         
         shinyjs::enable("button_input_next") # Enable button continue
-
     })
     
     
@@ -230,7 +281,7 @@ shinyServer(function(input, output, session) {
     # rval_rgset loads RGSet using read.metharray.exp and the sample sheet (rval_sheet())
     rval_rgset <- eventReactive(input$button_input_next, ignoreNULL = FALSE, {
         validate(need(input$input_data != "", "Data has not been uploaded yet"))
-        
+
         # Prior check to test variable selection
         if (anyDuplicated(rval_sheet_target()[, input$select_input_samplenamevar]) > 0 |
             anyDuplicated(rval_sheet_target()[, input$select_input_groupingvar]) == 0) {
@@ -258,7 +309,11 @@ shinyServer(function(input, output, session) {
         # disable button to avoid multiple clicks
         shinyjs::disable("button_input_next")
         
-        
+        #waitress <- Waitress$new(theme = "overlay-percent")$start()
+        #waiter_show( # show the waiter
+        #    html = tagList(spin_fading_circles(), # use a spinner
+        #    "Reading data ...")
+        #    )
         # We need to check if this step works
         withProgress(
             message = "Reading array data...",
@@ -341,11 +396,12 @@ shinyServer(function(input, output, session) {
                 # analysis restarted
                 rval_analysis_finished(FALSE)
                 rval_dmrs_finished(FALSE)
-                
                 # we return RGSet
                 RGSet
             }
         )
+        #waitress$close() 
+        #waiter_hide()
     })
     
     # We change the page to the next one
@@ -401,7 +457,7 @@ shinyServer(function(input, output, session) {
             choices = rval_sheet_target()[, input$select_input_samplenamevar],
             choicesOpt = list(subtext = paste("Group: ", rval_sheet_target()[, input$select_input_groupingvar]))
         )
-        
+        print("ok")
         shinyjs::enable("button_minfi_select")
     })
     
@@ -493,8 +549,10 @@ shinyServer(function(input, output, session) {
     
     ##### INTENSITIES BOXPLOTS #####
 
-    output$green_intensities_plot <- renderPlot(create_boxplot_intensities_green(rval_rgset()))
-    output$red_intensities_plot <- renderPlot(create_boxplot_intensities_red(rval_rgset()))
+    boxplot_intensities_green <- reactive(create_boxplot_intensities_green(rval_rgset()))
+    boxplot_intensities_red <- reactive(create_boxplot_intensities_red(rval_rgset()))
+    output$green_intensities_plot <- renderPlot(boxplot_intensities_green())
+    output$red_intensities_plot <- renderPlot(boxplot_intensities_red())
     
     ########## FAILURE RATE PLOT ##########
     
@@ -708,7 +766,9 @@ shinyServer(function(input, output, session) {
     
     ##### AGE #####
     
-    output$table_age <- DT::renderDT(create_age(rval_rgset_getBeta(), rval_sheet_target(), input$select_input_age))
+    age_data <- reactive(create_age(rval_rgset_getBeta(), rval_sheet_target(), input$select_input_age))
+    
+    output$table_age <- DT::renderDT(age_data())
     
     
     ##### HYPER/HYPO PLOTS #####
@@ -765,7 +825,7 @@ shinyServer(function(input, output, session) {
     })
     
     
-    # LIMMA
+    ###### LIMMA #####
     
     # Variable of interest
     rval_voi <- reactive(factor(make.names(minfi::pData(rval_gset())[, input$select_limma_voi])))
@@ -864,7 +924,6 @@ shinyServer(function(input, output, session) {
         
         fit
     })
-    
 
     # rval_fit() has NAs, we remove the option to trend or robust in eBayes to prevent failure
     observeEvent(input$button_limma_calculatemodel, {
@@ -1165,7 +1224,8 @@ shinyServer(function(input, output, session) {
             rval_voi(),
             rval_gset_getBeta()
         )
-        
+        print("join table")
+        print(join_table)
         # If the number of CpGs is not in the plotting range, return NULL to avoid errors in plot_heatmap and disable download
         if (is.null(join_table) |
             nrow(join_table) < 2 | nrow(join_table) > 12000) {
@@ -1217,12 +1277,10 @@ shinyServer(function(input, output, session) {
         dendrogram # returning the dendrogram classification
     })
     
-    
-    
     plot_heatmap <- eventReactive(input$button_limma_heatmapcalc, {
         validate(
             need(
-                !is.null(rval_filteredlist2heatmap()),
+               !is.null(rval_filteredlist2heatmap()),
                 "Differences are not in the plotting range (<12000, >1)"
             ),
             need(
@@ -1288,8 +1346,6 @@ shinyServer(function(input, output, session) {
         rbind(as.data.frame(count_df), default_df[!(default_df[["contrast"]] %in% count_df[["contrast"]]), ])
     })
     
-    
-    
     observe({
         # Render the correct plot depending on the selected
         output$graph_limma_heatmapcontainer <- renderUI({
@@ -1351,117 +1407,6 @@ shinyServer(function(input, output, session) {
         temp
     })
     
-    
-    functional_enrich <- eventReactive(table_annotation(), {
-        print("FUNCTIONAL ENRICHMENT")
-        testgenes <- unique(as.character(table_annotation()$gene))
-        testgenes <- testgenes[!testgenes == ""]
-        eg <- clusterProfiler::bitr(testgenes, fromType = "SYMBOL", toType = "ENTREZID", OrgDb = "org.Hs.eg.db")
-        print(eg)
-        kk <- clusterProfiler::enrichKEGG(gene = eg$ENTREZID, organism = 'hsa', pvalueCutoff = 0.05)
-        print(kk)
-        
-        egomf <- clusterProfiler::enrichGO(gene = eg$ENTREZID, OrgDb = org.Hs.eg.db, ont = "MF", pAdjustMethod = "BH", pvalueCutoff  = 0.01, qvalueCutoff = 0.05, readable = TRUE)
-        
-        egobp <- clusterProfiler::enrichGO(gene = eg$ENTREZID, OrgDb = org.Hs.eg.db, ont = "BP", pAdjustMethod = "BH", pvalueCutoff  = 0.01, qvalueCutoff = 0.05, readable = TRUE)
-        
-        egocc <- clusterProfiler::enrichGO(gene = eg$ENTREZID, OrgDb = org.Hs.eg.db, ont = "CC", pAdjustMethod = "BH", pvalueCutoff  = 0.01, qvalueCutoff = 0.05, readable = TRUE)
-
-        react <- clusterProfiler::enrichPathway(eg$ENTREZID)
-        
-        gmtfile <- "/illumina/databases/references/gsea_db/c5.bp.v6.2.entrez.gmt"
-        c5 <- read.gmt(gmtfile)
-        egmtbp <- clusterProfiler::enricher(eg$ENTREZID, TERM2GENE=c5)
-        #write.table(as.data.frame(egmtbp),"msigdb_bp.csv",col.names=T,row.names=F,sep="\t",quote=F)
-        
-        gmtfile <- "/illumina/databases/references/gsea_db/c5.mf.v6.2.entrez.gmt"
-        c5 <- read.gmt(gmtfile)
-        egmtmf <- clusterProfiler::enricher(eg$ENTREZID, TERM2GENE=c5)
-        #write.table(as.data.frame(egmtmf),"msigdb_mf.csv",col.names=T,row.names=F,sep="\t",quote=F)
-        
-        gmtfile <- "/illumina/databases/references/gsea_db/c5.cc.v6.2.entrez.gmt"
-        c5 <- read.gmt(gmtfile)
-        egmtcc <- clusterProfiler::enricher(eg$ENTREZID, TERM2GENE=c5)
-        #write.table(as.data.frame(egmtcc),"msigdb_cc.csv",col.names=T,row.names=F,sep="\t",quote=F)
-        
-        gmtfile <- "/illumina/databases/references/gsea_db/c2.cp.kegg.v6.2.entrez.gmt"
-        c5 <- read.gmt(gmtfile)
-        egmtkk <- clusterProfiler::enricher(eg$ENTREZID, TERM2GENE=c5)
-        #write.table(as.data.frame(egmtkk),"msigdb_kegg.csv",col.names=T,row.names=F,sep="\t",quote=F)
-        
-        return(list(kegg = kk, go_mf = egomf, go_bp = egobp, go_cc = egocc, reactome = react, gmt_kegg = egmtkk, gmt_go_mf = egmtmf, gmt_go_bp = egmtbp, gmt_go_cc = egmtcc))
-    })
-    
-    cluster_profiler <- eventReactive(table_annotation(), {
-        testgenes <- unique(as.character(table_annotation()$gene))
-        testgenes <- testgenes[!testgenes == ""]
-        eg <- clusterProfiler::bitr(testgenes, fromType = "SYMBOL", toType = "ENTREZID", OrgDb = "org.Hs.eg.db")
-        eg
-    })
-    
-    kegg <- eventReactive(cluster_profiler(), {
-        kegg <- clusterProfiler::enrichKEGG(gene = cluster_profiler()$ENTREZID, organism = 'hsa', pvalueCutoff = 0.05)
-        kegg
-    })
-    reactome <- eventReactive(cluster_profiler(), {
-        reactome <- ReactomePA::enrichPathway(cluster_profiler()$ENTREZID)
-        reactome
-    })
-    go_mf <- eventReactive(cluster_profiler(), {
-        mf <- clusterProfiler::enrichGO(gene = cluster_profiler()$ENTREZID, OrgDb = org.Hs.eg.db, ont = "MF", pAdjustMethod = "BH", pvalueCutoff = 0.01, qvalueCutoff = 0.05, readable = TRUE)
-        mf
-    })
-    go_bp <- eventReactive(cluster_profiler(), {
-        bp <- clusterProfiler::enrichGO(gene = cluster_profiler()$ENTREZID, OrgDb = org.Hs.eg.db, ont = "BP", pAdjustMethod = "BH", pvalueCutoff = 0.01, qvalueCutoff = 0.05, readable = TRUE)
-        bp
-    })
-    go_cc <- eventReactive(cluster_profiler(), {
-        cc <- clusterProfiler::enrichGO(gene = cluster_profiler()$ENTREZID, OrgDb = org.Hs.eg.db, ont = "CC", pAdjustMethod = "BH", pvalueCutoff = 0.01, qvalueCutoff = 0.05, readable = TRUE)
-        cc
-    })
-    gmt_kegg <- eventReactive(cluster_profiler(), {
-        print("GMT")
-        gmtfile <- "gsea/c2.cp.kegg.v7.2.entrez.gmt"
-        print("file")
-        print(gmtfile)
-        c5 <- suppressWarnings(qusage::read.gmt(gmtfile))
-        print("file")
-        print(head(c5))
-        egmtkegg <- clusterProfiler::enricher(cluster_profiler()$ENTREZID, TERM2GENE=c5)
-        print("file")
-        print(egmtkegg)
-        write.table(as.data.frame(egmtkegg),"msigdb_kegg.csv",col.names=T,row.names=F,sep="\t",quote=F)
-    })
-    gmt_go_mf <- eventReactive(cluster_profiler(), {
-        gmtfile <- "gsea/c5.go.mf.v7.2.entrez.xls"
-        c5 <- qusage::read.gmt(gmtfile)
-        egmtmf <- clusterProfiler::enricher(cluster_profiler()$ENTREZID, TERM2GENE=c5)
-        egmtmf
-    })
-    gmt_go_bp <- eventReactive(cluster_profiler(), {
-        gmtfile <- "gsea/c5.go.bp.v7.2.entrez.xls"
-        c5 <- qusage::read.gmt(gmtfile)
-        egmtbp <- clusterProfiler::enricher(cluster_profiler()$ENTREZID, TERM2GENE=c5)
-        egmtbp
-    })
-    gmt_go_cc <- eventReactive(cluster_profiler(), {
-        gmtfile <- "gsea/c5.go.cc.v7.2.entrez.xls"
-        c5 <- qusage::read.gmt(gmtfile)
-        egmtcc <- clusterProfiler::enricher(cluster_profiler()$ENTREZID, TERM2GENE=c5)
-        egmtcc
-    })
-    
-    output$plot_kegg <- renderPlot(enrichplot::dotplot(kegg(), font.size = 12, title = "KEGG"))
-    output$plot_go_mf <- renderPlot(enrichplot::dotplot(go_mf(), font.size = 12, title = "GO - Molecular Function"))
-    output$plot_go_bp <- renderPlot(enrichplot::dotplot(go_bp(), font.size = 12, title = "GO - Biological Process"))
-    output$plot_go_cc <- renderPlot(enrichplot::dotplot(go_cc(), font.size = 12, title = "GO - Cellular Component"))
-    output$plot_reactome <- renderPlot(enrichplot::dotplot(reactome(), font.size = 12, title = "REACTOME"))
-    output$plot_gmt_kegg <- renderPlot(enrichplot::dotplot(gmt_kegg(), font.size = 12, title = "MSigDB KEGG"))
-    output$plot_gmt_go_mf <- renderPlot(enrichplot::dotplot(gmt_go_mf(), font.size = 12, title = "MSigDB GO - Molecular Function"))
-    output$plot_gmt_go_bp <- renderPlot(enrichplot::dotplot(gmt_go_bp(), font.size = 12, title = "MSigDB GO - Biological Process"))
-    output$plot_gmt_go_cc <- renderPlot(enrichplot::dotplot(gmt_go_cc(), font.size = 12, title = "MSigDB GO - Cellular Component"))
-
-    
     output$table_limma_ann <- DT::renderDT(
         table_annotation(),
         extensions = "Buttons",
@@ -1489,10 +1434,10 @@ shinyServer(function(input, output, session) {
     output$graph_limma_indboxplot <- renderPlot(ind_boxplot())
     
     
-    ########## MANHATTAN PLOT ##########
+    ########## MANHATTAN & VOLCANO PLOT ##########
     
     table_annotation_manhattan <- eventReactive(input$select_anncontrast_manhattan, {
-        req(rval_list())
+        req(rval_filteredlist())
         
         dif_target <- paste("dif",
                             limma::strsplit2(input$select_anncontrast_manhattan, "-")[1],
@@ -1500,12 +1445,12 @@ shinyServer(function(input, output, session) {
                             sep = "_"
         )
         
-        temp <- rval_annotation()[row.names(rval_annotation()) %in% rval_list()[[input$select_anncontrast_manhattan]]$cpg, ]
+        temp <- rval_annotation()[row.names(rval_annotation()) %in% rval_filteredlist()[[input$select_anncontrast_manhattan]]$cpg, ]
         temp$dif_beta <- rval_globaldifs()[[dif_target]][rval_globaldifs()[["cpg"]] %in% row.names(temp)]
         
-        temp$fdr <- rval_list()[[input$select_anncontrast_manhattan]][["adj.P.Val"]][rval_list()[[input$select_anncontrast_manhattan]][["cpg"]] %in% row.names(temp)]
+        temp$fdr <- rval_filteredlist()[[input$select_anncontrast_manhattan]][["adj.P.Val"]][rval_filteredlist()[[input$select_anncontrast_manhattan]][["cpg"]] %in% row.names(temp)]
         
-        temp$pvalue <- rval_list()[[input$select_anncontrast_manhattan]][["P.Value"]][rval_list()[[input$select_anncontrast_manhattan]][["cpg"]] %in% row.names(temp)]
+        temp$pvalue <- rval_filteredlist()[[input$select_anncontrast_manhattan]][["P.Value"]][rval_filteredlist()[[input$select_anncontrast_manhattan]][["cpg"]] %in% row.names(temp)]
         
         temp$chr[temp$chr == "chrX"] <- 23
         temp$chr[temp$chr == "chrY"] <- 24
@@ -1525,7 +1470,7 @@ shinyServer(function(input, output, session) {
     })
     
     table_annotation_volcano <- eventReactive(input$select_anncontrast_volcano, {
-        req(rval_list())
+        req(rval_filteredlist())
         
         dif_target <- paste("dif",
                             limma::strsplit2(input$select_anncontrast_volcano, "-")[1],
@@ -1533,12 +1478,12 @@ shinyServer(function(input, output, session) {
                             sep = "_"
         )
         
-        temp <- rval_annotation()[row.names(rval_annotation()) %in% rval_list()[[input$select_anncontrast_volcano]]$cpg, ]
+        temp <- rval_annotation()[row.names(rval_annotation()) %in% rval_filteredlist()[[input$select_anncontrast_volcano]]$cpg, ]
         temp$dif_beta <- rval_globaldifs()[[dif_target]][rval_globaldifs()[["cpg"]] %in% row.names(temp)]
         
-        temp$fdr <- rval_list()[[input$select_anncontrast_volcano]][["adj.P.Val"]][rval_list()[[input$select_anncontrast_volcano]][["cpg"]] %in% row.names(temp)]
+        temp$fdr <- rval_filteredlist()[[input$select_anncontrast_volcano]][["adj.P.Val"]][rval_filteredlist()[[input$select_anncontrast_volcano]][["cpg"]] %in% row.names(temp)]
         
-        temp$pvalue <- rval_list()[[input$select_anncontrast_volcano]][["P.Value"]][rval_list()[[input$select_anncontrast_volcano]][["cpg"]] %in% row.names(temp)]
+        temp$pvalue <- rval_filteredlist()[[input$select_anncontrast_volcano]][["P.Value"]][rval_filteredlist()[[input$select_anncontrast_volcano]][["cpg"]] %in% row.names(temp)]
         
         temp$chr[temp$chr == "chrX"] <- 23
         temp$chr[temp$chr == "chrY"] <- 24
@@ -1581,28 +1526,6 @@ shinyServer(function(input, output, session) {
         dta
     })
     
-    #volcano_graph <- reactive(plotly::ggplotly(ggplot2::ggplot(volcano_data(), ggplot2::aes_string(x="FC", y="PV", color="clr", fill="clr")) +
-    #                           ggplot2::theme_bw() +
-    #                          ggplot2::geom_point(alpha=1) #+
-    #ggplot2::scale_colour_manual(values=clrvalues) +
-    #ggplot2::ylab("expression(-log[10](P-Value))") +
-    #ggplot2::theme(legend.position="none") +
-    #ggplot2::xlab("expression(log[2](Fold~~Change))") +
-    #ggrepel::geom_text_repel(
-    #  data = subset(volcano_data(), volcano_data()$PV >= tPV & abs(volcano_data()$FC) >= tFC),
-    #  ggplot2::aes_string("FC", "PV", label="names"),
-    #  size = 2,
-    #  box.padding = ggplot2::unit(0.35, "lines"),
-    #  point.padding = ggplot2::unit(0.3, "lines"),
-    #  color="black"
-    #) +
-    #ggplot2::geom_hline(yintercept=tPV,
-    #                    linetype="dotdash", color="gray69", size=0.75) +
-    #ggplot2::geom_vline(xintercept=-tFC,
-    #                    linetype="dotdash", color="gray69", size=0.75) +
-    #ggplot2::geom_vline(xintercept=tFC,
-    #                    linetype="dotdash", color="gray69", size=0.75)))
-    #))
     manhattan_graph <- reactive(qqman::manhattan(table_annotation_manhattan(), chr = "chr", bp = "pos", snp = "gene", p = "pvalue",
                                                  annotatePval = 1, suggestiveline = T, genomewideline = T, annotateTop = T))
     volcano_graph <- reactive(MultiDataSet::volcano_plot(pval = table_annotation_volcano()$pvalue, fc = table_annotation_volcano()$dif_beta,
@@ -1611,56 +1534,11 @@ shinyServer(function(input, output, session) {
     
     output$manhattan_plot <- renderPlot(manhattan_graph())
     output$volcano_plot <- renderPlot(volcano_graph())
-    #output$volcano_plot1 <- plotly::renderPlotly(volcano_graph1())
     
     
+
     
-    
-    
-    
-    ########## VOLCANO PLOT ##########
-    
-    
-    
-    # Disable or enable buttons depending on software state
-    observeEvent(
-        rval_analysis_finished(),
-        if (rval_analysis_finished()) {
-            shinyjs::enable("download_export_robjects")
-            shinyjs::enable("download_export_filteredbeds")
-            shinyjs::enable("download_export_markdown")
-            shinyjs::enable("download_export_script")
-            shinyjs::enable("button_dmrs_calculate")
-            
-            updatePickerInput(
-                session,
-                "select_dmrs_contrasts",
-                selected = rval_contrasts(),
-                choices = rval_contrasts()
-            )
-            updatePickerInput(
-                session,
-                "select_dmrs_platform",
-                selected = if (nrow(rval_finddifcpgs()[[1]]) > 500000) {
-                    "EPIC"
-                } else {
-                    "450k"
-                },
-                choices = c("450k", "EPIC")
-            )
-        }
-        
-        else {
-            shinyjs::disable("download_export_robjects")
-            shinyjs::disable("download_export_filteredbeds")
-            shinyjs::disable("download_export_markdown")
-            shinyjs::disable("download_export_script")
-            shinyjs::disable("download_export_heatmaps")
-            shinyjs::disable("button_dmrs_calculate")
-        }
-    )
-    
-    # DMRs
+    ###### DMRs #####
     
     rval_mcsea <- eventReactive(input$button_dmrs_calculate, {
         validate(
@@ -2022,7 +1900,43 @@ shinyServer(function(input, output, session) {
     
     
     
-    
+    # Disable or enable buttons depending on software state
+    observeEvent(
+        rval_analysis_finished(),
+        if (rval_analysis_finished()) {
+            shinyjs::enable("download_export_robjects")
+            shinyjs::enable("download_export_filteredbeds")
+            shinyjs::enable("download_export_markdown")
+            shinyjs::enable("download_export_script")
+            shinyjs::enable("button_dmrs_calculate")
+            
+            updatePickerInput(
+                session,
+                "select_dmrs_contrasts",
+                selected = rval_contrasts(),
+                choices = rval_contrasts()
+            )
+            updatePickerInput(
+                session,
+                "select_dmrs_platform",
+                selected = if (nrow(rval_finddifcpgs()[[1]]) > 500000) {
+                    "EPIC"
+                } else {
+                    "450k"
+                },
+                choices = c("450k", "EPIC")
+            )
+        }
+        
+        else {
+            shinyjs::disable("download_export_robjects")
+            shinyjs::disable("download_export_filteredbeds")
+            shinyjs::disable("download_export_markdown")
+            shinyjs::disable("download_export_script")
+            shinyjs::disable("download_export_heatmaps")
+            shinyjs::disable("button_dmrs_calculate")
+        }
+    )
     
     
     
@@ -2122,6 +2036,91 @@ shinyServer(function(input, output, session) {
     
     
     
+    ##### FUNCTIONAL ENRICHMENT #####
+    
+    cluster_profiler <- eventReactive(table_annotation(), {
+        testgenes <- unique(as.character(table_annotation()$gene))
+        print("testgenes")
+        testgenes <- testgenes[!testgenes == ""]
+        print(testgenes)
+        eg <- clusterProfiler::bitr(testgenes, fromType = "SYMBOL", toType = "ENTREZID", OrgDb = "org.Hs.eg.db")
+        print("eg")
+        print(eg)
+        eg
+    })
+    
+    kegg <- eventReactive(cluster_profiler(), {
+        kegg <- clusterProfiler::enrichKEGG(gene = cluster_profiler()$ENTREZID, organism = 'hsa', pvalueCutoff = 0.05)
+        kegg
+    })
+    reactome <- eventReactive(cluster_profiler(), {
+        reactome <- ReactomePA::enrichPathway(cluster_profiler()$ENTREZID)
+        reactome
+    })
+    go_mf <- eventReactive(cluster_profiler(), {
+        mf <- clusterProfiler::enrichGO(gene = cluster_profiler()$ENTREZID, OrgDb = org.Hs.eg.db, ont = "MF", pAdjustMethod = "BH", pvalueCutoff = 0.01, qvalueCutoff = 0.05, readable = TRUE)
+        mf
+    })
+    go_bp <- eventReactive(cluster_profiler(), {
+        bp <- clusterProfiler::enrichGO(gene = cluster_profiler()$ENTREZID, OrgDb = org.Hs.eg.db, ont = "BP", pAdjustMethod = "BH", pvalueCutoff = 0.01, qvalueCutoff = 0.05, readable = TRUE)
+        bp
+    })
+    go_cc <- eventReactive(cluster_profiler(), {
+        cc <- clusterProfiler::enrichGO(gene = cluster_profiler()$ENTREZID, OrgDb = org.Hs.eg.db, ont = "CC", pAdjustMethod = "BH", pvalueCutoff = 0.01, qvalueCutoff = 0.05, readable = TRUE)
+        cc
+    })
+    gmt_kegg <- eventReactive(cluster_profiler(), {
+        print("GMT")
+        gmtfile <- "gsea/c2.cp.kegg.v7.1.entrez.gmt"
+        print("file")
+        print(gmtfile)
+        c5 <- suppressWarnings(qusage::read.gmt(gmtfile))
+        print("file")
+        print(head(c5))
+        egmtkegg <- clusterProfiler::enricher(cluster_profiler()$ENTREZID, TERM2GENE=c5)
+        print("file")
+        print(egmtkegg)
+        #write.table(as.data.frame(egmtkegg),"msigdb_kegg.csv",col.names=T,row.names=F,sep="\t",quote=F)
+    })
+    gmt_go_mf <- eventReactive(cluster_profiler(), {
+        gmtfile <- "gsea/c5.mf.v7.1.entrez.gmt"
+        c5 <- qusage::read.gmt(gmtfile)
+        egmtmf <- clusterProfiler::enricher(cluster_profiler()$ENTREZID, TERM2GENE=c5)
+        egmtmf
+    })
+    gmt_go_bp <- eventReactive(cluster_profiler(), {
+        gmtfile <- "gsea/c5.bp.v7.1.entrez.gmt"
+        c5 <- qusage::read.gmt(gmtfile)
+        egmtbp <- clusterProfiler::enricher(cluster_profiler()$ENTREZID, TERM2GENE=c5)
+        egmtbp
+    })
+    gmt_go_cc <- eventReactive(cluster_profiler(), {
+        gmtfile <- "gsea/c5.cc.v7.1.entrez.gmt"
+        c5 <- qusage::read.gmt(gmtfile)
+        egmtcc <- clusterProfiler::enricher(cluster_profiler()$ENTREZID, TERM2GENE=c5)
+        egmtcc
+    })
+    
+    output$plot_kegg <- renderPlot(enrichplot::dotplot(kegg(), font.size = 12, title = "KEGG"))
+    output$plot_go_mf <- renderPlot(enrichplot::dotplot(go_mf(), font.size = 12, title = "GO - Molecular Function"))
+    output$plot_go_bp <- renderPlot(enrichplot::dotplot(go_bp(), font.size = 12, title = "GO - Biological Process"))
+    output$plot_go_cc <- renderPlot(enrichplot::dotplot(go_cc(), font.size = 12, title = "GO - Cellular Component"))
+    output$plot_reactome <- renderPlot(enrichplot::dotplot(reactome(), font.size = 12, title = "REACTOME"))
+    output$plot_gmt_kegg <- renderPlot(enrichplot::dotplot(gmt_kegg(), font.size = 12, title = "MSigDB KEGG"))
+    output$plot_gmt_go_mf <- renderPlot(enrichplot::dotplot(gmt_go_mf(), font.size = 12, title = "MSigDB GO - Molecular Function"))
+    output$plot_gmt_go_bp <- renderPlot(enrichplot::dotplot(gmt_go_bp(), font.size = 12, title = "MSigDB GO - Biological Process"))
+    output$plot_gmt_go_cc <- renderPlot(enrichplot::dotplot(gmt_go_cc(), font.size = 12, title = "MSigDB GO - Cellular Component"))
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     
     ##### DOWNLOADS #####
@@ -2134,10 +2133,15 @@ shinyServer(function(input, output, session) {
             #print(tempReport)
             #file.copy("report.Rmd", getwd(), overwrite = TRUE)
             src <- normalizePath('report_html.Rmd')
+            print(src)
             owd <- setwd(tempdir())
+            print(owd)
             on.exit(setwd(owd))
+            print("on.exit")
             file.copy(src, 'report_html.Rmd', overwrite = TRUE)
+            print("file.copy")
             shinyjs::disable("download_html")
+            print("start")
             withProgress(
                 message = "Generating Report...",
                 value = 1,
@@ -2155,6 +2159,10 @@ shinyServer(function(input, output, session) {
                         dropsex = input$select_minfi_chromosomes,
                         maf = input$slider_minfi_maf,
                         probes = rval_gsetprobes(),
+                        
+                        
+                        
+                        
                         #limma_voi = input$select_limma_voi,
                         #limma_covar = input$checkbox_limma_covariables,
                         #limma_inter = input$checkbox_limma_interactions,
@@ -2175,9 +2183,13 @@ shinyServer(function(input, output, session) {
                         #distance = input$select_limma_clusterdist,
                         #scale = input$select_limma_scale,
                         #removebatch = input$select_limma_removebatch,
-                        plot_green_intensities = green_intensities_graph(),
-                        plot_red_intensities = red_intensities_graph(),
-                        plot_failed_probes = failure_plot(),
+                        
+                        
+                        
+                        
+                        plot_green_intensities = boxplot_intensities_green(),
+                        plot_red_intensities = boxplot_intensities_red(),
+                        plot_failed_probes = failure_plot()[["graph"]],
                         plot_densityplotraw = rval_plot_densityplotraw(),
                         plot_densityplotraw_green = rval_plot_densityplotraw_green(),
                         plot_densityplotraw_red = rval_plot_densityplotraw_red(),
@@ -2188,28 +2200,49 @@ shinyServer(function(input, output, session) {
                         plot_densityplot_red = rval_plot_densityplot_red(),
                         plot_densityplot_II = rval_plot_densityplot_II(),
                         plot_densityplot_all = rval_plot_densityplot_all(),
+                        
+                        
+                        
+                        
                         #plot_pcaplot = rval_plot_pca()[["graph"]],
+                        
+                        
+                        
                         plot_corrplot = rval_plot_corrplot()[["graph"]],
+                        
+                        
+                        
                         #plot_boxplotraw = rval_plot_boxplotraw(),
                         #plot_boxplot = rval_plot_boxplot(),
                         #plot_qcraw = rval_plot_qcraw(),
                         #plot_bisulfiterawII = rval_plot_bisulfiterawII(),
+                        
+                        
+                        
                         plot_sexprediction = rval_plot_sexprediction(),
                         plot_snpheatmap = rval_plot_snpheatmap(),
+                        
+                        
+                        
                         #plot_plotSA = rval_plot_plotSA(),
                         #table_pcaplot = rval_plot_pca()[["info"]],
+                        
+                        
+                        
                         table_corrplot = rval_plot_corrplot()[["info"]],
                         data_sexprediction = as.data.frame(minfi::pData(rval_gset()))[["predictedSex"]]
+                        
+                        
+                        
                         #table_dmps = make_table(),
                         #filteredlist2heatmap = rval_filteredlist2heatmap()
                     )
                     
-                    
+                    print(params)
                     newenv <- new.env(parent = globalenv())
                     #newenv$create_heatmap <- create_heatmap
                     print(newenv)
-                    print(params)
-                    
+
                     render_file <- rmarkdown::render(
                         #tempReport,
                         input = "report_html.Rmd",
@@ -2222,6 +2255,7 @@ shinyServer(function(input, output, session) {
                     shinyjs::enable("download_html")
                 }
             )
+            shinyjs::enable("download_html")
         }
     )
    
@@ -2323,7 +2357,165 @@ shinyServer(function(input, output, session) {
                 }
             )
         }
-    ) 
+    )
+    
+    
+    
+    #Complete report
+    output$complete_report_html <- downloadHandler(
+        filename = "Report_complete.html",
+        content = function(file) {
+            #tempReport <- file.path(tempdir(), "Report.Rmd")
+            #print(tempReport)
+            #file.copy("report.Rmd", getwd(), overwrite = TRUE)
+            src <- normalizePath('report_complete_html.Rmd')
+            print(src)
+            owd <- setwd(tempdir())
+            print(owd)
+            on.exit(setwd(owd))
+            print("on.exit")
+            file.copy(src, 'report_complete_html.Rmd', overwrite = TRUE)
+            print("file.copy")
+            shinyjs::disable("complete_report_html")
+            print("start")
+            withProgress(
+                message = "Generating Report...",
+                value = 1,
+                max = 3,
+                {
+                    params <- list(
+                        rval_sheet = rval_sheet(),
+                        rval_sheet_target = rval_sheet_target(),
+                        name_var = input$select_input_samplenamevar,
+                        grouping_var = input$select_input_groupingvar,
+                        donor_var = input$select_input_donorvar,
+                        normalization_mode = input$select_minfi_norm,
+                        dropsnps = input$select_minfi_dropsnps,
+                        dropcphs = input$select_minfi_dropcphs,
+                        dropsex = input$select_minfi_chromosomes,
+                        maf = input$slider_minfi_maf,
+                        probes = rval_gsetprobes(),
+                        
+                        plot_green_intensities = boxplot_intensities_green(),
+                        plot_red_intensities = boxplot_intensities_red(),
+                        plot_failed_probes = failure_plot()[["graph"]],
+                        plot_densityplotraw = rval_plot_densityplotraw(),
+                        plot_densityplotraw_green = rval_plot_densityplotraw_green(),
+                        plot_densityplotraw_red = rval_plot_densityplotraw_red(),
+                        plot_densityplotraw_II = rval_plot_densityplotraw_II(),
+                        plot_densityplotraw_all = rval_plot_densityplotraw_all(),
+                        plot_densityplot = rval_plot_densityplot(),
+                        plot_densityplot_green = rval_plot_densityplot_green(),
+                        plot_densityplot_red = rval_plot_densityplot_red(),
+                        plot_densityplot_II = rval_plot_densityplot_II(),
+                        plot_densityplot_all = rval_plot_densityplot_all(),
+                      
+                        #plot_pcaplot = rval_plot_pca()[["graph"]],
+                        
+                        plot_corrplot = rval_plot_corrplot()[["graph"]],
+                        
+                        #plot_boxplotraw = rval_plot_boxplotraw(),
+                        #plot_boxplot = rval_plot_boxplot(),
+                        #plot_qcraw = rval_plot_qcraw(),
+                        #plot_bisulfiterawII = rval_plot_bisulfiterawII(),
+                        
+                        plot_sexprediction = rval_plot_sexprediction(),
+                        plot_snpheatmap = rval_plot_snpheatmap(),
+                        
+                        #plot_plotSA = rval_plot_plotSA(),
+                        #table_pcaplot = rval_plot_pca()[["info"]],
+                        
+                        table_corrplot = rval_plot_corrplot()[["info"]],
+                        data_sexprediction = as.data.frame(minfi::pData(rval_gset()))[["predictedSex"]],
+                        
+                        
+                        
+                        #exploratory analysis
+                        plot_violin_raw = rval_plot_violin_raw(),
+                        plot_violin_normalized = rval_plot_violin_normalized(),
+                        
+                        plot_pca = rval_plot_pca()[["graph"]],
+                        
+                        table_age = age_data(),
+                        
+                        plot_random_heatmap = plot_random_heatmap(),
+                        plot_top_heatmap = plot_top_heatmap(),
+                        
+                        plot_deconvolution = graph_deconvolution(),
+                        
+                        plot_hyper_hypo_chr = graph_hyper_hypo()[["chr"]],
+                        plot_hyper_hypo_relation_to_island = graph_hyper_hypo()[["relation_to_island"]],
+                        plot_hyper_hypo_group = graph_hyper_hypo()[["group"]]
+                    )
+                    
+                    # if DMP analysis has been done, we add specific parameters
+                    if (rval_analysis_finished()) {
+                        params[["limma_voi"]] <- input$select_limma_voi
+                        params[["limma_covar"]] <- input$checkbox_limma_covariables
+                        params[["limma_inter"]] <- input$checkbox_limma_interactions
+                        params[["limma_arrayweights"]] <- input$select_limma_weights
+                        params[["limma_ebayes_trend"]] <- input$select_limma_trend
+                        params[["limma_ebayes_robust"]] <- input$select_limma_robust
+                        params[["rval_design"]] <- rval_fit()$design
+                        params[["rval_contrasts"]] <- rval_contrasts()
+                        params[["rval_voi"]] <- rval_voi()
+                        params[["rval_dendrogram"]] <- rval_dendrogram()
+                        params[["min_deltabeta"]] <- input$slider_limma_deltab
+                        params[["max_fdr"]] <- input$slider_limma_adjpvalue
+                        params[["max_pvalue"]] <- input$slider_limma_pvalue
+                        params[["clusteralg"]] <- input$select_limma_clusteralg
+                        params[["groups2plot"]] <- input$select_limma_groups2plot
+                        params[["contrasts2plot"]] <- input$select_limma_contrasts2plot
+                        params[["Colv"]] <- input$select_limma_colv
+                        params[["distance"]] <- input$select_limma_clusterdist
+                        params[["scale"]] <- input$select_limma_scale
+                        params[["removebatch"]] <- input$select_limma_removebatch
+                        params[["table_dmps"]] <- make_table()
+                        params[["filteredlist2heatmap"]] <- rval_filteredlist2heatmap()
+                    }
+                    
+                    # if DMR analysis has been done, we add specific parameters
+                    if (rval_dmrs_finished()) {
+                        params[["dmrs_contrasts"]] <- input$select_dmrs_contrasts
+                        params[["dmrs_rval_dendrogram"]] <- rval_dendrogram_dmrs()
+                        params[["dmrs_min_deltabeta"]] <- input$slider_dmrs_deltab
+                        params[["dmrs_max_fdr"]] <- input$slider_dmrs_adjpvalue
+                        params[["dmrs_max_pvalue"]] <- input$slider_dmrs_pvalue
+                        params[["dmrs_clusteralg"]] <- input$select_dmrs_clusteralg
+                        params[["dmrs_groups2plot"]] <- input$select_dmrs_groups2plot
+                        params[["dmrs_contrasts2plot"]] <- input$select_dmrs_contrasts2plot
+                        params[["dmrs_regions2plot"]] <- input$select_dmrs_regions2plot
+                        params[["dmrs_Colv"]] <- input$select_dmrs_colv
+                        params[["dmrs_distance"]] <- input$select_dmrs_clusterdist
+                        params[["dmrs_scale"]] <- input$select_dmrs_scale
+                        params[["dmrs_removebatch"]] <- input$select_dmrs_removebatch
+                        params[["table_dmrs"]] <- make_table_dmrscount()
+                        params[["filteredmcsea2heatmap"]] <- rval_filteredmcsea2heatmap()
+                    }
+                    
+                    
+                    
+                    
+                    
+                    print(params)
+                    newenv <- new.env(parent = globalenv())
+                    #newenv$create_heatmap <- create_heatmap
+                    print(newenv)
+
+                    render_file <- rmarkdown::render(
+                        #tempReport,
+                        input = "report_complete_html.Rmd",
+                        output_file = file,
+                        run_pandoc = TRUE,
+                        params = params,
+                        envir = newenv
+                    )
+                    
+                    shinyjs::enable("complete_report_html")
+                }
+            )
+        }
+    )
     
     
     
