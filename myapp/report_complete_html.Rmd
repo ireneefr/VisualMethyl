@@ -549,35 +549,35 @@ DT::datatable(params$table_sigdmrs,
 cat("\n## Functional enrichment")
 cat("\n### KEGG")
 ```
-```{r plot_kegg, echo = FALSE, warning = FALSE, message = FALSE, eval = !is.null(params$kegg), fig.width=15}
+```{r plot_kegg, echo = FALSE, warning = FALSE, message = FALSE, eval = !is.null(params$kegg), fig.width=15, fig.height=10}
 params$kegg
 ```
 
 ```{r mf, echo = FALSE, eval = !is.null(params$go_mf), results='asis'}
 cat("\n### GO - Molecular Function")
 ```
-```{r plot_mf, echo=FALSE, warning=FALSE, message=FALSE, eval=!is.null(params$go_mf), fig.width=15}
+```{r plot_mf, echo=FALSE, warning=FALSE, message=FALSE, eval=!is.null(params$go_mf), fig.width=15, fig.height=10}
 params$go_mf
 ```
 
 ```{r bp, echo=FALSE, eval=!is.null(params$go_bp), results='asis'}
 cat("\n### GO - Biological Process")
 ```
-```{r plot_bp, echo=FALSE, warning=FALSE, message=FALSE, eval=!is.null(params$go_bp), fig.width=20}
+```{r plot_bp, echo=FALSE, warning=FALSE, message=FALSE, eval=!is.null(params$go_bp), fig.width=15, fig.height=10}
 params$go_bp
 ```
 
 ```{r cc, echo=FALSE, eval=!is.null(params$go_cc), results='asis'}
 cat("\n### GO - Cellular Component")
 ```
-```{r plot_cc, echo=FALSE, warning=FALSE, message=FALSE, eval=!is.null(params$go_cc), fig.width=20}
+```{r plot_cc, echo=FALSE, warning=FALSE, message=FALSE, eval=!is.null(params$go_cc), fig.width=15, fig.height=10}
 params$go_cc
 ```
 
 ```{r reactome, echo=FALSE, eval=!is.null(params$reactome), results='asis'}
 cat("\n### Reactome")
 ```
-```{r plot_reactome, echo=FALSE, warning=FALSE, message=FALSE, eval=!is.null(params$reactome), fig.width=10}
+```{r plot_reactome, echo=FALSE, warning=FALSE, message=FALSE, eval=!is.null(params$reactome), fig.width=15, fig.height=10}
 params$reactome
 ```
 

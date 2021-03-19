@@ -1317,9 +1317,9 @@ shinyServer(function(input, output, session) {
         }
     })
     
-    rval_cpgcount_heatmap <- eventReactive(input$button_limma_heatmapcalc, nrow(rval_filteredlist2heatmap()))
+    rval_cpgcount_heatmap <- eventReactive(list(input$button_limma_calculatedifs, input$button_limma_heatmapcalc), nrow(rval_filteredlist2heatmap()))
     
-    rval_dendrogram <- eventReactive(input$button_limma_heatmapcalc, {
+    rval_dendrogram <- eventReactive(list(input$button_limma_calculatedifs, input$button_limma_heatmapcalc), {
         if (input$select_limma_rowsidecolors) {
             print("if dendogram")
             # check if dendrogram cutting works (k should be minor than heatmap rows)
@@ -1360,7 +1360,7 @@ shinyServer(function(input, output, session) {
         dendrogram # returning the dendrogram classification
     })
     
-    plot_heatmap <- eventReactive(input$button_limma_heatmapcalc, {
+    plot_heatmap <- eventReactive(list(input$button_limma_calculatedifs, input$button_limma_heatmapcalc), ignoreNULL = FALSE, {
         validate(
             need(
                !is.null(rval_filteredlist2heatmap()),
@@ -1389,7 +1389,7 @@ shinyServer(function(input, output, session) {
         )
     })
     
-    make_table <- eventReactive(input$button_limma_tablecalc, {
+    make_table <- eventReactive(list(input$button_limma_calculatedifs, input$button_limma_tablecalc), {
         default_df <- data.frame(
             contrast = rval_contrasts(),
             Hypermethylated = 0,
@@ -1465,7 +1465,7 @@ shinyServer(function(input, output, session) {
     
     output$table_limma_difcpgs <- renderTable(make_table(), digits = 0)
     
-    table_annotation <- eventReactive(list(input$button_limma_heatmapcalc, input$select_limma_anncontrast), {
+    table_annotation <- eventReactive(list(input$button_limma_calculatedifs, input$button_limma_heatmapcalc, input$select_limma_anncontrast), {
         req(rval_filteredlist())
         print("TABLE ANNOTATION")
         dif_target <- paste("dif",
