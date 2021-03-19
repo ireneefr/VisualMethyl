@@ -50,6 +50,11 @@ params:
   rval_voi: NA
   rval_dendrogram: NULL
   
+  table_annotation_manhattan: NULL
+  plot_volcano: NULL
+  table_annotation: NULL
+  
+  
   #heatmap 
   min_deltabeta: NA
   max_fdr: NA
@@ -78,6 +83,8 @@ params:
   dmrs_removebatch: NA
   table_dmrs: NA
   filteredmcsea2heatmap: NULL
+  table_sigdmrs: NULL
+
   
   #plots
 
@@ -111,6 +118,16 @@ params:
   plot_heatmap_html: NA
   table_dmps: NA
   filteredlist2heatmap: NULL
+  
+  
+  
+  #functional enrichment
+  kegg: NULL
+  go_mf: NULL
+  go_bp: NULL
+  go_cc: NULL
+  reactome: NULL
+
 ---
 
 ```{r setup, include=FALSE}
@@ -308,7 +325,7 @@ params$plot_hyper_hypo_group
 
 ***
 
-```{r linear_model, echo = FALSE, eval = !is.null(params$rval_dendrogram), results = "asis"}
+```{r linear_model, echo = FALSE, eval = !is.null(params$filteredlist2heatmap), results = "asis"}
 cat("\n## DMPs and DMRs")
 
 cat("\n### Linear Model")
@@ -318,7 +335,7 @@ cat("\nThe linear model was generated using ", params$limma_voi, " as variable o
 cat("\nThe resulting design matrix was:")
 ```
 
-```{r design, echo=FALSE, warning=FALSE, message = FALSE, eval = !is.null(params$rval_dendrogram)}
+```{r design, echo=FALSE, warning=FALSE, message = FALSE, eval = !is.null(params$filteredlist2heatmap)}
 if (!is.na(params$rval_design)){
 DT::datatable(
   params$rval_design,
@@ -333,11 +350,11 @@ DT::datatable(
 )}
 ```
 
-```{r array_weights, echo = FALSE, eval = !is.null(params$rval_dendrogram), results = "asis"}
+```{r array_weights, echo = FALSE, eval = !is.null(params$filteredlist2heatmap), results = "asis"}
 cat("\nOptionally, ArrayWeights can be activated to weight the value of each sample depending on their adjust to the linear model:")
 ```
 
-```{r limma, echo=!is.null(params$rval_dendrogram), eval=FALSE}
+```{r limma, echo=!is.null(params$filteredlist2heatmap), eval=FALSE}
  
       if (weights_option){
         try({weights = limma::arrayWeights(MValues, design = design})
@@ -347,48 +364,48 @@ cat("\nOptionally, ArrayWeights can be activated to weight the value of each sam
       fit = limma::lmFit(MValues, design, weights = weights)
 ```
 
-```{r array_weights_option, echo = FALSE, eval = !is.null(params$rval_dendrogram), results = "asis"}
+```{r array_weights_option, echo = FALSE, eval = !is.null(params$filteredlist2heatmap), results = "asis"}
 cat("\nWhere `weights` is the option specified in the form. In this case, weights is ", params$limma_arrayweights)
 ```
 
-```{r contrasts, echo = FALSE, eval = !is.null(params$rval_dendrogram), results = "asis"}
+```{r contrasts, echo = FALSE, eval = !is.null(params$filteredlist2heatmap), results = "asis"}
 cat("\nWith the sample groups selected, the possible contrasts were:\n")
 cat(params$rval_contrasts, sep = "\n")
 ```
 
-```{r contrasts_statistics, echo = FALSE, eval = !is.null(params$rval_dendrogram),results='asis'}
+```{r contrasts_statistics, echo = FALSE, eval = !is.null(params$filteredlist2heatmap),results='asis'}
 cat("\nUsing the calculated model, the t-statistics and p.values are obtained automatically for each contrast:")
 ```
 
-```{r ebayes, eval=FALSE, echo=!is.null(params$rval_dendrogram)}
+```{r ebayes, eval=FALSE, echo=!is.null(params$filteredlist2heatmap)}
   mcontrast = makeContrasts(contrasts=contrast, levels = design)
   fitting = contrasts.fit(fit, mcontrast)
   fitting = eBayes(fitting, trend=trend, robust=robust)
   toptable = topTable(fitting, coef= 1,  adjust.method = "fdr", number =  Inf)
 ```
 
-```{r ebayes_options, echo = FALSE, eval = !is.null(params$rval_dendrogram), results = "asis"}
+```{r ebayes_options, echo = FALSE, eval = !is.null(params$filteredlist2heatmap), results = "asis"}
 cat("\nWhere `trend` and `robust` are the options specified in the form. In this case, trend is ", params$limma_ebayes_trend, " and robust is ", params$limma_ebayes_robust)
 ```
 
 <br>
 
-```{r dmp_options, echo = FALSE, eval = !is.null(params$rval_dendrogram), results = "asis"}
+```{r dmp_options, echo = FALSE, eval = !is.null(params$filteredlist2heatmap), results = "asis"}
 cat("\n### DMPs")
 cat("\n#### Options (DMPs)")
-cat("\nFor each contrast (", paste(params$rval_contrasts, collapse=", "), " ), the statistics for each CpG were generated and, after, filtered with these criteria:")
-cat("\n* Max. FDR: ", params$max_fdr,
+cat("\nFor each contrast (", paste(params$rval_contrasts, collapse=", "), " ), the statistics for each CpG were generated and, after, filtered with these criteria:\n")
+cat("* Max. FDR: ", params$max_fdr,
 "\n* Min. Δβ: ", params$min_deltabeta,
-"\n* Max. pvalue: ", params$max_pvalue)
+"\n* Max. pvalue: ", params$max_pvalue, "\n")
 
 cat("\n#### Table with all contrasts (DMPs)")
 ```
 
 ```{r filtered_table_all,echo=FALSE,message=FALSE, warning=FALSE}
-if(!is.null(params$rval_dendrogram)) knitr::kable(params$table_dmps)
+if(!is.null(params$filteredlist2heatmap)) knitr::kable(params$table_dmps)
 ```
 
-```{r dmp_custom_heatmap, echo = FALSE, eval = !is.null(params$rval_dendrogram), results = "asis"}
+```{r dmp_custom_heatmap, echo = FALSE, eval = !is.null(params$filteredlist2heatmap), results = "asis"}
 cat("\n#### Custom heatmap (DMPs)")
 cat("\n* Column dendogram: ", params$Colv,
 "\n* Scale: ", params$scale,
@@ -400,8 +417,8 @@ cat("\nThe data used for the representation are ", if(params$removebatch == FALS
 cat("\nIn the custom heatmap the selected contrasts to plot were: ", paste(params$contrasts2plot, collapse=", "), " and the groups were: ", paste(params$groups2plot, collapse=", "))
 ```
 
-```{r heatmap_dmps,echo=FALSE,message=FALSE, warning=FALSE, fig.width = 9, fig.height = 12, eval = !is.null(params$rval_dendrogram)}
-    if(!is.null(params$rval_dendrogram)){
+```{r heatmap_dmps,echo=FALSE,message=FALSE, warning=FALSE, fig.width = 9, fig.height = 12, eval = !is.null(params$filteredlist2heatmap)}
+    if(!is.null(params$filteredlist2heatmap)){
       create_heatmap(params$filteredlist2heatmap, 
                      factorgroups = factor(params$rval_voi[params$rval_voi %in% params$groups2plot], levels = params$groups2plot), 
                      groups2plot = params$rval_voi %in% params$groups2plot, 
@@ -422,6 +439,41 @@ cat("\nIn the custom heatmap the selected contrasts to plot were: ", paste(param
 cat("\nDMPs in heatmap: ", nrow(params$filteredlist2heatmap))
 ```
 
+```{r manhattan, echo=FALSE, eval=!is.null(params$filteredlist2heatmap), results='asis'}
+cat("\n#### Manhattan plot")
+```
+```{r plot_manhattan, echo=FALSE, warning=FALSE, message=FALSE, eval=!is.null(params$filteredlist2heatmap)}
+qqman::manhattan(params$table_annotation_manhattan, chr = "chr", bp = "pos", snp = "gene", p = "pvalue",
+                                                 annotatePval = 1, suggestiveline = T, genomewideline = T, annotateTop = T)
+```
+
+```{r volcano, echo=FALSE, eval=!is.null(params$filteredlist2heatmap), results='asis'}
+cat("\n#### Volcano plot")
+```
+```{r plot_volcano, echo=FALSE, message=FALSE, warning=FALSE, eval=!is.null(params$filteredlist2heatmap)}
+params$plot_volcano
+```
+
+```{r annotation_dmps, echo=FALSE, eval=!is.null(params$filteredlist2heatmap), results='asis'}
+cat("\n#### Annotation (DMPs)")
+```
+```{r table_annotation_dmps, echo=FALSE, warning=FALSE, message=FALSE, eval=!is.null(params$filteredlist2heatmap)}
+DT::datatable(params$table_annotation,
+        extensions = "Buttons",
+        rownames = FALSE,
+        selection = "single",
+        style = "bootstrap",
+        caption = "DMPs Annotation:",
+        options = list(
+            dom = "Blfrtip",
+            lengthMenu = list(c(10, 25, 50, 100, 25000), c(10, 25, 50, 100, 25000)),
+            pageLength = 10,
+            autoWidth = TRUE,
+            scrollX = TRUE,
+            buttons = c("csv", "excel", "print")
+        ))
+```
+
 <br>
 
 ```{r filt_res, echo=FALSE, eval=!is.null(params$dmrs_contrasts), results="asis"}
@@ -430,7 +482,7 @@ cat("\n### DMRs")
 cat("\n#### Options (DMRs)")
 cat("\nFor each contrast (", paste(params$rval_contrasts, collapse=", "))
 cat(" ) the statistics for each CpG were generated and, after, filtered with these criteria: \n
-* Max. FDR: ", params$dmrs_max_fdr, "\n* Min. Δβ: ", params$dmrs_min_deltabeta, "\n* Max. pvalue: ", params$dmrs_max_pvalue)
+* Max. FDR: ", params$dmrs_max_fdr, "\n* Min. Δβ: ", params$dmrs_min_deltabeta, "\n* Max. pvalue: ", params$dmrs_max_pvalue, "\n")
 cat("\n#### Table with all contrasts (DMRs)")
 ```
 
@@ -468,6 +520,65 @@ if(!is.null(params$filteredmcsea2heatmap) & !is.null(params$dmrs_contrasts)){
 
 ```{r num_heatmap_dmrs, echo = FALSE, eval = !is.null(params$filteredmcsea2heatmap), results = "asis"}
 cat("\nDMRs in heatmap: ", nrow(params$filteredmcsea2heatmap))
+```
+
+```{r annotation_dmrs, echo=FALSE, eval=!is.null(params$filteredmcsea2heatmap), results='asis'}
+cat("\n#### Annotation (DMRs)")
+```
+```{r table_annotation_dmrs, echo=FALSE, warning=FALSE, message=FALSE, eval=!is.null(params$filteredmcsea2heatmap)}
+DT::datatable(params$table_sigdmrs,
+        rownames = TRUE,
+        extensions = "Buttons",
+        selection = "single",
+        style = "bootstrap",
+        caption = "Select DMR to plot:",
+        options = list(
+            pageLength = 10,
+            dom = "Blfrtip",
+            lengthMenu = list(c(10, 25, 50, 100, 25000), c(10, 25, 50, 100, 25000)),
+            autoWidth = TRUE,
+            scrollX = TRUE,
+            buttons = c("csv", "excel", "print")
+        )
+    )
+```
+
+***
+
+```{r functional_enrichment, echo = FALSE, eval = !is.null(params$kegg), results = "asis"}
+cat("\n## Functional enrichment")
+cat("\n### KEGG")
+```
+```{r plot_kegg, echo = FALSE, warning = FALSE, message = FALSE, eval = !is.null(params$kegg), fig.width=15}
+params$kegg
+```
+
+```{r mf, echo = FALSE, eval = !is.null(params$go_mf), results='asis'}
+cat("\n### GO - Molecular Function")
+```
+```{r plot_mf, echo=FALSE, warning=FALSE, message=FALSE, eval=!is.null(params$go_mf), fig.width=15}
+params$go_mf
+```
+
+```{r bp, echo=FALSE, eval=!is.null(params$go_bp), results='asis'}
+cat("\n### GO - Biological Process")
+```
+```{r plot_bp, echo=FALSE, warning=FALSE, message=FALSE, eval=!is.null(params$go_bp), fig.width=20}
+params$go_bp
+```
+
+```{r cc, echo=FALSE, eval=!is.null(params$go_cc), results='asis'}
+cat("\n### GO - Cellular Component")
+```
+```{r plot_cc, echo=FALSE, warning=FALSE, message=FALSE, eval=!is.null(params$go_cc), fig.width=20}
+params$go_cc
+```
+
+```{r reactome, echo=FALSE, eval=!is.null(params$reactome), results='asis'}
+cat("\n### Reactome")
+```
+```{r plot_reactome, echo=FALSE, warning=FALSE, message=FALSE, eval=!is.null(params$reactome), fig.width=10}
+params$reactome
 ```
 
 ***

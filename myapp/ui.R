@@ -127,20 +127,28 @@ shinyUI(
         ),
         tabItem(
           tabName = "analysis",
-          verticalLayout(
-            splitLayout(
-              style = "margin-left: 14px; margin-right: 14px;", cellArgs = list(style = "padding: 4px;"),
-              actionButton("b_qc", width = "100%", label = "QC", class = "btn-info", style = "padding:3.55vw;", disable = TRUE),
-              actionButton("b_exploratory_analysis", width = "100%", label = HTML("Exploratory <br/> Analysis"), class = "btn-info", style = "padding:1.75vw;"),
-              actionButton("b_dmp_dmr", width = "100%", label = "DMPs/DMRs", class = "btn-info", style = "padding:3.55vw;"),
-              actionButton("b_functional_enrichment", width = "90%", label = HTML("Functional <br/> Enrichment"), class = "btn-info", style = "padding:1.75vw;")
+          fluidPage(
+            br(),
+            br(),
+            column(3, align = "center",
+                   actionButton("b_qc", label = "QC", class = "btn-info"),
+                   br(),
+                   actionButton("b_survival", label = "Survival", class = "btn-info")
             ),
-            splitLayout(
-              style = "margin-left: 14px; margin-right: 14px", cellArgs = list(style = "padding: 4px;"),
-              actionButton("b_survival", width = "100%", label = "Survival", class = "btn-info", style = "padding:3.55vw;"),
-              actionButton("b_predicted_models", width = "100%", label = HTML("Predicted <br/> Models"), class = "btn-info", style = "padding:1.75vw;"),
-              actionButton("b_external_sources", width = "100%", label = HTML("External <br/> Sources"), class = "btn-info", style = "padding:1.75vw;"),
-              actionButton("b_genome_browser", width = "90%", label = HTML("Genome <br/> Browser"), class = "btn-info", style = "padding:1.75vw;")
+            column(3, align = "center",
+                   actionButton("b_exploratory_analysis", label = HTML("Exploratory <br/> Analysis"), class = "btn-info"),
+                   br(),
+                   actionButton("b_predicted_models", label = HTML("Predicted <br/> Models"), class = "btn-info")
+            ),
+            column(3, align = "center",
+                   actionButton("b_dmp_dmr", label = HTML("DMPs <br/> DMRs"), class = "btn-info"),
+                   br(),
+                   actionButton("b_external_sources", label = HTML("External <br/> Sources"), class = "btn-info")
+            ),
+            column(3, align = "center",
+                   actionButton("b_functional_enrichment", label = HTML("Functional <br/> Enrichment"), class = "btn-info"),
+                   br(),
+                   actionButton("b_genome_browser", label = HTML("Genome <br/> Browser"), class = "btn-info")
             )
           )
         ),
@@ -875,7 +883,8 @@ shinyUI(
               selected = c()
             ),
             br(),
-            downloadButton("complete_report_html", label = "Download Report")),
+            br(),
+            downloadButton("complete_report_html", class = "btn-primary", label = "Download Report")),
             column(2,
             checkboxInput(
               "check_exploratory_analysis",
@@ -897,12 +906,8 @@ shinyUI(
             checkboxGroupInput(
               "check_group_dmps",
               label = NULL,
-              choices = list("Table",
-                             "Heatmap",
-                             "Annotation",
-                             "Manhattan plot",
-                             "Volcano plot"),
-              selected = NULL
+              choices = c(),
+              selected = c()
             )),
             column(2,
             checkboxInput(
@@ -913,10 +918,8 @@ shinyUI(
             checkboxGroupInput(
               "check_group_dmrs",
               label = NULL,
-              choices = list("Table",
-                             "Heatmap",
-                             "Annotation"),
-              selected = NULL
+              choices = c(),
+              selected = c()
             )),
             column(2,
             checkboxInput(
@@ -927,10 +930,8 @@ shinyUI(
             checkboxGroupInput(
               "check_group_functional_enrichment",
               label = NULL,
-              choices = list("Kegg",
-                             "Gene Ontology (GO)",
-                             "Reactome"),
-              selected = NULL
+              choices = c(),
+              selected = c()
             ))
           )
         ),

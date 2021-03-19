@@ -22,6 +22,18 @@ shinyServer(function(input, output, session) {
     options(shiny.maxRequestSize = 8000 * 1024^2) # 5MB getShinyOption("shiny.maxRequestSize") | 30*1024^2 = 30MB
     n_cores <- parallel::detectCores() / 2
     
+    
+    output$arrow1 <- renderImage(list(src = "img/arrow3.png", contentType = "image/png"), deleteFile = FALSE)
+    output$arrow2 <- renderImage(list(src = "img/arrow3.png", contentType = "image/png"), deleteFile = FALSE)
+    output$arrow3 <- renderImage(list(src = "img/arrow4.png", contentType = "image/png"), deleteFile = FALSE)
+    output$arrow4 <- renderImage(list(src = "img/arrow4.png", contentType = "image/png"), deleteFile = FALSE)
+    
+    output$arrow1_ <- renderImage(list(src = "img/arrow3.png", contentType = "image/png"), deleteFile = FALSE)
+    output$arrow3_ <- renderImage(list(src = "img/arrow4.png", contentType = "image/png"), deleteFile = FALSE)
+    output$arrow4_ <- renderImage(list(src = "img/arrow4.png", contentType = "image/png"), deleteFile = FALSE)
+    
+    
+    
     observe({
         shinyjs::disable("check_qc")
         shinyjs::disable("check_group_qc")
@@ -29,13 +41,28 @@ shinyServer(function(input, output, session) {
         shinyjs::disable("check_group_exploratory_analysis")
         shinyjs::disable("check_dmps")
         shinyjs::disable("check_group_dmps")
+        shinyjs::disable("check_dmrs")
+        shinyjs::disable("check_group_dmrs")
+        shinyjs::disable("check_functional_enrichment")
+        shinyjs::disable("check_group_functional_enrichment")
+        
         })
-    eventReactive(rval_gset(), {
+    observeEvent(rval_gset(), {
         shinyjs::enable("check_qc")
         shinyjs::enable("check_exploratory_analysis")
         updateCheckboxInput(session, "check_qc", value = TRUE)
         updateCheckboxInput(session, "check_exploratory_analysis", value = TRUE)
         })
+    observeEvent(rval_filteredlist(), {
+        shinyjs::enable("check_dmps")
+        shinyjs::enable("check_functional_enrichment")
+        updateCheckboxInput(session, "check_dmps", value = TRUE)
+        updateCheckboxInput(session, "check_functional_enrichment", value = TRUE)
+    })
+    observeEvent(rval_mcsea(), {
+        shinyjs::enable("check_dmrs")
+        updateCheckboxInput(session, "check_dmrs", value = TRUE)
+    })
     observe({
         req(rval_gset())
         if(input$check_qc){
@@ -76,6 +103,48 @@ shinyServer(function(input, output, session) {
             shinyjs::disable("check_group_exploratory_analysis")
         }
     })
+    observe({
+        req(rval_filteredlist())
+        if(input$check_dmps){
+            updateCheckboxGroupInput(session, "check_group_dmps", choices = list("Table" = 1,
+                                                                           "Heatmap" = 2,
+                                                                           "Annotation" = 3,
+                                                                           "Manhattan plot" = 4,
+                                                                           "Volcano plot" = 5), selected = c(1:5))
+            shinyjs::enable("check_group_dmps")
+        } else{
+            updateCheckboxGroupInput(session, "check_group_dmps", choices = list("Table" = 1,
+                                                                                 "Heatmap" = 2,
+                                                                                 "Annotation" = 3,
+                                                                                 "Manhattan plot" = 4,
+                                                                                 "Volcano plot" = 5), selected = c())
+            
+        }
+        if(input$check_functional_enrichment){
+            updateCheckboxGroupInput(session, "check_group_functional_enrichment", choices = list("Kegg" = 1,
+                                                                                                  "Gene Ontology (GO)" = 2,
+                                                                                                  "Reactome" = 3), selected = c(1:3))
+            shinyjs::enable("check_group_functional_enrichment")
+        } else{
+            updateCheckboxGroupInput(session, "check_group_functional_enrichment", choices = list("Kegg" = 1,
+                                                                                                  "Gene Ontology (GO)" = 2,
+                                                                                                  "Reactome" = 3), selected = c())
+        }
+    })
+    observe({
+        req(rval_mcsea())
+        if(input$check_dmrs){
+            updateCheckboxGroupInput(session, "check_group_dmrs", choices = list("Table" = 1,
+                                                                                 "Heatmap" = 2,
+                                                                                 "Annotation" = 3), selected = c(1:3))
+            shinyjs::enable("check_group_dmrs")
+        } else{
+            updateCheckboxGroupInput(session, "check_group_dmrs", choices = list("Table" = 1,
+                                                                                 "Heatmap" = 2,
+                                                                                 "Annotation" = 3), selected = c())
+        }
+    })
+    
     
     # Reaction of data action buttons
     observeEvent(input$b_qc, {
@@ -310,10 +379,10 @@ shinyServer(function(input, output, session) {
         shinyjs::disable("button_input_next")
         
         #waitress <- Waitress$new(theme = "overlay-percent")$start()
-        #waiter_show( # show the waiter
-        #    html = tagList(spin_fading_circles(), # use a spinner
-        #    "Reading data ...")
-        #    )
+        waiter_show( # show the waiter
+            html = tagList(spin_fading_circles(), # use a spinner
+            "Reading data ...")
+            )
         # We need to check if this step works
         withProgress(
             message = "Reading array data...",
@@ -325,6 +394,7 @@ shinyServer(function(input, output, session) {
                 })
                 
                 if (!exists("RGSet", inherits = FALSE)) {
+                    waiter_hide()
                     showModal(
                         modalDialog(
                             title = "reading error",
@@ -394,6 +464,7 @@ shinyServer(function(input, output, session) {
                 }
                 
                 # analysis restarted
+                waiter_hide()
                 rval_analysis_finished(FALSE)
                 rval_dmrs_finished(FALSE)
                 # we return RGSet
@@ -401,7 +472,7 @@ shinyServer(function(input, output, session) {
             }
         )
         #waitress$close() 
-        #waiter_hide()
+
     })
     
     # We change the page to the next one
@@ -471,7 +542,10 @@ shinyServer(function(input, output, session) {
         ))
         
         shinyjs::disable("button_minfi_select") # disable button to avoid repeat clicking
-        
+        waiter_show( # show the waiter
+            html = tagList(spin_fading_circles(), # use a spinner
+                           "Normalization in progress...")
+        )
         withProgress(
             message = "Normalization in progress...",
             value = 1,
@@ -488,6 +562,7 @@ shinyServer(function(input, output, session) {
                 # check if normalization has worked
                 
                 if (!exists("gset", inherits = FALSE)) {
+                    waiter_hide()
                     showModal(
                         modalDialog(
                             title = "Normalization failure",
@@ -505,7 +580,7 @@ shinyServer(function(input, output, session) {
                         "An unexpected error has occurred during minfi normalization. Please, notify the error to the package maintainer."
                     )
                 )
-                
+                waiter_hide()
                 # enable button
                 shinyjs::enable("button_minfi_select")
                 
@@ -513,6 +588,7 @@ shinyServer(function(input, output, session) {
                 gset
             }
         )
+        
     })
     
     
@@ -885,7 +961,7 @@ shinyServer(function(input, output, session) {
         print("fit2")
         
         shinyjs::disable("button_limma_calculatemodel") # disable button to avoid repeat clicking
-        
+
         withProgress(
             message = "Generating linear model...",
             value = 3,
@@ -913,6 +989,7 @@ shinyServer(function(input, output, session) {
                 }
             }
         )
+        
         
         shinyjs::enable("button_limma_calculatemodel") # enable button again to allow repeting calculation
         
@@ -1172,7 +1249,8 @@ shinyServer(function(input, output, session) {
     })
     
     # Calculation of filtered list
-    rval_filteredlist <- reactive({
+    rval_filteredlist <- eventReactive(rval_finddifcpgs(), {
+
         withProgress(
             message = "Performing contrasts calculations...",
             value = 1,
@@ -1193,6 +1271,7 @@ shinyServer(function(input, output, session) {
                 )
             }
         )
+        
     })
     
     rval_list <- reactive({
@@ -1242,7 +1321,7 @@ shinyServer(function(input, output, session) {
     
     rval_dendrogram <- eventReactive(input$button_limma_heatmapcalc, {
         if (input$select_limma_rowsidecolors) {
-            
+            print("if dendogram")
             # check if dendrogram cutting works (k should be minor than heatmap rows)
             try({
                 dendrogram <- create_dendrogram(
@@ -1257,12 +1336,15 @@ shinyServer(function(input, output, session) {
                     k_number = input$select_limma_knumber
                 )
             })
+            print("final if dendogram")
         } else {
+            print("else dendogram")
             dendrogram <- NULL
         }
         
         
         if (!exists("dendrogram", inherits = FALSE)) {
+            print("if exists")
             dendrogram <- NULL
             showModal(
                 modalDialog(
@@ -1272,8 +1354,9 @@ shinyServer(function(input, output, session) {
                     footer = NULL
                 )
             )
+            print("final if exists")
         }
-        
+        print("dendogram")
         dendrogram # returning the dendrogram classification
     })
     
@@ -1384,7 +1467,7 @@ shinyServer(function(input, output, session) {
     
     table_annotation <- eventReactive(list(input$button_limma_heatmapcalc, input$select_limma_anncontrast), {
         req(rval_filteredlist())
-        
+        print("TABLE ANNOTATION")
         dif_target <- paste("dif",
                             limma::strsplit2(input$select_limma_anncontrast, "-")[1],
                             limma::strsplit2(input$select_limma_anncontrast, "-")[2],
@@ -1404,6 +1487,8 @@ shinyServer(function(input, output, session) {
         gene[is.na(gene)]<-""
         temp$gene <- gene
 
+        print("temp")
+        
         temp
     })
     
@@ -1437,7 +1522,7 @@ shinyServer(function(input, output, session) {
     ########## MANHATTAN & VOLCANO PLOT ##########
     
     table_annotation_manhattan <- eventReactive(input$select_anncontrast_manhattan, {
-        req(rval_filteredlist())
+        req(rval_list())
         
         dif_target <- paste("dif",
                             limma::strsplit2(input$select_anncontrast_manhattan, "-")[1],
@@ -1445,12 +1530,12 @@ shinyServer(function(input, output, session) {
                             sep = "_"
         )
         
-        temp <- rval_annotation()[row.names(rval_annotation()) %in% rval_filteredlist()[[input$select_anncontrast_manhattan]]$cpg, ]
+        temp <- rval_annotation()[row.names(rval_annotation()) %in% rval_list()[[input$select_anncontrast_manhattan]]$cpg, ]
         temp$dif_beta <- rval_globaldifs()[[dif_target]][rval_globaldifs()[["cpg"]] %in% row.names(temp)]
         
-        temp$fdr <- rval_filteredlist()[[input$select_anncontrast_manhattan]][["adj.P.Val"]][rval_filteredlist()[[input$select_anncontrast_manhattan]][["cpg"]] %in% row.names(temp)]
+        temp$fdr <- rval_list()[[input$select_anncontrast_manhattan]][["adj.P.Val"]][rval_list()[[input$select_anncontrast_manhattan]][["cpg"]] %in% row.names(temp)]
         
-        temp$pvalue <- rval_filteredlist()[[input$select_anncontrast_manhattan]][["P.Value"]][rval_filteredlist()[[input$select_anncontrast_manhattan]][["cpg"]] %in% row.names(temp)]
+        temp$pvalue <- rval_list()[[input$select_anncontrast_manhattan]][["P.Value"]][rval_list()[[input$select_anncontrast_manhattan]][["cpg"]] %in% row.names(temp)]
         
         temp$chr[temp$chr == "chrX"] <- 23
         temp$chr[temp$chr == "chrY"] <- 24
@@ -1470,7 +1555,7 @@ shinyServer(function(input, output, session) {
     })
     
     table_annotation_volcano <- eventReactive(input$select_anncontrast_volcano, {
-        req(rval_filteredlist())
+        req(rval_list())
         
         dif_target <- paste("dif",
                             limma::strsplit2(input$select_anncontrast_volcano, "-")[1],
@@ -1478,12 +1563,12 @@ shinyServer(function(input, output, session) {
                             sep = "_"
         )
         
-        temp <- rval_annotation()[row.names(rval_annotation()) %in% rval_filteredlist()[[input$select_anncontrast_volcano]]$cpg, ]
+        temp <- rval_annotation()[row.names(rval_annotation()) %in% rval_list()[[input$select_anncontrast_volcano]]$cpg, ]
         temp$dif_beta <- rval_globaldifs()[[dif_target]][rval_globaldifs()[["cpg"]] %in% row.names(temp)]
         
-        temp$fdr <- rval_filteredlist()[[input$select_anncontrast_volcano]][["adj.P.Val"]][rval_filteredlist()[[input$select_anncontrast_volcano]][["cpg"]] %in% row.names(temp)]
+        temp$fdr <- rval_list()[[input$select_anncontrast_volcano]][["adj.P.Val"]][rval_list()[[input$select_anncontrast_volcano]][["cpg"]] %in% row.names(temp)]
         
-        temp$pvalue <- rval_filteredlist()[[input$select_anncontrast_volcano]][["P.Value"]][rval_filteredlist()[[input$select_anncontrast_volcano]][["cpg"]] %in% row.names(temp)]
+        temp$pvalue <- rval_list()[[input$select_anncontrast_volcano]][["P.Value"]][rval_list()[[input$select_anncontrast_volcano]][["cpg"]] %in% row.names(temp)]
         
         temp$chr[temp$chr == "chrX"] <- 23
         temp$chr[temp$chr == "chrY"] <- 24
@@ -1595,7 +1680,10 @@ shinyServer(function(input, output, session) {
         )
         
         shinyjs::disable("button_dmrs_calculate")
-        
+        waiter_show( # show the waiter
+            html = tagList(spin_fading_circles(), # use a spinner
+                           "Calculating DMRs...")
+        )
         withProgress(
             message = "Calculating DMRs...",
             max = 3,
@@ -1622,6 +1710,7 @@ shinyServer(function(input, output, session) {
                         regionsTypes = input$select_dmrs_regions
                     )
                 })
+                waiter_hide()
             }
         )
         
@@ -1948,7 +2037,7 @@ shinyServer(function(input, output, session) {
     
     
     
-    rval_annotation <- reactive({
+    rval_annotation <- eventReactive(rval_gset(), {
         int_cols <- c(
             "Name",
             "Relation_to_Island",
@@ -1960,24 +2049,24 @@ shinyServer(function(input, output, session) {
         )
         print("int")
         print(int_cols)
-        if (input$select_export_genometype == "hg38" &
-            (!requireNamespace("rtracklayer", quietly = TRUE)) |
-            !requireNamespace("GenomicRanges", quietly = TRUE)) {
-            showModal(
-                modalDialog(
-                    title = "rtracklayer::liftOver not available",
-                    "Rtracklayer is not installed and it is needed to liftOver annotation from hg19 to hg38 genome. Please, install the package and restart the R session.",
-                    easyClose = TRUE,
-                    footer = NULL
-                )
-            )
-            updateSelectInput(session,
-                              "select_export_genometype",
-                              choices = "hg19",
-                              selected = "hg19"
-            )
-        }
-        
+        #if (input$select_export_genometype == "hg38" &
+        #    (!requireNamespace("rtracklayer", quietly = TRUE)) |
+        #    !requireNamespace("GenomicRanges", quietly = TRUE)) {
+        #    showModal(
+        #        modalDialog(
+        #            title = "rtracklayer::liftOver not available",
+        #            "Rtracklayer is not installed and it is needed to liftOver annotation from hg19 to hg38 genome. Please, install the package and restart the R session.",
+        #            easyClose = TRUE,
+        #            footer = NULL
+        #        )
+        #    )
+        #    updateSelectInput(session,
+        #                      "select_export_genometype",
+        #                      choices = "hg19",
+        #                      selected = "hg19"
+        #    )
+        #}
+
         withProgress(
             message = "Generating annotation...",
             max = 3,
@@ -1989,44 +2078,44 @@ shinyServer(function(input, output, session) {
                 print("annotation")
                 print(annotation)
                 
-                if (input$select_export_genometype == "hg19") {
-                    annotation
-                }
-                else {
-                    chain <- rtracklayer::import.chain(system.file("hg19ToHg38.over.chain", package = "shinyepico"))
-                    
-                    ann_granges <- data.frame(
-                        chr = annotation$chr,
-                        start = annotation$pos - 1,
-                        end = annotation$pos,
-                        name = row.names(annotation)
-                    )
-                    ann_granges <- GenomicRanges::makeGRangesFromDataFrame(
-                        ann_granges,
-                        starts.in.df.are.0based = TRUE,
-                        keep.extra.columns = TRUE
-                    )
-                    ann_granges <- unlist(rtracklayer::liftOver(ann_granges, chain = chain))
-                    
-                    hg38 <- data.table::data.table(
-                        Name = GenomicRanges::mcols(ann_granges)[[1]],
-                        chr = as.character(GenomicRanges::seqnames(ann_granges)),
-                        pos = GenomicRanges::start(ann_granges),
-                        genome = "hg38"
-                    )
-                    
-                    annotation <- as.data.table(annotation[, !(colnames(annotation) %in% c("chr", "pos", "genome"))])
-                    
-                    hg38 <- as.data.frame(data.table::merge.data.table(
-                        x = annotation,
-                        y = hg38,
-                        by = "Name",
-                        all.x = TRUE
-                    ))
-                    row.names(hg38) <- hg38$Name
-                    
-                    hg38
-                }
+                #if (input$select_export_genometype == "hg19") {
+                #    annotation
+                #}
+                #else {
+                #    chain <- rtracklayer::import.chain(system.file("hg19ToHg38.over.chain", package = "shinyepico"))
+                #    
+                #    ann_granges <- data.frame(
+                #        chr = annotation$chr,
+                #        start = annotation$pos - 1,
+                #        end = annotation$pos,
+                #        name = row.names(annotation)
+                #    )
+                #    ann_granges <- GenomicRanges::makeGRangesFromDataFrame(
+                #        ann_granges,
+                #        starts.in.df.are.0based = TRUE,
+                #        keep.extra.columns = TRUE
+                #    )
+                #    ann_granges <- unlist(rtracklayer::liftOver(ann_granges, chain = chain))
+                #    
+                #    hg38 <- data.table::data.table(
+                #        Name = GenomicRanges::mcols(ann_granges)[[1]],
+                #        chr = as.character(GenomicRanges::seqnames(ann_granges)),
+                #        pos = GenomicRanges::start(ann_granges),
+                #        genome = "hg38"
+                #    )
+                #    
+                #    annotation <- as.data.table(annotation[, !(colnames(annotation) %in% c("chr", "pos", "genome"))])
+                #    
+                #    hg38 <- as.data.frame(data.table::merge.data.table(
+                #        x = annotation,
+                #        y = hg38,
+                #        by = "Name",
+                #        all.x = TRUE
+                #    ))
+                #    row.names(hg38) <- hg38$Name
+                #    
+                #    hg38
+                #}
             }
         )
     })
@@ -2101,22 +2190,25 @@ shinyServer(function(input, output, session) {
         egmtcc
     })
     
-    output$plot_kegg <- renderPlot(enrichplot::dotplot(kegg(), font.size = 12, title = "KEGG"))
-    output$plot_go_mf <- renderPlot(enrichplot::dotplot(go_mf(), font.size = 12, title = "GO - Molecular Function"))
-    output$plot_go_bp <- renderPlot(enrichplot::dotplot(go_bp(), font.size = 12, title = "GO - Biological Process"))
-    output$plot_go_cc <- renderPlot(enrichplot::dotplot(go_cc(), font.size = 12, title = "GO - Cellular Component"))
-    output$plot_reactome <- renderPlot(enrichplot::dotplot(reactome(), font.size = 12, title = "REACTOME"))
-    output$plot_gmt_kegg <- renderPlot(enrichplot::dotplot(gmt_kegg(), font.size = 12, title = "MSigDB KEGG"))
-    output$plot_gmt_go_mf <- renderPlot(enrichplot::dotplot(gmt_go_mf(), font.size = 12, title = "MSigDB GO - Molecular Function"))
-    output$plot_gmt_go_bp <- renderPlot(enrichplot::dotplot(gmt_go_bp(), font.size = 12, title = "MSigDB GO - Biological Process"))
-    output$plot_gmt_go_cc <- renderPlot(enrichplot::dotplot(gmt_go_cc(), font.size = 12, title = "MSigDB GO - Cellular Component"))
+    dotplot_kegg <- reactive(enrichplot::dotplot(kegg(), font.size = 12, title = "KEGG"))
+    dotplot_go_mf <- reactive(enrichplot::dotplot(go_mf(), font.size = 12, title = "GO - Molecular Function"))
+    dotplot_go_bp <- reactive(enrichplot::dotplot(go_bp(), font.size = 12, title = "GO - Biological Process"))
+    dotplot_go_cc <- reactive(enrichplot::dotplot(go_cc(), font.size = 12, title = "GO - Cellular Component"))
+    dotplot_reactome <- reactive(enrichplot::dotplot(reactome(), font.size = 12, title = "Reactome"))
+    dotplot_gmt_kegg <- reactive(enrichplot::dotplot(gmt_kegg(), font.size = 12, title = "MSigDB KEGG"))
+    dotplot_gmt_go_mf <- reactive(enrichplot::dotplot(gmt_go_mf(), font.size = 12, title = "MSigDB GO - Molecular Function"))
+    dotplot_gmt_go_bp <- reactive(enrichplot::dotplot(gmt_go_bp(), font.size = 12, title = "MSigDB GO - Biological Process"))
+    dotplot_gmt_go_cc <- reactive(enrichplot::dotplot(gmt_go_cc(), font.size = 12, title = "MSigDB GO - Cellular Component"))
     
-    
-    
-    
-    
-    
-    
+    output$plot_kegg <- renderPlot(dotplot_kegg())
+    output$plot_go_mf <- renderPlot(dotplot_go_mf())
+    output$plot_go_bp <- renderPlot(dotplot_go_bp())
+    output$plot_go_cc <- renderPlot(dotplot_go_cc())
+    output$plot_reactome <- renderPlot(dotplot_reactome())
+    output$plot_gmt_kegg <- renderPlot(dotplot_gmt_kegg())
+    output$plot_gmt_go_mf <- renderPlot(dotplot_gmt_go_mf())
+    output$plot_gmt_go_bp <- renderPlot(dotplot_gmt_go_bp())
+    output$plot_gmt_go_cc <- renderPlot(dotplot_gmt_go_cc())
     
     
     
@@ -2378,6 +2470,10 @@ shinyServer(function(input, output, session) {
             print("file.copy")
             shinyjs::disable("complete_report_html")
             print("start")
+            waiter_show( # show the waiter
+                html = tagList(spin_fading_circles(), # use a spinner
+                               "Generating Report...")
+            )
             withProgress(
                 message = "Generating Report...",
                 value = 1,
@@ -2472,6 +2568,10 @@ shinyServer(function(input, output, session) {
                         params[["removebatch"]] <- input$select_limma_removebatch
                         params[["table_dmps"]] <- make_table()
                         params[["filteredlist2heatmap"]] <- rval_filteredlist2heatmap()
+                        params[["table_annotation_manhattan"]] <- table_annotation_manhattan()
+                        params[["plot_volcano"]] <- volcano_graph()
+                        params[["table_annotation"]] <- table_annotation()
+                
                     }
                     
                     # if DMR analysis has been done, we add specific parameters
@@ -2491,17 +2591,30 @@ shinyServer(function(input, output, session) {
                         params[["dmrs_removebatch"]] <- input$select_dmrs_removebatch
                         params[["table_dmrs"]] <- make_table_dmrscount()
                         params[["filteredmcsea2heatmap"]] <- rval_filteredmcsea2heatmap()
+                        params[["table_sigdmrs"]] <- rval_table_sigdmrs()
+                    }
+                    
+                    # functional analysis
+                    if(rval_analysis_finished()) {
+                        params[["kegg"]] <- dotplot_kegg()
+                        params[["go_mf"]] <- dotplot_go_mf()
+                        params[["go_bp"]] <- dotplot_go_bp()
+                        params[["go_cc"]] <- dotplot_go_cc()
+                        params[["reactome"]] <- dotplot_reactome()
+                        #params[["gmt_kegg"]] <- dotplot_gmt_kegg()
+                        #params[["gmt_go_mf"]] <- dotplot_gmt_go_mf()
+                        #params[["gmt_go_bp"]] <- dotplot_gmt_go_bp()
+                        #params[["gmt_go_cc"]] <- dotplot_gmt_go_cc()
                     }
                     
                     
                     
-                    
-                    
-                    print(params)
+
                     newenv <- new.env(parent = globalenv())
                     #newenv$create_heatmap <- create_heatmap
-                    print(newenv)
 
+                    waiter_hide()
+                    
                     render_file <- rmarkdown::render(
                         #tempReport,
                         input = "report_complete_html.Rmd",
@@ -2514,6 +2627,7 @@ shinyServer(function(input, output, session) {
                     shinyjs::enable("complete_report_html")
                 }
             )
+            
         }
     )
     
