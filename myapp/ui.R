@@ -200,15 +200,7 @@ shinyUI(
 
               shinyjs::disabled(actionButton("button_minfi_select", "Run Normalization", class = "btn-primary")),
               h4(),
-              textOutput("text_minfi_probes"),
-              conditionalPanel(
-                "input.button_minfi_select > 0",
-                # "typeof output.green_intensities_plot != 'undefined'",
-                br(),
-                downloadButton("download_html", label = "Download HTML"),
-                br(),
-                downloadButton("download_pdf", label = "Download PDF")
-              )
+              textOutput("text_minfi_probes")
             ),
 
             mainPanel(
@@ -839,14 +831,14 @@ shinyUI(
             box(
               title = "REACTOME", width = 12, closable = FALSE, collapsible = TRUE, collapsed = TRUE, status = "primary",
               withSpinner(plotOutput("plot_reactome"))
-            ),
-            box(
-              title = "MSigDB", width = 12, closable = FALSE, collapsible = TRUE, collapsed = TRUE, status = "primary",
-              withSpinner(plotOutput("plot_gmt_kegg")),
-              withSpinner(plotOutput("plot_gmt_go_mf")),
-              withSpinner(plotOutput("plot_gmt_go_bp")),
-              withSpinner(plotOutput("plot_gmt_go_cc"))
-            )
+            )#,
+            #box(
+            #  title = "MSigDB", width = 12, closable = FALSE, collapsible = TRUE, collapsed = TRUE, status = "primary",
+            #  withSpinner(plotOutput("plot_gmt_kegg")),
+            #  withSpinner(plotOutput("plot_gmt_go_mf")),
+            #  withSpinner(plotOutput("plot_gmt_go_bp")),
+            #  withSpinner(plotOutput("plot_gmt_go_cc"))
+            #)
           )
         ),
         tabItem(
