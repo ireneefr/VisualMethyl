@@ -82,24 +82,24 @@ shinyServer(function(input, output, session) {
                                                                               "Batch effects" = 6), selected = c())
         }
         if(input$check_exploratory_analysis){
-            updateCheckboxGroupInput(session, "check_group_exploratory_analysis",choices = list("Violin plots",
-                                                                                                "Principal Component Analysis",
-                                                                                                "Heatmaps",
-                                                                                                "Deconvolution",
-                                                                                                "Age methylation",
-                                                                                                "Hypo/Hyper (chr)",
-                                                                                                "Hypo/Hyper (relation to island)",
-                                                                                                "Hypo/Hyper (group)"), selected = c(1:8))
+            updateCheckboxGroupInput(session, "check_group_exploratory_analysis",choices = list("Violin plots" = 1,
+                                                                                                "Principal Component Analysis" = 2,
+                                                                                                "Heatmaps" = 3,
+                                                                                                "Deconvolution" = 4,
+                                                                                                "Age methylation" = 5,
+                                                                                                "Hypo/Hyper (chr)" = 6,
+                                                                                                "Hypo/Hyper (relation to island)" = 7,
+                                                                                                "Hypo/Hyper (group)" = 8), selected = c(1:8))
             shinyjs::enable("check_group_exploratory_analysis")
         } else{
-            updateCheckboxGroupInput(session, "check_group_exploratory_analysis",choices = list("Violin plots",
-                                                                                                "Principal Component Analysis",
-                                                                                                "Heatmaps",
-                                                                                                "Deconvolution",
-                                                                                                "Age methylation",
-                                                                                                "Hypo/Hyper (chr)",
-                                                                                                "Hypo/Hyper (relation to island)",
-                                                                                                "Hypo/Hyper (group)"), selected = c())
+            updateCheckboxGroupInput(session, "check_group_exploratory_analysis",choices = list("Violin plots" = 1,
+                                                                                                "Principal Component Analysis" = 2,
+                                                                                                "Heatmaps" = 3,
+                                                                                                "Deconvolution" = 4,
+                                                                                                "Age methylation" = 5,
+                                                                                                "Hypo/Hyper (chr)" = 6,
+                                                                                                "Hypo/Hyper (relation to island)" = 7,
+                                                                                                "Hypo/Hyper (group)" = 8), selected = c())
             shinyjs::disable("check_group_exploratory_analysis")
         }
     })
@@ -1612,7 +1612,7 @@ shinyServer(function(input, output, session) {
     })
     
     manhattan_graph <- reactive(qqman::manhattan(table_annotation_manhattan(), chr = "chr", bp = "pos", snp = "gene", p = "pvalue",
-                                                 annotatePval = 1, suggestiveline = T, genomewideline = T, annotateTop = T))
+                                                 annotatePval = 1, suggestiveline = -log10(1e-05), genomewideline = -log10(5e-08), annotateTop = T))
     volcano_graph <- reactive(MultiDataSet::volcano_plot(pval = table_annotation_volcano()$pvalue, fc = table_annotation_volcano()$dif_beta,
                                                          table_annotation_volcano()$gene, tFC = 0.2, show.labels = T))
     
