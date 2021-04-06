@@ -73,7 +73,6 @@ shinyUI(
 
     dashboardBody(
       includeCSS("www/style.css"),
-      includeScript("www/message.js"),
       tabItems(
         tabItem(
           tabName = "data",

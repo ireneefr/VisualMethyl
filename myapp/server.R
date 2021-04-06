@@ -72,12 +72,7 @@ shinyServer(function(input, output, session) {
                                                                               "Batch effects" = 6),  selected = c(1:6))
             shinyjs::enable("check_group_qc")
         } else{shinyjs::disable("check_group_qc")
-            updateCheckboxGroupInput(session, "check_group_qc",choices = list("Intensities boxplots" = 1,
-                                                                              "Failed probes" = 2,
-                                                                              "Density plots" = 3,
-                                                                              "SNPs heatmap" = 4,
-                                                                              "Sex prediction" = 5,
-                                                                              "Batch effects" = 6), selected = c())
+            updateCheckboxGroupInput(session, "check_group_qc", choices = c(), selected = 0)
         }
         if(input$check_exploratory_analysis){
             updateCheckboxGroupInput(session, "check_group_exploratory_analysis",choices = list("Violin plots" = 1,
@@ -90,14 +85,7 @@ shinyServer(function(input, output, session) {
                                                                                                 "Hypo/Hyper (group)" = 8), selected = c(1:8))
             shinyjs::enable("check_group_exploratory_analysis")
         } else{
-            updateCheckboxGroupInput(session, "check_group_exploratory_analysis",choices = list("Violin plots" = 1,
-                                                                                                "Principal Component Analysis" = 2,
-                                                                                                "Heatmaps" = 3,
-                                                                                                "Deconvolution" = 4,
-                                                                                                "Age methylation" = 5,
-                                                                                                "Hypo/Hyper (chr)" = 6,
-                                                                                                "Hypo/Hyper (relation to island)" = 7,
-                                                                                                "Hypo/Hyper (group)" = 8), selected = c())
+            updateCheckboxGroupInput(session, "check_group_exploratory_analysis", choices = c(), selected = 0)
             shinyjs::disable("check_group_exploratory_analysis")
         }
     })
@@ -591,12 +579,12 @@ shinyServer(function(input, output, session) {
                 )
                 # enable button
                 shinyjs::enable("button_minfi_select")
-                
+                removeModal()
                 # return gset
                 gset
             }
         )
-        removeModal()
+        
         
     })
     
@@ -622,6 +610,8 @@ shinyServer(function(input, output, session) {
     rval_gset_getBeta <- eventReactive(rval_gset(), {
         bvalues <- as.data.frame(minfi::getBeta(rval_gset()))
         colnames(bvalues) <- rval_sheet_target()[[input$select_input_samplenamevar]]
+        print(bvalues)
+        print(class(bvalues))
         bvalues
     })
     
