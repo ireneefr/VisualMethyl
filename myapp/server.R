@@ -71,7 +71,8 @@ shinyServer(function(input, output, session) {
                                                                               "Sex prediction" = 5,
                                                                               "Batch effects" = 6),  selected = c(1:6))
             shinyjs::enable("check_group_qc")
-        } else{shinyjs::disable("check_group_qc")
+        } else{
+            shinyjs::disable("check_group_qc")
             updateCheckboxGroupInput(session, "check_group_qc", choices = c(), selected = 0)
         }
         if(input$check_exploratory_analysis){
@@ -87,6 +88,7 @@ shinyServer(function(input, output, session) {
         } else{
             updateCheckboxGroupInput(session, "check_group_exploratory_analysis", choices = c(), selected = 0)
             shinyjs::disable("check_group_exploratory_analysis")
+
         }
     })
     observe({
@@ -99,11 +101,8 @@ shinyServer(function(input, output, session) {
                                                                            "Volcano plot" = 5), selected = c(1:5))
             shinyjs::enable("check_group_dmps")
         } else{
-            updateCheckboxGroupInput(session, "check_group_dmps", choices = list("Table" = 1,
-                                                                                 "Heatmap" = 2,
-                                                                                 "Annotation" = 3,
-                                                                                 "Manhattan plot" = 4,
-                                                                                 "Volcano plot" = 5), selected = c())
+            updateCheckboxGroupInput(session, "check_group_dmps", choices = c(), selected = 0)
+            shinyjs::disable("check_group_dmps")
             
         }
         if(input$check_functional_enrichment){
@@ -112,9 +111,8 @@ shinyServer(function(input, output, session) {
                                                                                                   "Reactome" = 3), selected = c(1:3))
             shinyjs::enable("check_group_functional_enrichment")
         } else{
-            updateCheckboxGroupInput(session, "check_group_functional_enrichment", choices = list("Kegg" = 1,
-                                                                                                  "Gene Ontology (GO)" = 2,
-                                                                                                  "Reactome" = 3), selected = c())
+            updateCheckboxGroupInput(session, "check_group_functional_enrichment", choices = c(), selected = 0)
+            shinyjs::disable("check_group_functional_enrichment")
         }
     })
     observe({
@@ -125,9 +123,8 @@ shinyServer(function(input, output, session) {
                                                                                  "Annotation" = 3), selected = c(1:3))
             shinyjs::enable("check_group_dmrs")
         } else{
-            updateCheckboxGroupInput(session, "check_group_dmrs", choices = list("Table" = 1,
-                                                                                 "Heatmap" = 2,
-                                                                                 "Annotation" = 3), selected = c())
+            updateCheckboxGroupInput(session, "check_group_dmrs", c(), selected = 0)
+            shinyjs::disable("check_group_dmrs")
         }
     })
     
@@ -2565,23 +2562,22 @@ shinyServer(function(input, output, session) {
                         maf = input$slider_minfi_maf,
                         probes = rval_gsetprobes(),
                         
-                        plot_green_intensities = boxplot_intensities_green(),
-                        plot_red_intensities = boxplot_intensities_red(),
-                        plot_failed_probes = failure_plot()[["graph"]],
+                        
+                        
                         plot_densityplotraw = rval_plot_densityplotraw(),
                         plot_densityplotraw_green = rval_plot_densityplotraw_green(),
                         plot_densityplotraw_red = rval_plot_densityplotraw_red(),
                         plot_densityplotraw_II = rval_plot_densityplotraw_II(),
-                        plot_densityplotraw_all = rval_plot_densityplotraw_all(),
+                        
                         plot_densityplot = rval_plot_densityplot(),
                         plot_densityplot_green = rval_plot_densityplot_green(),
                         plot_densityplot_red = rval_plot_densityplot_red(),
                         plot_densityplot_II = rval_plot_densityplot_II(),
-                        plot_densityplot_all = rval_plot_densityplot_all(),
+                        
                       
                         #plot_pcaplot = rval_plot_pca()[["graph"]],
                         
-                        plot_corrplot = rval_plot_corrplot()[["graph"]],
+                        
                         
                         #plot_boxplotraw = rval_plot_boxplotraw(),
                         #plot_boxplot = rval_plot_boxplot(),
@@ -2589,13 +2585,10 @@ shinyServer(function(input, output, session) {
                         #plot_bisulfiterawII = rval_plot_bisulfiterawII(),
                         
                         plot_sexprediction = rval_plot_sexprediction(),
-                        plot_snpheatmap = rval_plot_snpheatmap(),
+                        
                         
                         #plot_plotSA = rval_plot_plotSA(),
                         #table_pcaplot = rval_plot_pca()[["info"]],
-                        
-                        table_corrplot = rval_plot_corrplot()[["info"]],
-                        data_sexprediction = as.data.frame(minfi::pData(rval_gset()))[["predictedSex"]],
                         
                         
                         
@@ -2616,7 +2609,32 @@ shinyServer(function(input, output, session) {
                         plot_hyper_hypo_relation_to_island = graph_hyper_hypo()[["relation_to_island"]],
                         plot_hyper_hypo_group = graph_hyper_hypo()[["group"]]
                     )
+                    if (input$check_qc){
+                        params[["check_qc"]] <- TRUE
+                        if("1" %in% input$check_group_qc){
+                            params[["plot_green_intensities"]] <- boxplot_intensities_green()
+                            params[["plot_red_intensities"]] <- boxplot_intensities_red()
+                        }
+                        if("2" %in% input$check_group_qc){
+                            params[["plot_failed_probes"]] <- failure_plot()[["graph"]]
+                        }
+                        if("3" %in% input$check_group_qc){
+                            params[["plot_densityplotraw_all"]] <- rval_plot_densityplotraw_all()
+                            params[["plot_densityplot_all"]] <- rval_plot_densityplot_all()
+                        }
+                        if("4" %in% input$check_group_qc){
+                            params[["plot_snpheatmap"]] <- rval_plot_snpheatmap()
+                        }
+                        if("5" %in% input$check_group_qc){
+                            params[["data_sexprediction"]] <- as.data.frame(minfi::pData(rval_gset()))[["predictedSex"]]
+                        }
+                        if("6" %in% input$check_group_qc){
+                            params[["plot_corrplot"]] <- rval_plot_corrplot()[["graph"]]
+                            params[["table_corrplot"]] <- rval_plot_corrplot()[["info"]]
+                        }
+                    }
                     
+
                     # if DMP analysis has been done, we add specific parameters
                     if (rval_analysis_finished()) {
                         params[["limma_voi"]] <- input$select_limma_voi

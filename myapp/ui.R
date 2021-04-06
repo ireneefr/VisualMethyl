@@ -126,25 +126,29 @@ shinyUI(
           fluidPage(
             br(),
             br(),
-            column(3, align = "center",
-                   actionButton("b_qc", label = "QC", class = "btn-info"),
-                   br(),
-                   actionButton("b_survival", label = "Survival", class = "btn-info")
+            column(3,
+              align = "center",
+              actionButton("b_qc", label = "QC", class = "btn-info"),
+              br(),
+              actionButton("b_survival", label = "Survival", class = "btn-info")
             ),
-            column(3, align = "center",
-                   actionButton("b_exploratory_analysis", label = HTML("Exploratory <br/> Analysis"), class = "btn-info"),
-                   br(),
-                   actionButton("b_predicted_models", label = HTML("Predicted <br/> Models"), class = "btn-info")
+            column(3,
+              align = "center",
+              actionButton("b_exploratory_analysis", label = HTML("Exploratory <br/> Analysis"), class = "btn-info"),
+              br(),
+              actionButton("b_predicted_models", label = HTML("Predicted <br/> Models"), class = "btn-info")
             ),
-            column(3, align = "center",
-                   actionButton("b_dmp_dmr", label = HTML("DMPs <br/> DMRs"), class = "btn-info"),
-                   br(),
-                   actionButton("b_external_sources", label = HTML("External <br/> Sources"), class = "btn-info")
+            column(3,
+              align = "center",
+              actionButton("b_dmp_dmr", label = HTML("DMPs <br/> DMRs"), class = "btn-info"),
+              br(),
+              actionButton("b_external_sources", label = HTML("External <br/> Sources"), class = "btn-info")
             ),
-            column(3, align = "center",
-                   actionButton("b_functional_enrichment", label = HTML("Functional <br/> Enrichment"), class = "btn-info"),
-                   br(),
-                   actionButton("b_genome_browser", label = HTML("Genome <br/> Browser"), class = "btn-info")
+            column(3,
+              align = "center",
+              actionButton("b_functional_enrichment", label = HTML("Functional <br/> Enrichment"), class = "btn-info"),
+              br(),
+              actionButton("b_genome_browser", label = HTML("Genome <br/> Browser"), class = "btn-info")
             )
           )
         ),
@@ -827,14 +831,14 @@ shinyUI(
             box(
               title = "REACTOME", width = 12, closable = FALSE, collapsible = TRUE, collapsed = TRUE, status = "primary",
               withSpinner(plotOutput("plot_reactome"))
-            )#,
-            #box(
+            ) # ,
+            # box(
             #  title = "MSigDB", width = 12, closable = FALSE, collapsible = TRUE, collapsed = TRUE, status = "primary",
             #  withSpinner(plotOutput("plot_gmt_kegg")),
             #  withSpinner(plotOutput("plot_gmt_go_mf")),
             #  withSpinner(plotOutput("plot_gmt_go_bp")),
             #  withSpinner(plotOutput("plot_gmt_go_cc"))
-            #)
+            # )
           )
         ),
         tabItem(
@@ -858,69 +862,79 @@ shinyUI(
           fluidPage(
             shinyjs::useShinyjs(),
             h3("Download Report"),
-            column(2,
-            checkboxInput(
-              "check_qc",
-              strong("QC"),
-              value = FALSE
+            column(
+              2,
+              checkboxInput(
+                "check_qc",
+                strong("QC"),
+                value = FALSE
+              ),
+              checkboxGroupInput(
+                "check_group_qc",
+                label = NULL,
+                choices = c(),
+                selected = c()
+              ),
+              br(),
+              br(),
+              downloadButton("complete_report_html", class = "btn-primary", label = "Download Report")
             ),
-            checkboxGroupInput(
-              "check_group_qc",
-              label = NULL,
-              choices = c(),
-              selected = c()
+            column(
+              2,
+              checkboxInput(
+                "check_exploratory_analysis",
+                strong("Exploratory analysis"),
+                value = FALSE
+              ),
+              checkboxGroupInput(
+                "check_group_exploratory_analysis",
+                label = NULL,
+                choices = c(),
+                selected = c()
+              )
             ),
-            br(),
-            br(),
-            downloadButton("complete_report_html", class = "btn-primary", label = "Download Report")),
-            column(2,
-            checkboxInput(
-              "check_exploratory_analysis",
-              strong("Exploratory analysis"),
-              value = FALSE
+            column(
+              2,
+              checkboxInput(
+                "check_dmps",
+                strong("DMPs"),
+                value = FALSE
+              ),
+              checkboxGroupInput(
+                "check_group_dmps",
+                label = NULL,
+                choices = c(),
+                selected = c()
+              )
             ),
-            checkboxGroupInput(
-              "check_group_exploratory_analysis",
-              label = NULL,
-              choices = c(),
-              selected = c()
-            )),
-            column(2,
-            checkboxInput(
-              "check_dmps",
-              strong("DMPs"),
-              value = FALSE
+            column(
+              2,
+              checkboxInput(
+                "check_dmrs",
+                strong("DMRs"),
+                value = FALSE
+              ),
+              checkboxGroupInput(
+                "check_group_dmrs",
+                label = NULL,
+                choices = c(),
+                selected = c()
+              )
             ),
-            checkboxGroupInput(
-              "check_group_dmps",
-              label = NULL,
-              choices = c(),
-              selected = c()
-            )),
-            column(2,
-            checkboxInput(
-              "check_dmrs",
-              strong("DMRs"),
-              value = FALSE
-            ),
-            checkboxGroupInput(
-              "check_group_dmrs",
-              label = NULL,
-              choices = c(),
-              selected = c()
-            )),
-            column(2,
-            checkboxInput(
-              "check_functional_enrichment",
-              strong("Functional enrichment"),
-              value = FALSE
-            ),
-            checkboxGroupInput(
-              "check_group_functional_enrichment",
-              label = NULL,
-              choices = c(),
-              selected = c()
-            ))
+            column(
+              2,
+              checkboxInput(
+                "check_functional_enrichment",
+                strong("Functional enrichment"),
+                value = FALSE
+              ),
+              checkboxGroupInput(
+                "check_group_functional_enrichment",
+                label = NULL,
+                choices = c(),
+                selected = c()
+              )
+            )
           )
         ),
         tabItem(
