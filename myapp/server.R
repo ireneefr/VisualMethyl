@@ -7,7 +7,6 @@ library(ggplot2)
 
 
 shinyServer(function(input, output, session) {
-    waiter_hide()
     # INITIALIZE REACTIVE VARIABLES
     rval_generated_limma_model <- reactiveVal(value = FALSE)
     rval_analysis_finished <- reactiveVal(value = FALSE)
@@ -45,7 +44,6 @@ shinyServer(function(input, output, session) {
         shinyjs::disable("check_group_dmrs")
         shinyjs::disable("check_functional_enrichment")
         shinyjs::disable("check_group_functional_enrichment")
-        
         })
     observeEvent(rval_gset(), {
         shinyjs::enable("check_qc")
@@ -378,11 +376,15 @@ shinyServer(function(input, output, session) {
         # disable button to avoid multiple clicks
         shinyjs::disable("button_input_next")
         
-        #waitress <- Waitress$new(theme = "overlay-percent")$start()
-        waiter_show( # show the waiter
-            html = tagList(spin_fading_circles(), # use a spinner
-            "Reading data ...")
+        showModal(modalDialog(
+            title = NULL, footer = NULL,
+            div(
+                img(src="https://upload.wikimedia.org/wikipedia/commons/7/7d/Pedro_luis_romani_ruiz.gif"),
+                p("Reading array data..."),
+                style = "margin: auto; text-align: center"
             )
+        ))
+        
         # We need to check if this step works
         withProgress(
             message = "Reading array data...",
@@ -394,7 +396,7 @@ shinyServer(function(input, output, session) {
                 })
                 
                 if (!exists("RGSet", inherits = FALSE)) {
-                    waiter_hide()
+                    removeModal()
                     showModal(
                         modalDialog(
                             title = "reading error",
@@ -421,6 +423,7 @@ shinyServer(function(input, output, session) {
                     if (!requireNamespace("IlluminaHumanMethylation450kanno.ilmn12.hg19", quietly = TRUE) |
                         !requireNamespace("IlluminaHumanMethylation450kmanifest", quietly = TRUE))
                     {
+                        removeModal()
                         showModal(
                             modalDialog(
                                 title = "Missing package(s)",
@@ -444,6 +447,7 @@ shinyServer(function(input, output, session) {
                     if (!requireNamespace("IlluminaHumanMethylationEPICanno.ilm10b4.hg19", quietly = TRUE) |
                         !requireNamespace("IlluminaHumanMethylationEPICmanifest", quietly = TRUE))
                     {
+                        removeModal()
                         showModal(
                             modalDialog(
                                 title = "Missing package(s)",
@@ -462,16 +466,15 @@ shinyServer(function(input, output, session) {
                         )
                     )
                 }
-                
+                removeModal()
                 # analysis restarted
-                waiter_hide()
                 rval_analysis_finished(FALSE)
                 rval_dmrs_finished(FALSE)
                 # we return RGSet
                 RGSet
             }
         )
-        #waitress$close() 
+        
 
     })
     
@@ -542,10 +545,16 @@ shinyServer(function(input, output, session) {
         ))
         
         shinyjs::disable("button_minfi_select") # disable button to avoid repeat clicking
-        waiter_show( # show the waiter
-            html = tagList(spin_fading_circles(), # use a spinner
-                           "Normalization in progress...")
-        )
+
+        showModal(modalDialog(
+            title = NULL, footer = NULL,
+            div(
+                img(src="https://upload.wikimedia.org/wikipedia/commons/7/7d/Pedro_luis_romani_ruiz.gif"),
+                p("Normalization in progress..."),
+                style = "margin: auto; text-align: center"
+            )
+        ))
+        
         withProgress(
             message = "Normalization in progress...",
             value = 1,
@@ -562,7 +571,7 @@ shinyServer(function(input, output, session) {
                 # check if normalization has worked
                 
                 if (!exists("gset", inherits = FALSE)) {
-                    waiter_hide()
+                    removeModal()
                     showModal(
                         modalDialog(
                             title = "Normalization failure",
@@ -580,7 +589,6 @@ shinyServer(function(input, output, session) {
                         "An unexpected error has occurred during minfi normalization. Please, notify the error to the package maintainer."
                     )
                 )
-                waiter_hide()
                 # enable button
                 shinyjs::enable("button_minfi_select")
                 
@@ -588,6 +596,7 @@ shinyServer(function(input, output, session) {
                 gset
             }
         )
+        removeModal()
         
     })
     
@@ -831,7 +840,6 @@ shinyServer(function(input, output, session) {
     output$deconvolution_heatmap <- renderPlot(graph_deconvolution())
     
     
-    
     ##### HEATMAP #####
     
     plot_random_heatmap <- reactive(create_random_heatmap(rval_rgset_getBeta()))
@@ -849,7 +857,6 @@ shinyServer(function(input, output, session) {
     
     ##### HYPER/HYPO PLOTS #####
     
-    
     graph_hyper_hypo <- eventReactive(list(input$button_hyper_hypo_update, input$button_input_next), create_hyper_hypo(rval_rgset(), rval_rgset_getBeta(), input$slider_beta, input$selected_samples_h))
     output$plot_chr <- renderPlot(graph_hyper_hypo()[["chr"]])
     output$plot_relation_to_island <- renderPlot(graph_hyper_hypo()[["relation_to_island"]])
@@ -858,7 +865,7 @@ shinyServer(function(input, output, session) {
     
     
     
-    # Update of next form and move to Limma
+    # Update of next form and move to Limma 
     observeEvent(input$button_minfi_select, {
         # check if normalization has been performed
         req(rval_gset())
@@ -962,6 +969,15 @@ shinyServer(function(input, output, session) {
         
         shinyjs::disable("button_limma_calculatemodel") # disable button to avoid repeat clicking
 
+        showModal(modalDialog(
+            title = NULL, footer = NULL,
+            div(
+                img(src="https://upload.wikimedia.org/wikipedia/commons/7/7d/Pedro_luis_romani_ruiz.gif"),
+                p("Generating linear model..."),
+                style = "margin: auto; text-align: center"
+            )
+        ))
+        
         withProgress(
             message = "Generating linear model...",
             value = 3,
@@ -978,6 +994,7 @@ shinyServer(function(input, output, session) {
                     rval_generated_limma_model(FALSE) # disable contrast button
                     rval_analysis_finished(FALSE) # disable download buttons
                     
+                    removeModal()
                     showModal(
                         modalDialog(
                             title = "lmFit error",
@@ -992,6 +1009,8 @@ shinyServer(function(input, output, session) {
         
         
         shinyjs::enable("button_limma_calculatemodel") # enable button again to allow repeting calculation
+        
+        removeModal()
         
         validate(need(
             exists("fit", inherits = FALSE),
@@ -1251,6 +1270,15 @@ shinyServer(function(input, output, session) {
     # Calculation of filtered list
     rval_filteredlist <- eventReactive(rval_finddifcpgs(), {
 
+        showModal(modalDialog(
+            title = NULL, footer = NULL,
+            div(
+                img(src="https://upload.wikimedia.org/wikipedia/commons/7/7d/Pedro_luis_romani_ruiz.gif"),
+                p("Performing contrasts calculations..."),
+                style = "margin: auto; text-align: center"
+            )
+        ))
+        
         withProgress(
             message = "Performing contrasts calculations...",
             value = 1,
@@ -1271,10 +1299,18 @@ shinyServer(function(input, output, session) {
                 )
             }
         )
-        
+        removeModal()
     })
     
     rval_list <- reactive({
+        showModal(modalDialog(
+            title = NULL, footer = NULL,
+            div(
+                p("content"),
+                img(src="https://upload.wikimedia.org/wikipedia/commons/7/7d/Pedro_luis_romani_ruiz.gif"),
+                style = "margin: auto; text-align: center"
+            )
+        ))
         withProgress(
             message = "Performing contrasts calculations...",
             value = 1,
@@ -1292,6 +1328,7 @@ shinyServer(function(input, output, session) {
                 )
             }
         )
+        removeModal()
     })
     
     rval_filteredlist2heatmap <- reactive({
@@ -1680,10 +1717,16 @@ shinyServer(function(input, output, session) {
         )
         
         shinyjs::disable("button_dmrs_calculate")
-        waiter_show( # show the waiter
-            html = tagList(spin_fading_circles(), # use a spinner
-                           "Calculating DMRs...")
-        )
+
+        showModal(modalDialog(
+            title = NULL, footer = NULL,
+            div(
+                img(src="https://upload.wikimedia.org/wikipedia/commons/7/7d/Pedro_luis_romani_ruiz.gif"),
+                p("Calculating DMRs..."),
+                style = "margin: auto; text-align: center"
+            )
+        ))
+        
         withProgress(
             message = "Calculating DMRs...",
             max = 3,
@@ -1710,11 +1753,12 @@ shinyServer(function(input, output, session) {
                         regionsTypes = input$select_dmrs_regions
                     )
                 })
-                waiter_hide()
             }
         )
         
         shinyjs::enable("button_dmrs_calculate")
+        
+        removeModal()
         
         if (!exists("dmrs_result", inherits = FALSE)) {
             rval_dmrs_finished(FALSE)
@@ -2067,6 +2111,15 @@ shinyServer(function(input, output, session) {
         #    )
         #}
 
+        showModal(modalDialog(
+            title = NULL, footer = NULL,
+            div(
+                img(src="https://upload.wikimedia.org/wikipedia/commons/7/7d/Pedro_luis_romani_ruiz.gif"),
+                p("Generating annotation..."),
+                style = "margin: auto; text-align: center"
+            )
+        ))
+        
         withProgress(
             message = "Generating annotation...",
             max = 3,
@@ -2118,6 +2171,7 @@ shinyServer(function(input, output, session) {
                 #}
             }
         )
+        removeModal()
     })
     
     
@@ -2234,6 +2288,16 @@ shinyServer(function(input, output, session) {
             print("file.copy")
             shinyjs::disable("download_html")
             print("start")
+            
+            showModal(modalDialog(
+                title = NULL, footer = NULL,
+                div(
+                    img(src="https://upload.wikimedia.org/wikipedia/commons/7/7d/Pedro_luis_romani_ruiz.gif"),
+                    p("Generating Report..."),
+                    style = "margin: auto; text-align: center"
+                )
+            ))
+            
             withProgress(
                 message = "Generating Report...",
                 value = 1,
@@ -2348,6 +2412,7 @@ shinyServer(function(input, output, session) {
                 }
             )
             shinyjs::enable("download_html")
+            removeModal()
         }
     )
    
@@ -2364,6 +2429,16 @@ shinyServer(function(input, output, session) {
             on.exit(setwd(owd))
             file.copy(src, 'report_pdf.Rmd', overwrite = TRUE)
             shinyjs::disable("download_pdf")
+            
+            showModal(modalDialog(
+                title = NULL, footer = NULL,
+                div(
+                    img(src="https://upload.wikimedia.org/wikipedia/commons/7/7d/Pedro_luis_romani_ruiz.gif"),
+                    p("Generating Report..."),
+                    style = "margin: auto; text-align: center"
+                )
+            ))
+            
             withProgress(
                 message = "Generating Report...",
                 value = 1,
@@ -2448,6 +2523,7 @@ shinyServer(function(input, output, session) {
                     shinyjs::enable("download_pdf")
                 }
             )
+            removeModal()
         }
     )
     
@@ -2470,10 +2546,17 @@ shinyServer(function(input, output, session) {
             print("file.copy")
             shinyjs::disable("complete_report_html")
             print("start")
-            waiter_show( # show the waiter
-                html = tagList(spin_fading_circles(), # use a spinner
-                               "Generating Report...")
-            )
+
+            
+            showModal(modalDialog(
+                title = NULL, footer = NULL,
+                div(
+                    img(src="https://upload.wikimedia.org/wikipedia/commons/7/7d/Pedro_luis_romani_ruiz.gif"),
+                    p("Generating Report..."),
+                    style = "margin: auto; text-align: center"
+                )
+            ))
+            
             withProgress(
                 message = "Generating Report...",
                 value = 1,
@@ -2612,8 +2695,6 @@ shinyServer(function(input, output, session) {
 
                     newenv <- new.env(parent = globalenv())
                     #newenv$create_heatmap <- create_heatmap
-
-                    waiter_hide()
                     
                     render_file <- rmarkdown::render(
                         #tempReport,
@@ -2627,7 +2708,7 @@ shinyServer(function(input, output, session) {
                     shinyjs::enable("complete_report_html")
                 }
             )
-            
+            removeModal()
         }
     )
     

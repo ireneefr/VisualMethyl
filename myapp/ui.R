@@ -40,7 +40,6 @@ convertMenuItem <- function(mi, tabName) {
   mi
 }
 
-library(waiter)
 library(shiny)
 library(shinydashboard)
 library(shinydashboardPlus)
@@ -74,9 +73,7 @@ shinyUI(
 
     dashboardBody(
       includeCSS("www/style.css"),
-      use_waitress(),
-      use_waiter(),
-      waiter_show_on_load(spin_fading_circles()),
+      includeScript("www/message.js"),
       tabItems(
         tabItem(
           tabName = "data",
@@ -195,7 +192,7 @@ shinyUI(
                 inputId = "select_minfi_chromosomes",
                 label = "Drop X/Y Chr.",
                 labelWidth = "fit",
-                value = FALSE
+                value = TRUE
               ),
 
               shinyjs::disabled(actionButton("button_minfi_select", "Run Normalization", class = "btn-primary")),
