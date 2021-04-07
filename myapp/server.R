@@ -81,9 +81,7 @@ shinyServer(function(input, output, session) {
                                                                                                 "Heatmaps" = 3,
                                                                                                 "Deconvolution" = 4,
                                                                                                 "Age methylation" = 5,
-                                                                                                "Hypo/Hyper (chr)" = 6,
-                                                                                                "Hypo/Hyper (relation to island)" = 7,
-                                                                                                "Hypo/Hyper (group)" = 8), selected = c(1:8))
+                                                                                                "Hypo/Hyper" = 6), selected = c(1:6))
             shinyjs::enable("check_group_exploratory_analysis")
         } else{
             updateCheckboxGroupInput(session, "check_group_exploratory_analysis", choices = c(), selected = 0)
@@ -2584,7 +2582,7 @@ shinyServer(function(input, output, session) {
                         #plot_qcraw = rval_plot_qcraw(),
                         #plot_bisulfiterawII = rval_plot_bisulfiterawII(),
                         
-                        plot_sexprediction = rval_plot_sexprediction(),
+                        plot_sexprediction = rval_plot_sexprediction()
                         
                         
                         #plot_plotSA = rval_plot_plotSA(),
@@ -2593,22 +2591,10 @@ shinyServer(function(input, output, session) {
                         
                         
                         #exploratory analysis
-                        plot_violin_raw = rval_plot_violin_raw(),
-                        plot_violin_normalized = rval_plot_violin_normalized(),
                         
-                        plot_pca = rval_plot_pca()[["graph"]],
-                        
-                        table_age = age_data(),
-                        
-                        plot_random_heatmap = plot_random_heatmap(),
-                        plot_top_heatmap = plot_top_heatmap(),
-                        
-                        plot_deconvolution = graph_deconvolution(),
-                        
-                        plot_hyper_hypo_chr = graph_hyper_hypo()[["chr"]],
-                        plot_hyper_hypo_relation_to_island = graph_hyper_hypo()[["relation_to_island"]],
-                        plot_hyper_hypo_group = graph_hyper_hypo()[["group"]]
+
                     )
+                    
                     if (input$check_qc){
                         params[["check_qc"]] <- TRUE
                         if("1" %in% input$check_group_qc){
@@ -2634,6 +2620,31 @@ shinyServer(function(input, output, session) {
                         }
                     }
                     
+                    if(input$check_exploratory_analysis){
+                        params[["check_exploratory_analysis"]] <- TRUE
+                        if("1" %in% input$check_group_exploratory_analysis){
+                            params[["plot_violin_raw"]] <- rval_plot_violin_raw()
+                            params[["plot_violin_normalized"]] <- rval_plot_violin_normalized()
+                        }
+                        if("2" %in% input$check_group_exploratory_analysis){
+                            params[["plot_pca"]] <- rval_plot_pca()[["graph"]]
+                        }
+                        if("3" %in% input$check_group_exploratory_analysis){
+                            params[["plot_random_heatmap"]] <- plot_random_heatmap()
+                            params[["plot_top_heatmap"]] <- plot_top_heatmap()
+                        }
+                        if("4" %in% input$check_group_exploratory_analysis){
+                            params[["plot_deconvolution"]] <- graph_deconvolution()
+                        }
+                        if("5" %in% input$check_group_exploratory_analysis){
+                            params[["table_age"]] <- age_data()
+                        }
+                        if("6" %in% input$check_group_exploratory_analysis){
+                            params[["plot_hyper_hypo_chr"]] <- graph_hyper_hypo()[["chr"]]
+                            params[["plot_hyper_hypo_relation_to_island"]] <- graph_hyper_hypo()[["relation_to_island"]]
+                            params[["plot_hyper_hypo_group"]] <- graph_hyper_hypo()[["group"]]
+                        }
+                    }
 
                     # if DMP analysis has been done, we add specific parameters
                     if (rval_analysis_finished()) {
@@ -2662,8 +2673,9 @@ shinyServer(function(input, output, session) {
                         params[["table_annotation_manhattan"]] <- table_annotation_manhattan()
                         params[["plot_volcano"]] <- volcano_graph()
                         params[["table_annotation"]] <- table_annotation()
-                
                     }
+                    
+                    
                     
                     # if DMR analysis has been done, we add specific parameters
                     if (rval_dmrs_finished()) {

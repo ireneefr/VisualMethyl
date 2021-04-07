@@ -12,6 +12,7 @@ params:
   
   #checks
   check_qc: FALSE
+  check_exploratory_analysis: FALSE
   
   #input 
   rval_sheet: NA
@@ -178,21 +179,22 @@ cat("\n## Quality Control")
 ```
 ```{r green_intensities, echo=FALSE, eval = !is.null(params$plot_green_intensities), results='asis'}
 cat("\n### Intensities boxplots")
-cat("\n__Green intensities__\n")
 
 cat("\n")
 cat("#####\n")
 cat("\n")
+
+cat("\n__Green intensities__")
 ```
 ```{r plot_green_intensities, echo=FALSE, warning=FALSE, message = FALSE, eval = !is.null(params$plot_green_intensities)}
 params$plot_green_intensities
 ```
-```{r red_intensities, echo=FALSE, eval=!is.null(params$red_intensities), results='asis'}
+```{r red_intensities, echo=FALSE, eval=!is.null(params$plot_red_intensities), results='asis'}
 cat("\n")
 cat("#####\n")
 cat("\n")
 
-cat("\n__Red intensities__\n")
+cat("\n__Red intensities__")
 ```
 ```{r plot_red_intensities, echo=FALSE, warning=FALSE, message = FALSE, eval = !is.null(params$plot_red_intensities)}
 params$plot_red_intensities
@@ -221,15 +223,16 @@ cat("\n### Normalization options")
 
 cat("\nThe selected normalization method was ", params$normalization_mode, ". In the next plots, we can see the comparison of the processed data with the raw data.")
 
-cat("\nAfter Minfi normalization, we obtained a GenomicRatioSet with some transformations depending on the type of normalization chosen. To understand better the different classes of Minfi packages, and their relations depending of the normalization method, please read this [vignette](https://www.bioconductor.org/help/course-materials/2015/BioC2015/methylation450k.html) of Minfi creators (it is also valid for Illumina EPIC arrays).")
+cat("\n After Minfi normalization, we obtained a GenomicRatioSet with some transformations depending on the type of normalization chosen. To understand better the different classes of Minfi packages, and their relations depending of the normalization method, please read this [vignette](https://www.bioconductor.org/help/course-materials/2015/BioC2015/methylation450k.html) of Minfi creators (it is also valid for Illumina EPIC arrays).\n")
 
-cat("\nOptions selected:\n")
+cat("\nOptions selected:\n\n")
 
-cat("* Drop SNPs: ", params$dropsnps, if(params$dropsnps){ cat("minimum MAF filtered: ", params$maf)})
+cat("* Drop SNPs: ", params$dropsnps)
+if(params$dropsnps){ cat(" minimum MAF filtered: ", params$maf)}
 cat("\n* Drop CpHs: ", params$dropcphs,
 "\n* Drop X/Y Chromosomes: ", params$dropsex)
 
-cat("\nAfter normalization, ", params$probes, "DNA methylation positions remained.")
+cat("\n\nAfter normalization, ", params$probes, "DNA methylation positions remained.")
 ```
 
 ```{r density_raw, echo = FALSE, eval=!is.null(params$plot_densityplotraw_all), results='asis'}
@@ -258,7 +261,7 @@ cat("\n")
 
 cat("\n### SNPs Heatmap")
 
-cat("\nThe methylation array has 65 specific SNP probes. These SNP probes are intended to be used for sample tracking and sample mixups. Each SNP probe ought to have values clustered around 3 distinct values corresponding to homo-, and hetero-zygotes. Therefore, different samples of the same donor should cluster together.")
+cat("\nThe methylation array has 65 specific SNP probes. These SNP probes are intended to be used for sample tracking and sample mixups. Each SNP probe ought to have values clustered around 3 distinct values corresponding to homo-, and hetero-zygotes. Therefore, different samples of the same donor should cluster together.\n")
 ```
 ```{r plot_snps_heatmap, echo=FALSE, warning=FALSE, message = FALSE, eval=!is.null(params$plot_snpheatmap)}
 params$plot_snpheatmap
@@ -308,45 +311,93 @@ DT::datatable(params$table_corrplot, extensions = 'Buttons',
 
 ***
 
-## Exploratory Analysis
+```{r exploratory_analysis, echo=FALSE, eval=params$check_exploratory_analysis==TRUE, results='asis'}
+cat("\n## Exploratory Analysis")
+```
 
-### Violin plot
+```{r violin_raw, echo=FALSE, eval=!is.null(params$plot_violin_raw), results='asis'}
+cat("\n")
+cat("#####\n")
+cat("\n")
 
-```{r violin, echo = FALSE, warning = FALSE, message = FALSE}
+cat("\n### Violin plot\n")
+
+cat("\n__Raw__\n")
+
+cat("\n")
+```
+```{r plot_violin_raw, echo = FALSE, warning = FALSE, message = FALSE, eval=!is.null(params$plot_violin_raw)}
 params$plot_violin_raw
+```
+```{r violin_normalized, echo=FALSE, eval=!is.null(params$plot_violin_normalized), results='asis'}
+cat("\n__Normalized__\n")
+
+cat("\n")
+```
+```{r plot_violin_normalized, echo=FALSE, warning=FALSE, message=FALSE, eval=!is.null(params$plot_violin_normalized)}
 params$plot_violin_normalized
 ```
 
-### Principal Component Analysis
+```{r pca, echo=FALSE, eval=!is.null(params$plot_pca), results='asis'}
+cat("\n")
+cat("#####\n")
+cat("\n")
 
-``` {r pca, echo = FALSE, warnimg = FALSE, message = FALSE}
+cat("\n### Principal Component Analysis\n")
+```
+```{r plot_pca, echo = FALSE, warnimg = FALSE, message = FALSE, eval=!is.null(params$plot_pca)}
 params$plot_pca
 ```
 
-### Heatmaps
+```{r heatmap_random, echo=FALSE, eval=!is.null(params$plot_random_heatmap), results='asis'}
+cat("\n")
+cat("#####\n")
+cat("\n")
 
-``` {r heatmaps_random, echo = FALSE, warning = FALSE, message = FALSE}
+cat("\n### Heatmaps\n")
+
+cat("\n__Random 1000 CpGs__\n")
+```
+```{r plot_heatmap_random, echo = FALSE, warning = FALSE, message = FALSE, eval=!is.null(params$plot_random_heatmap)}
 params$plot_random_heatmap
 ```
-``` {r heatmaps_top, echo = FALSE, warning = FALSE, message = FALSE}
+```{r heatmap_top, echo=FALSE, eval=!is.null(params$plot_top_heatmap), results='asis'}
+cat("\n__Top 1000 variable CpGs__\n")
+```
+```{r plot_heatmap_top, echo = FALSE, warning = FALSE, message = FALSE, eval=!is.null(params$plot_top_heatmap)}
 params$plot_top_heatmap
 ```
 
-### Age methylation
+```{r age_meth, echo=FALSE, eval=!is.null(params$table_age), results='asis'}
+cat("\n")
+cat("#####\n")
+cat("\n")
 
-```{r age_meth, echo = FALSE, warning =FALSE, message = FALSE}
+cat("\n### Age methylation\n")
+```
+```{r table_age_meth, echo = FALSE, warning =FALSE, message = FALSE, eval=!is.null(params$table_age)}
 DT::datatable(params$table_age)
 ```
 
-### Deconvolution
+```{r deconvolution, echo=FALSE, eval=!is.null(params$plot_deconvolution), results='asis'}
+cat("\n")
+cat("#####\n")
+cat("\n")
 
-```{r deconvolution, echo = FALSE, warning = FALSE, message = FALSE}
+cat("\n### Deconvolution\n")
+```
+```{r plot_deconvolution, echo = FALSE, warning = FALSE, message = FALSE, eval=!is.null(params$plot_deconvolution)}
 params$plot_deconvolution
 ```
 
-### Hypo/Hyper plots
+```{r hypo_hyper, echo=FALSE, eval=!is.null(params$plot_hyper_hypo_chr), results='asis'}
+cat("\n")
+cat("#####\n")
+cat("\n")
 
-```{r hypo_hyper, echo = FALSE, warning = FALSE, message = FALSE}
+cat("\n### Hypo/Hyper plots\n")
+```
+```{r plot_hypo_hyper, echo = FALSE, warning = FALSE, message = FALSE, eval=!is.null(params$plot_hyper_hypo_chr)}
 params$plot_hyper_hypo_chr
 params$plot_hyper_hypo_relation_to_island
 params$plot_hyper_hypo_group
