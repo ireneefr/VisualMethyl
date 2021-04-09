@@ -15,19 +15,19 @@ params:
   check_exploratory_analysis: FALSE
   
   #input 
-  rval_sheet: NA
-  rval_sheet_target: NA
-  name_var: NA
-  grouping_var: NA
-  donor_var: NA
+  rval_sheet: NULL
+  rval_sheet_target: NULL
+  name_var: NULL
+  grouping_var: NULL
+  donor_var: NULL
   
   #normalization 
-  normalization_mode: NA
-  dropsnps: NA
-  dropcphs: NA
-  dropsex: NA
-  maf: NA
-  probes: NA
+  normalization_mode: NULL
+  dropsnps: NULL
+  dropcphs: NULL
+  dropsex: NULL
+  maf: NULL
+  probes: NULL
   
   #exploratory analysis
   plot_violin_raw: NULL
@@ -42,51 +42,49 @@ params:
   plot_hyper_hypo_group: NULL
   
   #DMP 
-  limma_voi: NA
-  limma_covar: NA
-  limma_inter: NA
-  limma_arrayweights: NA
-  limma_ebayes_trend: NA
-  limma_ebayes_robust: NA
+  limma_voi: NULL
+  limma_covar: NULL
+  limma_inter: NULL
+  limma_arrayweights: NULL
+  limma_ebayes_trend: NULL
+  limma_ebayes_robust: NULL
   
-
-  rval_design: NA
-  rval_contrasts: NA
-  rval_voi: NA
+  rval_design: NULL
+  rval_contrasts: NULL
+  rval_voi: NULL
   rval_dendrogram: NULL
   
   table_annotation_manhattan: NULL
   plot_volcano: NULL
   table_annotation: NULL
   
-  
   #heatmap 
-  min_deltabeta: NA
-  max_fdr: NA
-  max_pvalue: NA
-  clusteralg: NA
-  groups2plot: NA
-  contrasts2plot: NA
-  Colv: NA
-  distance: NA
-  scale: NA
-  removebatch: NA
+  min_deltabeta: NULL
+  max_fdr: NULL
+  max_pvalue: NULL
+  clusteralg: NULL
+  groups2plot: NULL
+  contrasts2plot: NULL
+  Colv: NULL
+  distance: NULL
+  scale: NULL
+  removebatch: NULL
   
   #DMRs
   dmrs_contrasts: NULL
   dmrs_rval_dendrogram: NULL
-  dmrs_min_deltabeta: NA
-  dmrs_max_fdr: NA
-  dmrs_max_pvalue: NA
-  dmrs_clusteralg: NA
-  dmrs_groups2plot: NA
-  dmrs_contrasts2plot: NA
-  dmrs_regions2plot: NA
-  dmrs_Colv: NA
-  dmrs_distance: NA
-  dmrs_scale: NA
-  dmrs_removebatch: NA
-  table_dmrs: NA
+  dmrs_min_deltabeta: NULL
+  dmrs_max_fdr: NULL
+  dmrs_max_pvalue: NULL
+  dmrs_clusteralg: NULL
+  dmrs_groups2plot: NULL
+  dmrs_contrasts2plot: NULL
+  dmrs_regions2plot: NULL
+  dmrs_Colv: NULL
+  dmrs_distance: NULL
+  dmrs_scale: NULL
+  dmrs_removebatch: NULL
+  table_dmrs: NULL
   filteredmcsea2heatmap: NULL
   table_sigdmrs: NULL
 
@@ -120,11 +118,9 @@ params:
   table_corrplot: NULL 
   data_sexprediction: NULL
   
-  plot_heatmap_html: NA
-  table_dmps: NA
+  plot_heatmap_html: NULL
+  table_dmps: NULL
   filteredlist2heatmap: NULL
-  
-  
   
   #functional enrichment
   kegg: NULL
@@ -138,7 +134,6 @@ params:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-
 
 ```{css, echo=FALSE}
 div, code {overflow-x:auto !important}
@@ -177,18 +172,22 @@ cat(params$rval_sheet[[params$name_var]][!(params$rval_sheet[[params$name_var]] 
 ```{r quality_control, echo = FALSE, eval=params$check_qc==TRUE, results='asis'}
 cat("\n## Quality Control")
 ```
+
 ```{r green_intensities, echo=FALSE, eval = !is.null(params$plot_green_intensities), results='asis'}
 cat("\n### Intensities boxplots")
 
 cat("\n")
-cat("#####\n")
+cat("####\n")
 cat("\n")
 
 cat("\n__Green intensities__")
+
 ```
+
 ```{r plot_green_intensities, echo=FALSE, warning=FALSE, message = FALSE, eval = !is.null(params$plot_green_intensities)}
 params$plot_green_intensities
 ```
+
 ```{r red_intensities, echo=FALSE, eval=!is.null(params$plot_red_intensities), results='asis'}
 cat("\n")
 cat("#####\n")
@@ -199,7 +198,6 @@ cat("\n__Red intensities__")
 ```{r plot_red_intensities, echo=FALSE, warning=FALSE, message = FALSE, eval = !is.null(params$plot_red_intensities)}
 params$plot_red_intensities
 ```
-
 
 ```{r failed_probes, echo = FALSE, eval = !is.null(params$plot_failed_probes), results='asis'}
 cat("\n")
@@ -212,7 +210,6 @@ cat("\nThe probe failure rate is calculated for each sample and two thresholds a
 ```{r plot_failed_probes, echo=FALSE, warning=FALSE, message = FALSE, eval = !is.null(params$plot_failed_probes)}
 params$plot_failed_probes
 ```
-
 
 ```{r normalization_options, echo = FALSE, eval=params$check_qc==TRUE, results='asis'}
 cat("\n")
@@ -512,7 +509,6 @@ cat("\nIn the custom heatmap the selected contrasts to plot were: ", paste(param
       } else {
         cat("Differences are not in the plotting range (<12000, >1)"
             )}
-  
 ```
 
 ```{r num_dmps_heatmap, echo = FALSE, eval = !is.null(params$filteredlist2heatmap), results = "asis"}
@@ -557,7 +553,6 @@ DT::datatable(params$table_annotation,
 <br>
 
 ```{r filt_res, echo=FALSE, eval=!is.null(params$dmrs_contrasts), results="asis"}
-
 cat("\n### DMRs")
 cat("\n#### Options (DMRs)")
 cat("\nFor each contrast (", paste(params$rval_contrasts, collapse=", "))

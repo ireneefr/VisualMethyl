@@ -843,7 +843,34 @@ shinyUI(
         ),
         tabItem(
           tabName = "survival",
-          fluidPage(h1("Survival"))
+          fluidPage(
+            sidebarPanel(width = 3,
+                    downloadButton("clinical_template", "Download clinical template"),
+                    fileInput("input_clinical", "Upload clinical data (.csv)", multiple = FALSE, accept = ".csv"),
+                    uiOutput("ui_clinical_data"),
+                    conditionalPanel(
+                      "input.b_clinical_data > 0",
+                      
+                        selectInput("select_clinical_samplenamevar", "", c()),
+                        selectInput("select_clinical_timevar", "", c()),
+                        selectInput("select_clinical_statusvar", "", c()),
+                        selectInput("select_clinical_infovar", "", c()),
+                        #selectInput("select_input_age", "", c()),
+                        actionButton("b_clinical_next", "Continue to Survival", class = "btn-primary")
+                    )
+            ),
+            mainPanel(width = 9,
+              box(title = "Options", width = 12, closable = FALSE, collapsible = FALSE, status = "primary",
+                selectInput("select_gene", "", c()),
+                selectInput("select_island", "", c()),
+                selectInput("select_region", "", c()),
+                selectInput("select_cpg", "", c()),
+                actionButton("b_run_survival", "Run Survival", class = "btn-primary")
+              ),
+              box(title = "Kaplan-Meier", width = 12, closable = FALSE, collapsible = FALSE, status = "primary"
+                  )
+            )
+          )
         ),
         tabItem(
           tabName = "predicted_models",

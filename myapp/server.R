@@ -605,6 +605,7 @@ shinyServer(function(input, output, session) {
     rval_gset_getBeta <- eventReactive(rval_gset(), {
         bvalues <- as.data.frame(minfi::getBeta(rval_gset()))
         colnames(bvalues) <- rval_sheet_target()[[input$select_input_samplenamevar]]
+        print("BETA")
         print(bvalues)
         print(class(bvalues))
         bvalues
@@ -1274,6 +1275,7 @@ shinyServer(function(input, output, session) {
                 setProgress(message = "Calculating eBayes...", value = 4)
                 rval_finddifcpgs()
                 setProgress(message = "Calculating filtered list...", value = 5)
+                removeModal()
                 create_filtered_list(
                     rval_finddifcpgs(),
                     rval_globaldifs(),
@@ -1282,9 +1284,10 @@ shinyServer(function(input, output, session) {
                     p.value = input$slider_limma_pvalue,
                     cores = n_cores
                 )
+               
             }
         )
-        removeModal()
+        
     })
     
     rval_list <- reactive({
@@ -1306,14 +1309,16 @@ shinyServer(function(input, output, session) {
                 setProgress(message = "Calculating eBayes...", value = 4)
                 rval_finddifcpgs()
                 setProgress(message = "Calculating filtered list...", value = 5)
+                removeModal()
                 create_list(
                     rval_finddifcpgs(),
                     rval_globaldifs(),
                     cores = n_cores
                 )
+                
             }
         )
-        removeModal()
+        
     })
     
     rval_filteredlist2heatmap <- reactive({
@@ -2114,6 +2119,7 @@ shinyServer(function(input, output, session) {
                 annotation <- annotation[, int_cols]
                 annotation$genome <- "hg19"
                 print("annotation")
+                removeModal()
                 print(annotation)
                 
                 #if (input$select_export_genometype == "hg19") {
@@ -2156,7 +2162,7 @@ shinyServer(function(input, output, session) {
                 #}
             }
         )
-        removeModal()
+       
     })
     
     
@@ -2248,6 +2254,134 @@ shinyServer(function(input, output, session) {
     output$plot_gmt_go_mf <- renderPlot(dotplot_gmt_go_mf())
     output$plot_gmt_go_bp <- renderPlot(dotplot_gmt_go_bp())
     output$plot_gmt_go_cc <- renderPlot(dotplot_gmt_go_cc())
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    ###### SURVIVAL #####
+    output$clinical_template <- downloadHandler(
+        filename = paste("clinical_template", ".csv", sep = ""),
+        content = function(file) {write.csv(data.frame(Sample = rval_sheet_target()[[input$select_input_samplenamevar]], Time = NA, Status = NA), file, row.names = FALSE)}
+    )
+    
+    # Input button
+    output$ui_clinical_data <- renderUI({
+        if (!is.null(input$input_clinical$datapath)) {
+            print(input$input_clinical$datapath)
+            print(read.csv(input$input_clinical$datapath))
+            return(actionButton("b_clinical_data", "Load Clinical Data"))
+        } else {
+            return()
+        }
+    })
+    
+    # input_clinical: enable b_clinical_data
+    observeEvent(input$input_clinical, shinyjs::enable("b_clinical_data"))
+    
+    clinical_sheet <- eventReactive(input$b_clinical_data, {
+        print("hello")
+        file <- read.csv(input$input_clinical$datapath)
+        #validate(need(tools::file_ext(input$input_data$datapath) == "csv", "File extension should be .csv"))
+        validate(
+            need(
+                is.data.frame(file),
+                "Clinical Data is not correct. Please, check it."
+            )
+        )
+        #validate(
+        #    need(
+        #        colnames(file) == rval_sheet_target()[[input$select_input_samplenamevar]],
+        #        "Sample names are not correct."
+        #    )
+        #)
+        print(file)
+        print(colnames(file))
+        file
+    })
+   
+    # When you press b_clinical_data, the form options are updated
+    observeEvent(input$b_clinical_data, {
+        updateSelectInput(
+            session,
+            "select_clinical_samplenamevar",
+            label = "Select Sample Names Column:",
+            choices = colnames(clinical_sheet())
+        )
+        
+        updateSelectInput(
+            session,
+            "select_clinical_timevar",
+            label = "Select Time Column:",
+            choices = colnames(clinical_sheet())
+        )
+        updateSelectInput(
+            session,
+            "select_clinical_statusvar",
+            label = "Select Status Column:",
+            choices = colnames(clinical_sheet())
+        )
+        updateSelectInput(
+            session,
+            "select_clinical_infovar",
+            label = "Select Clinical Information Column",
+            choices = c("None", colnames(clinical_sheet()))
+        )
+       # updateSelectInput(
+    #        session,
+    #        "select_input_age",
+    #        label = "Select Age Column",
+    #        choices = c("None", colnames(rval_sheet()))
+    #    )
+        
+        
+        shinyjs::enable("b_clinical_next") # Enable button continue
+    })
+    
+    
+    # When you press b_clinical_next, the options are updated
+    observeEvent(input$b_clinical_next, {
+        updateSelectInput(
+            session,
+            "select_gene",
+            label = "Select Gene:",
+            choices = colnames(clinical_sheet())
+        )
+        
+        updateSelectInput(
+            session,
+            "select_island",
+            label = "Select Relation to Island:",
+            choices = colnames(clinical_sheet())
+        )
+        updateSelectInput(
+            session,
+            "select_region",
+            label = "Select Genomic Region:",
+            choices = colnames(clinical_sheet())
+        )
+        updateSelectInput(
+            session,
+            "select_cpg",
+            label = "Select CpG site:",
+            choices = c("None", colnames(clinical_sheet()))
+        )
+        # updateSelectInput(
+        #        session,
+        #        "select_input_age",
+        #        label = "Select Age Column",
+        #        choices = c("None", colnames(rval_sheet()))
+        #    )
+        
+        
+        shinyjs::enable("b_run_survival") # Enable button continue
+    })
     
     
     
