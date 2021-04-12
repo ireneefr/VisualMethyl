@@ -861,13 +861,14 @@ shinyUI(
             ),
             mainPanel(width = 9,
               box(title = "Options", width = 12, closable = FALSE, collapsible = FALSE, status = "primary",
-                selectInput("select_gene", "", c()),
+                selectizeInput("select_gene", "", c(),  options = list(maxOptions = 30000)),
                 selectInput("select_island", "", c()),
                 selectInput("select_region", "", c()),
                 selectInput("select_cpg", "", c()),
                 actionButton("b_run_survival", "Run Survival", class = "btn-primary")
               ),
-              box(title = "Kaplan-Meier", width = 12, closable = FALSE, collapsible = FALSE, status = "primary"
+              box(title = "Kaplan-Meier", width = 12, closable = FALSE, collapsible = FALSE, status = "primary",
+                  withSpinner(plotOutput("plot_survival"))
                   )
             )
           )
@@ -972,3 +973,4 @@ shinyUI(
     )
   )
 )
+?selectizeInput

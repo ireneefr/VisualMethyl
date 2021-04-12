@@ -403,6 +403,7 @@ create_hyper_hypo <- function(rgset, bvalues, b, samples){
   bvalues <- bvalues[,colnames(bvalues) %in% samples]
   print(head(bvalues))
   annotation <- as.data.frame(getAnnotation(rgset))
+  print(head(annotation))
   print(unique(annotation$chr))
   annotation$chr <- factor(annotation$chr, levels = c("chr1", "chr2", "chr3", "chr4", "chr5", "chr6", "chr7", "chr8", "chr9", "chr10", "chr11", "chr12", "chr13", "chr14", "chr15", "chr16", "chr17", "chr18", "chr19", "chr20", "chr21", "chr22", "chrX", "chrY", "chrM"))
   c <- cbind(annotation[rownames(bvalues), ], beta_median = apply(bvalues, 1, median, na.rm = TRUE))
@@ -411,8 +412,9 @@ create_hyper_hypo <- function(rgset, bvalues, b, samples){
   c$beta_median[c$beta_median < b] <- "Hypomethylated"
   
   data_group <- rbind(Hypermethylated = table(unlist(strsplit(c$UCSC_RefGene_Group[c$beta_median == "Hypermethylated"], ";"))), Hypomethylated = table(unlist(strsplit(c$UCSC_RefGene_Group[c$beta_median == "Hypomethylated"], ";"))))
+  print(data_group)
   data_group <- data.frame(groups = rep(colnames(data_group), nrow(data_group)), hyper_hypo = rep(rownames(data_group), ncol(data_group)), count = as.vector(data_group))
-  
+  print(data_group)
 
   plot_chr <- ggplot(c, aes(x = chr)) +
     geom_bar(aes(fill = beta_median), position = position_dodge()) + 

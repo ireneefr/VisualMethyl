@@ -2347,11 +2347,11 @@ shinyServer(function(input, output, session) {
     
     # When you press b_clinical_next, the options are updated
     observeEvent(input$b_clinical_next, {
-        updateSelectInput(
+        updateSelectizeInput(
             session,
             "select_gene",
             label = "Select Gene:",
-            choices = colnames(clinical_sheet())
+            choices = sort(unique(unlist(strsplit(getAnnotation(rval_gset())$UCSC_RefGene_Name, ";"))))
         )
         
         updateSelectInput(
@@ -2383,8 +2383,41 @@ shinyServer(function(input, output, session) {
         shinyjs::enable("b_run_survival") # Enable button continue
     })
     
+    surv_data <- reactive(rbind(rval_gset_getBeta()[rownames(rval_annotation()[grep(input$select_gene, rval_annotation()$UCSC_RefGene_Name), ]),], beta_median = apply(rval_gset_getBeta()[rownames(rval_annotation()[grep(input$select_gene, rval_annotation()$UCSC_RefGene_Name), ]),], 1, median, na.rm = TRUE)))
     
+    survival <- eventReactive("b_run_survival", {
+        surv <- cbind(clinical_sheet(), beta = t(surv_data()["beta_median",]))
+        
+        surv$beta_median[surv$beta_median >= 0.33] <- "Hypermethylated"
+        surv$beta_median[surv$beta_median < 0.33] <- "Hypomethylated"
     
+    log.rank.test <- survival::survdiff(survival::Surv(Time, Status) ~ beta, data = surv)
+    
+    cox.fit <- summary(survival::coxph(survival::Surv(Time, Status) ~ beta, data = surv))
+    hz <- round(cox.fit$conf.int[1], 3)
+    ci.95.low <- round(cox.fit$conf.int[3], 3)
+    ci.95.up <- round(cox.fit$conf.int[4], 3)
+    hz.pval <- round(cox.fit$logtest[3], 3)
+    my_text <- paste0("HR=", hz, "(95% CI ", ci.95.low, " - ", ci.95.up, "); p=", hz.pval)
+    
+    ggsurv <- survminer::ggsurvplot(
+        fit = survival::survfit(survival::Surv(Time, Status)  ~ beta, data = surv), 
+        xlab = "Months",
+        ylab = "Overall survival probability",
+        legend.title = "CN_EPIC_2.5",
+        legend.labs = c("Hypermathylated", "Hypomethylated"),
+        #break.x.by = 10, 
+        #palette = ezfun::msk_palette("contrast"), 
+        #censor = FALSE,
+        risk.table = TRUE,
+        risk.table.y.text = TRUE,
+        pval = TRUE, 
+        pval.method = TRUE)
+    ggsurv$plot <- ggsurv$plot + ggplot2::annotate("text", x = 25, y = 1, label = my_text)
+    ggsurv
+    })
+    
+    output$plot_survival <- renderPlot(survival())
     
     
     
