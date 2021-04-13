@@ -853,6 +853,7 @@ shinyUI(
                       
                         selectInput("select_clinical_samplenamevar", "", c()),
                         selectInput("select_clinical_timevar", "", c()),
+                        radioButtons("select_time_unit", "Time unit", choices = c("Days" = 1, "Months" = 2, "Years" = 3), selected = 2, inline = TRUE),
                         selectInput("select_clinical_statusvar", "", c()),
                         selectInput("select_clinical_infovar", "", c()),
                         #selectInput("select_input_age", "", c()),
@@ -868,7 +869,8 @@ shinyUI(
                 actionButton("b_run_survival", "Run Survival", class = "btn-primary")
               ),
               box(title = "Kaplan-Meier", width = 12, closable = FALSE, collapsible = FALSE, status = "primary",
-                  withSpinner(plotOutput("plot_survival"))
+                  conditionalPanel("input.b_run_survival > 0",
+                  withSpinner(plotOutput("plot_survival")))
                   )
             )
           )
