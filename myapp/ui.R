@@ -855,51 +855,54 @@ shinyUI(
                         selectInput("select_clinical_timevar", "", c()),
                         radioButtons("select_time_unit", "Time unit", choices = c("Days", "Months", "Years"), selected = "Months", inline = TRUE),
                         selectInput("select_clinical_statusvar", "", c()),
-                      pickerInput(
-                        "select_clinical_infovar",
-                        label = "Select Clinical Information Columns:",
-                        choices = c(),
-                        multiple = TRUE,
-                        options = list(
-                          `actions-box` = TRUE,
-                          size = 10,
-                          `selected-text-format` = "count > 3"
-                        )
-                      ),
-                      div(
-                        switchInput(
-                          inputId = "select_meth_data",
-                          label = "Methylation Data",
-                          labelWidth = "100px",
-                          value = TRUE
-                        ),
-                        conditionalPanel(
-                          "input.select_meth_data",
-                          sliderInput(
-                            inputId = "slider_meth_data_val",
-                            label = "Beta threshold",
-                            min = 0,
-                            max = 1,
-                            step = 0.01,
-                            value = 0.33
-                          )
-                        )),
-                        #selectInput("select_input_age", "", c()),
+                      uiOutput("ui_clinical_different"),
                         actionButton("b_clinical_next", "Continue to Survival", class = "btn-primary")
                     )
             ),
             mainPanel(width = 9,
+              conditionalPanel("input.b_clinical_next > 0",
               box(title = "Options", width = 12, closable = FALSE, collapsible = FALSE, status = "primary",
-                selectizeInput("select_gene", "", c(),  options = list(maxOptions = 10)),
-                radioButtons("select_group_island", "Other options", choices = c("None", "Genomic Region", "Relation to Island"), selected = "None", inline = TRUE),
-                uiOutput("ui_group_island"),
-                #selectInput("select_island", "", c()),
-                #selectInput("select_region", "", c()),
-                #selectizeInput("select_cpg", "", c(),  options = list(maxOptions = 10)),
-                #uiOutput("ui_select_cpg"),
-                textInput("cpg_input", "Select CpG site:"),
-                actionButton("b_run_survival", "Run Survival", class = "btn-primary")
-              ),
+                  pickerInput(
+                    "select_clinical_infovar",
+                    label = "Select Clinical Information Columns:",
+                    choices = c(),
+                    multiple = TRUE,
+                    options = list(
+                      `actions-box` = TRUE,
+                      size = 10,
+                      `selected-text-format` = "count > 3"
+                    )
+                  ),
+                  column(width = 5, align = "center",
+                    switchInput(
+                      inputId = "select_meth_data",
+                      label = "Methylation Data",
+                      labelWidth = "100px",
+                      value = TRUE
+                    ),
+                    uiOutput("ui_meth_data_disabled"),
+                    style = "align-items: center; justify-content: center"),
+                    column(width = 7,
+                    conditionalPanel(
+                      "input.select_meth_data",
+                      sliderInput(
+                        inputId = "slider_meth_data_val",
+                        label = "Beta threshold",
+                        min = 0,
+                        max = 1,
+                        step = 0.01,
+                        value = 0.33
+                      ))),
+                  conditionalPanel(
+                    "input.select_meth_data",
+                      selectizeInput("select_gene", "", c(),  options = list(maxOptions = 10)),
+                      radioButtons("select_group_island", "Other options", choices = c("None", "Genomic Region", "Relation to Island"), selected = "None", inline = TRUE),
+                      uiOutput("ui_group_island"),
+                      textInput("cpg_input", "Select CpG site:")
+                    ),
+                  #column(width = 12,
+                actionButton("b_run_survival", "Run Survival", class = "btn-primary")#)
+              )),
               box(title = "Kaplan-Meier", width = 12, closable = FALSE, collapsible = FALSE, status = "primary",
                   conditionalPanel("input.b_run_survival > 0",
                   withSpinner(plotOutput("plot_survival")))
