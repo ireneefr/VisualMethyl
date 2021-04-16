@@ -861,18 +861,13 @@ shinyUI(
             ),
             mainPanel(width = 9,
               conditionalPanel("input.b_clinical_next > 0",
-              box(title = "Options", width = 12, closable = FALSE, collapsible = FALSE, status = "primary",
-                  pickerInput(
-                    "select_clinical_infovar",
-                    label = "Select Clinical Information Columns:",
-                    choices = c(),
-                    multiple = TRUE,
-                    options = list(
-                      `actions-box` = TRUE,
-                      size = 10,
-                      `selected-text-format` = "count > 3"
-                    )
+              box(title = "Options", width = 12, closable = FALSE, collapsible = TRUE, collapsed = FALSE, status = "primary",
+                  column(width = 6,
+                  selectInput("select_clinical_infovar","", c()),
+                  uiOutput("ui_slider_clin1")
                   ),
+                  column(width = 6,
+                  uiOutput("ui_select_clinical_infovar2")),
                   column(width = 5, align = "center",
                     switchInput(
                       inputId = "select_meth_data",

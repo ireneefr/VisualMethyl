@@ -2363,11 +2363,11 @@ shinyServer(function(input, output, session) {
             max = 3,
             value = 1,
             {
-                updatePickerInput(
+                updateSelectInput(
                     session,
                     "select_clinical_infovar",
-                    selected = NULL,
-                    choices = colnames(clinical_sheet())[!(colnames(clinical_sheet()) %in% c(input$select_clinical_samplenamevar, input$select_clinical_timevar, input$select_clinical_statusvar))]
+                    label = "Select Clinical Information Column:",
+                    choices = c("None", colnames(clinical_sheet())[!(colnames(clinical_sheet()) %in% c(input$select_clinical_samplenamevar, input$select_clinical_timevar, input$select_clinical_statusvar))])
                 )
 
                 removeModal()
@@ -2375,6 +2375,40 @@ shinyServer(function(input, output, session) {
          }
         )
     })
+    
+    observeEvent(input$select_clinical_infovar, ignoreNULL = TRUE, {
+        if(input$select_clinical_infovar != "None"){
+            output$ui_select_clinical_infovar2 <- renderUI(
+                selectInput("select_clinical_infovar2", label = "Select Second Clinical Information Column:",
+                            choices = c("None", colnames(clinical_sheet())[!(colnames(clinical_sheet()) %in% c(input$select_clinical_samplenamevar, input$select_clinical_timevar, input$select_clinical_statusvar, input$select_clinical_infovar))]))
+            )
+            if(is.numeric(clinical_sheet()[,input$select_clinical_infovar])){
+                print("CLIN1 NUMERIC")
+                print(clinical_sheet()[,input$select_clinical_infovar])
+                if(length(unique(clinical_sheet()[,input$select_clinical_infovar])) > 2){
+                    print("CLIN1 NUMERIC > 2")
+                    print(clinical_sheet()[,input$select_clinical_infovar])
+                    output$ui_slider_clin1 <- renderUI(sliderInput("slider_clin1",
+                                                                   label = paste(input$select_clinical_infovar, "threshold"),
+                                                                   min = min(clinical_sheet()[,input$select_clinical_infovar]),
+                                                                   max = max(clinical_sheet()[,input$select_clinical_infovar]),
+                                                                   value = (min(clinical_sheet()[,input$select_clinical_infovar]) + max(clinical_sheet()[,input$select_clinical_infovar]))/2
+                    )
+                    )
+                }
+            }
+            else{
+                print("CLIN1 NO NUMERIC")
+                print(clinical_sheet()[,input$select_clinical_infovar])
+                output$ui_slider_clin1 <- renderUI(NULL)
+            }
+        }
+        else{
+            output$ui_select_clinical_infovar2 <- renderUI(NULL)
+        }
+    })
+    
+    
     
     output$ui_meth_data_disabled <- renderUI({
         if(rval_gset_done() == TRUE){
@@ -2462,27 +2496,40 @@ shinyServer(function(input, output, session) {
         }
         a3
     })
-
-   
-    # surv_data <- reactive({
-    #    ann <- rbind(rval_gset_getBeta()[rownames(surv_annotation()),], beta_median = apply(rval_gset_getBeta()[rownames(surv_annotation()),], 1, median, na.rm = TRUE))
-    #    
-    ##    print("ann")
-    #    print(ann)
-        #   surv <- cbind(clinical_sheet(), beta_median = t(ann["beta_median",]))
-        
-    #     surv$beta_median[surv$beta_median >= 0.33] <- "Hypermethylated"
-    #     surv$beta_median[surv$beta_median < 0.33] <- "Hypomethylated"
-    #    print("surv")
-        #     print(surv)
-        
-    #     surv
-    #     })
     
     graph_survival <- eventReactive(input$b_run_survival, {
         
+        surv_time <- input$select_clinical_timevar
+        surv_status <- input$select_clinical_statusvar
+        surv_clin <- input$select_clinical_infovar
+        surv_clin2 <- input$select_clinical_infovar2
+        
+        new_clinical_sheet <- clinical_sheet()
+#        if(!is.null(input$slider_clin1)){
+#            print("INSIDE")
+#            print(input$slider_clin1)
+#            
+#            nn <- new_clinical_sheet[,input$select_clinical_infovar]
+#            print(nn)
+#            nn[nn >= input$slider_clin1] <- paste0(">=", input$slider_clin1)
+#            nn[nn < input$slider_clin1] <- paste0("<", input$slider_clin1)
+#print(nn)
+#print("HELLO")
+#            new_clinical_sheet <- cbind(new_clinical_sheet, other = nn)
+#            surv_clin <- "other"
+#            print(new_clinical_sheet$other)
+#            print(new_clinical_sheet$other[new_clinical_sheet$other >= input$slider_clin1])
+#            new_clinical_sheet$other[new_clinical_sheet$other >= input$slider_clin1] <- paste0(">=", input$slider_clin1)
+#            new_clinical_sheet$other[new_clinical_sheet$other < input$slider_clin1] <- paste0("<", input$slider_clin1)
+#            print(new_clinical_sheet)
+#            
+#         }
+#        print(new_clinical_sheet)
+        
+        
         if(input$select_meth_data == FALSE){
-            if(is.null(input$select_clinical_infovar)){
+            
+            if(surv_clin == "None"){
                 showModal(
                     modalDialog(
                         title = "Variable error",
@@ -2493,37 +2540,30 @@ shinyServer(function(input, output, session) {
                 )
                 return()
             }
-            else{
-                surv_variables <- paste(input$select_clinical_infovar, collapse = "+")
-                surv_variables2 <- input$select_clinical_infovar
-                print(surv_variables2)
-                print(class(surv_variables2))
-                print("SURV VARIABLES 2")
-                #surv_variables2 <- c()
-                #for (i in input$select_clinical_infovar){
-                 #   surv_variables2 <- c(surv_variables2, eval(parse(text = i)))
-                  #  }
-                
-                #print(surv_variables2)
-                print("surv_variables")
-                print(surv_variables)
-            }
             
-            surv <- clinical_sheet()
-            print("surv")
-            print(surv)
-        
+            else{
+                
+                surv <- new_clinical_sheet
+                print("surv")
+                print(surv)
+                
+                if(surv_clin2 == "None"){
+                    log.rank.test <- survival::survdiff(survival::Surv(eval(parse(text = surv_time)), eval(parse(text = surv_status))) ~ eval(parse(text = surv_clin)), data = surv)
+                    cox.fit <- summary(survival::coxph(survival::Surv(eval(parse(text = surv_time)), eval(parse(text = surv_status))) ~ eval(parse(text = surv_clin)), data = surv))
+                    s_fit <- survminer::surv_fit(survival::Surv(eval(parse(text = surv_time)), eval(parse(text = surv_status)))  ~ eval(parse(text = surv_clin)), data = surv)
+                }
+                
+                else{
+                    log.rank.test <- survival::survdiff(survival::Surv(eval(parse(text = surv_time)), eval(parse(text = surv_status))) ~ eval(parse(text = surv_clin)) + eval(parse(text = surv_clin2)), data = surv)
+                    cox.fit <- summary(survival::coxph(survival::Surv(eval(parse(text = surv_time)), eval(parse(text = surv_status))) ~ eval(parse(text = surv_clin)) + eval(parse(text = surv_clin2)), data = surv))
+                    s_fit <- survminer::surv_fit(survival::Surv(eval(parse(text = surv_time)), eval(parse(text = surv_status)))  ~ eval(parse(text = surv_clin)) + eval(parse(text = surv_clin2)), data = surv)
+                }
+
+            }
         }
         
+        
         else{
-            
-            if(is.null(input$select_clinical_infovar)){
-                surv_variables <- "beta_median"
-            }
-            else{
-                surv_variables <- paste(c("beta_median", input$select_clinical_infovar), collapse = "+")
-            }
-            
             
             if(input$cpg_input == ""){
                 surv_data <- surv_annotation()
@@ -2544,38 +2584,49 @@ shinyServer(function(input, output, session) {
             }
             
             ann <- rbind(rval_gset_getBeta()[rownames(surv_data),], beta_median = apply(rval_gset_getBeta()[rownames(surv_data),], 2, median, na.rm = TRUE))
-            
             print("ann")
             print(ann)
-            surv <- cbind(clinical_sheet(), beta_median = t(ann["beta_median",]))
+            surv <- cbind(new_clinical_sheet, beta_median = t(ann["beta_median",]))
             
-            #surv$beta_median[surv$beta_median >= input$slider_meth_data_val] <- "Hypermethylated"
-            #surv$beta_median[surv$beta_median < input$slider_meth_data_val] <- "Hypomethylated"
-            surv$beta_median[surv$beta_median >= input$slider_meth_data_val] <- 1
-            surv$beta_median[surv$beta_median < input$slider_meth_data_val] <- 0
+            print(surv$beta_median[surv$beta_median >= input$slider_meth_data_val])
+            print(surv$beta_median)
+            print(surv[beta_median])
+            surv$beta_median[surv$beta_median >= input$slider_meth_data_val] <- "Hypermethylated"
+            surv$beta_median[surv$beta_median < input$slider_meth_data_val] <- "Hypomethylated"
+            #surv$beta_median[surv$beta_median >= input$slider_meth_data_val] <- 1
+            #surv$beta_median[surv$beta_median < input$slider_meth_data_val] <- 0
+            surv$beta_median <- as.factor(surv$beta_median)
             print("surv")
             print(surv)
+            
+            
+            if(surv_clin == "None"){
+                log.rank.test <- survival::survdiff(survival::Surv(eval(parse(text = surv_time)), eval(parse(text = surv_status))) ~ beta_median, data = surv)
+                cox.fit <- summary(survival::coxph(survival::Surv(eval(parse(text = surv_time)), eval(parse(text = surv_status))) ~ beta_median, data = surv))
+                s_fit <- survminer::surv_fit(survival::Surv(eval(parse(text = surv_time)), eval(parse(text = surv_status)))  ~ beta_median, data = surv)
+            }
+            
+            else{
+                
+                if(surv_clin2 == "None"){
+                    log.rank.test <- survival::survdiff(survival::Surv(eval(parse(text = surv_time)), eval(parse(text = surv_status))) ~ beta_median + eval(parse(text = surv_clin)), data = surv)
+                    cox.fit <- summary(survival::coxph(survival::Surv(eval(parse(text = surv_time)), eval(parse(text = surv_status))) ~ beta_median + eval(parse(text = surv_clin)), data = surv))
+                    s_fit <- survminer::surv_fit(survival::Surv(eval(parse(text = surv_time)), eval(parse(text = surv_status)))  ~ beta_median + eval(parse(text = surv_clin)), data = surv)
+                }
+                
+                else{
+                    log.rank.test <- survival::survdiff(survival::Surv(eval(parse(text = surv_time)), eval(parse(text = surv_status))) ~ beta_median + eval(parse(text = surv_clin)) + eval(parse(text = surv_clin2)), data = surv)
+                    cox.fit <- summary(survival::coxph(survival::Surv(eval(parse(text = surv_time)), eval(parse(text = surv_status))) ~ beta_median + eval(parse(text = surv_clin)) + eval(parse(text = surv_clin2)), data = surv))
+                    s_fit <- survminer::surv_fit(survival::Surv(eval(parse(text = surv_time)), eval(parse(text = surv_status)))  ~ beta_median + eval(parse(text = surv_clin)) + eval(parse(text = surv_clin2)), data = surv)
+                }
+            }
         }
         
-        time_surv <- input$select_clinical_timevar
-        print(time_surv)
-        print(surv$time_surv)
-        print(surv[time_surv])
-        print(class(time_surv))
-        print(class(surv[time_surv]))
-        print(surv["Time"])
-        print(class(surv["Time"]))
-        print("AS NUMERIC")
-        #print(eval(parse(text = time_surv)))
-    
-        
-        status_surv <- input$select_clinical_statusvar
-        
-        log.rank.test <- survival::survdiff(as.formula(paste(survival::Surv(eval(parse(text = input$select_clinical_timevar)), eval(parse(text = input$select_clinical_statusvar))), "~", paste(surv_variables2, collapse = "+"))), data = surv)
+        #log.rank.test
         print("log.rank.test")
         print(log.rank.test)
         
-        cox.fit <- summary(survival::coxph(survival::Surv(eval(parse(text = input$select_clinical_timevar)), eval(parse(text = input$select_clinical_statusvar)))  ~ eval(parse(text = surv_variables)), data = surv))
+        #cox.fit
         print("cox.fit")
         print(cox.fit)
         hz <- round(cox.fit$conf.int[1], 3)
@@ -2587,11 +2638,11 @@ shinyServer(function(input, output, session) {
         print(my_text)
         
         ggsurv <- survminer::ggsurvplot(
-            fit = survminer::surv_fit(survival::Surv(eval(parse(text = time_surv)), eval(parse(text = status_surv)))  ~ eval(parse(text = surv_variables)), data = surv), 
+            fit = s_fit, 
             xlab = input$select_time_unit,
             ylab = "Overall survival probability",
             legend.title = "",
-            legend.labs = c("Hypermethylated", "Hypomethylated"),
+            #legend.labs = c("Hypermethylated", "Hypomethylated"),
             #break.x.by = 10, 
             #palette = ezfun::msk_palette("contrast"), 
             #censor = FALSE,
