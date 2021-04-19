@@ -8,6 +8,7 @@ library(ggplot2)
 
 shinyServer(function(input, output, session) {
     # INITIALIZE REACTIVE VARIABLES
+    rval_sheet_target_done <- reactiveVal(value = FALSE)
     rval_gset_done <- reactiveVal(value = FALSE)
     rval_generated_limma_model <- reactiveVal(value = FALSE)
     rval_analysis_finished <- reactiveVal(value = FALSE)
@@ -184,6 +185,12 @@ shinyServer(function(input, output, session) {
                          "analysis" = "data")
         updateTabItems(session, "menu", newtab)
     })
+    observeEvent(input$norm_link, {
+        newtab <- switch(input$menu,
+                         "survival" = "qc",
+                         "qc" = "survival")
+        updateTabItems(session, "menu", newtab)
+    })
     
     # Input button
     output$ui_input_data <- renderUI({
@@ -243,8 +250,10 @@ shinyServer(function(input, output, session) {
     
     
     rval_sheet_target <- eventReactive(
-        input$button_input_next,
+        input$button_input_next, {
+            rval_sheet_target_done(TRUE)
         rval_sheet()[rval_sheet()[[input$select_input_samplenamevar]] %in% input$selected_samples, ]
+        }
     )
     
     
@@ -2292,7 +2301,9 @@ shinyServer(function(input, output, session) {
     
     clinical_sheet <- eventReactive(input$b_clinical_data, {
         print("hello")
-        file <- read.csv(input$input_clinical$datapath)
+        validate(need(try(file <- read.csv(file = input$input_clinical$datapath)), 
+                      "Error reading the file !!!"))
+        #file <- read.csv(input$input_clinical$datapath)
         #validate(need(tools::file_ext(input$input_data$datapath) == "csv", "File extension should be .csv"))
         validate(
             need(
@@ -2335,6 +2346,24 @@ shinyServer(function(input, output, session) {
         shinyjs::enable("b_clinical_next") # Enable button continue
     })
     
+    clinical_sheet_target <- eventReactive(input$b_clinical_next, {
+        if(rval_sheet_target_done() == TRUE){
+            print("sheet target")
+            print(rval_sheet_target())
+            print("clinical")
+            print(file)
+            print("merge")
+            print(input$select_input_samplenamevar)
+            clinical <- merge(x = clinical_sheet(), y = rval_sheet_target(), by.x = input$select_clinical_samplenamevar, by.y = input$select_input_samplenamevar)
+        }
+        else{
+            clinical <- clinical_sheet()
+        }
+        print("CLINICAL TARGET")
+        print(clinical)
+        clinical
+    })
+    
     output$ui_clinical_different <- renderUI({
         if(input$select_clinical_samplenamevar==input$select_clinical_timevar | input$select_clinical_samplenamevar==input$select_clinical_statusvar | input$select_clinical_timevar==input$select_clinical_statusvar){
             shinyjs::disable("b_clinical_next")
@@ -2363,11 +2392,12 @@ shinyServer(function(input, output, session) {
             max = 3,
             value = 1,
             {
+                
                 updateSelectInput(
                     session,
                     "select_clinical_infovar",
-                    label = "Select Clinical Information Column:",
-                    choices = c("None", colnames(clinical_sheet())[!(colnames(clinical_sheet()) %in% c(input$select_clinical_samplenamevar, input$select_clinical_timevar, input$select_clinical_statusvar))])
+                    label = "Select First Clinical Information Column:",
+                    choices = c("None", colnames(clinical_sheet_target())[!(colnames(clinical_sheet_target()) %in% c(input$select_clinical_samplenamevar, input$select_clinical_timevar, input$select_clinical_statusvar))])
                 )
 
                 removeModal()
@@ -2377,36 +2407,77 @@ shinyServer(function(input, output, session) {
     })
     
     observeEvent(input$select_clinical_infovar, ignoreNULL = TRUE, {
+        req(clinical_sheet_target())
         if(input$select_clinical_infovar != "None"){
-            output$ui_select_clinical_infovar2 <- renderUI(
-                selectInput("select_clinical_infovar2", label = "Select Second Clinical Information Column:",
-                            choices = c("None", colnames(clinical_sheet())[!(colnames(clinical_sheet()) %in% c(input$select_clinical_samplenamevar, input$select_clinical_timevar, input$select_clinical_statusvar, input$select_clinical_infovar))]))
-            )
-            if(is.numeric(clinical_sheet()[,input$select_clinical_infovar])){
+            
+            output$clin2_active <- renderText("active")
+            outputOptions(output, 'clin2_active', suspendWhenHidden=FALSE) 
+            updateSelectInput(session, "select_clinical_infovar2", label = "Select Second Clinical Information Column:",
+                            choices = c("None", colnames(clinical_sheet_target())[!(colnames(clinical_sheet_target()) %in% c(input$select_clinical_samplenamevar, input$select_clinical_timevar, input$select_clinical_statusvar, input$select_clinical_infovar))])
+                            )
+
+            if(is.numeric(clinical_sheet_target()[,input$select_clinical_infovar])){
                 print("CLIN1 NUMERIC")
-                print(clinical_sheet()[,input$select_clinical_infovar])
-                if(length(unique(clinical_sheet()[,input$select_clinical_infovar])) > 2){
+                print(clinical_sheet_target()[,input$select_clinical_infovar])
+                if(length(unique(clinical_sheet_target()[,input$select_clinical_infovar])) > 2){
                     print("CLIN1 NUMERIC > 2")
-                    print(clinical_sheet()[,input$select_clinical_infovar])
-                    output$ui_slider_clin1 <- renderUI(sliderInput("slider_clin1",
-                                                                   label = paste(input$select_clinical_infovar, "threshold"),
-                                                                   min = min(clinical_sheet()[,input$select_clinical_infovar]),
-                                                                   max = max(clinical_sheet()[,input$select_clinical_infovar]),
-                                                                   value = (min(clinical_sheet()[,input$select_clinical_infovar]) + max(clinical_sheet()[,input$select_clinical_infovar]))/2
-                    )
+                    print(clinical_sheet_target()[,input$select_clinical_infovar])
+                    output$clin1_num <- renderText("numeric")
+                    outputOptions(output, 'clin1_num', suspendWhenHidden=FALSE) 
+                    updateSliderInput(session, "slider_clin1_num", label = paste(input$select_clinical_infovar, "threshold"),
+                                      min = min(clinical_sheet_target()[,input$select_clinical_infovar]),
+                                      max = max(clinical_sheet_target()[,input$select_clinical_infovar]),
+                                      value = (min(clinical_sheet_target()[,input$select_clinical_infovar]) + max(clinical_sheet_target()[,input$select_clinical_infovar]))/2
                     )
                 }
             }
             else{
                 print("CLIN1 NO NUMERIC")
-                print(clinical_sheet()[,input$select_clinical_infovar])
-                output$ui_slider_clin1 <- renderUI(NULL)
+                print(clinical_sheet_target()[,input$select_clinical_infovar])
+                output$clin1_num <- renderText("")
+                outputOptions(output, 'clin1_num', suspendWhenHidden=FALSE) 
             }
         }
         else{
-            output$ui_select_clinical_infovar2 <- renderUI(NULL)
+            output$clin1_num <- renderText("")
+            outputOptions(output, 'clin1_num', suspendWhenHidden=FALSE) 
+            output$clin2_active <- renderText("")
+            outputOptions(output, 'clin2_active', suspendWhenHidden=FALSE) 
         }
     })
+    
+    observeEvent(input$select_clinical_infovar2, ignoreNULL = TRUE, {
+        
+        if(input$select_clinical_infovar2 != "None"){
+            
+            if(is.numeric(clinical_sheet_target()[,input$select_clinical_infovar2])){
+                print("CLIN2 NUMERIC")
+                print(clinical_sheet_target()[,input$select_clinical_infovar2])
+                if(length(unique(clinical_sheet_target()[,input$select_clinical_infovar2])) > 2){
+                    print("CLIN2 NUMERIC > 2")
+                    print(clinical_sheet_target()[,input$select_clinical_infovar2])
+                    output$clin2_num <- renderText("numeric")
+                    outputOptions(output, 'clin2_num', suspendWhenHidden=FALSE) 
+                    updateSliderInput(session, "slider_clin2_num", label = paste(input$select_clinical_infovar2, "threshold"),
+                                      min = min(clinical_sheet_target()[,input$select_clinical_infovar2]),
+                                      max = max(clinical_sheet_target()[,input$select_clinical_infovar2]),
+                                      value = (min(clinical_sheet_target()[,input$select_clinical_infovar2]) + max(clinical_sheet_target()[,input$select_clinical_infovar2]))/2
+                    )
+                }
+            }
+            else{
+                print("CLIN2 NO NUMERIC")
+                print(clinical_sheet_target()[,input$select_clinical_infovar2])
+                output$clin2_num <- renderText("")
+                outputOptions(output, 'clin2_num', suspendWhenHidden=FALSE) 
+            }
+        }
+        else{
+            output$clin2_num <- renderText("")
+            outputOptions(output, 'clin2_num', suspendWhenHidden=FALSE) 
+        }
+    })
+    
     
     
     
@@ -2423,7 +2494,7 @@ shinyServer(function(input, output, session) {
         }
         else{
             updateSwitchInput(session, "select_meth_data", value = FALSE, disabled = TRUE)
-            return(helpText("Methylation options are disabled because normalization is not done.", style = "font-size:11px"))
+            return(helpText(HTML("Methylation options are disabled because", as.character(actionLink("norm_link", label = "normalization")), "is not done."), style = "font-size:11px"))
         }
     })
     
@@ -2504,30 +2575,58 @@ shinyServer(function(input, output, session) {
         surv_clin <- input$select_clinical_infovar
         surv_clin2 <- input$select_clinical_infovar2
         
-        new_clinical_sheet <- clinical_sheet()
-#        if(!is.null(input$slider_clin1)){
-#            print("INSIDE")
-#            print(input$slider_clin1)
-#            
-#            nn <- new_clinical_sheet[,input$select_clinical_infovar]
-#            print(nn)
-#            nn[nn >= input$slider_clin1] <- paste0(">=", input$slider_clin1)
-#            nn[nn < input$slider_clin1] <- paste0("<", input$slider_clin1)
-#print(nn)
-#print("HELLO")
-#            new_clinical_sheet <- cbind(new_clinical_sheet, other = nn)
-#            surv_clin <- "other"
-#            print(new_clinical_sheet$other)
-#            print(new_clinical_sheet$other[new_clinical_sheet$other >= input$slider_clin1])
-#            new_clinical_sheet$other[new_clinical_sheet$other >= input$slider_clin1] <- paste0(">=", input$slider_clin1)
-#            new_clinical_sheet$other[new_clinical_sheet$other < input$slider_clin1] <- paste0("<", input$slider_clin1)
-#            print(new_clinical_sheet)
-#            
-#         }
-#        print(new_clinical_sheet)
+        new_clinical_sheet <- clinical_sheet_target()
+        print("START")
+        print(new_clinical_sheet)
+        
+        if(input$select_clinical_infovar != "None"){
+        if(is.numeric(clinical_sheet_target()[,input$select_clinical_infovar])){
+            print("SLIDER VALUE")
+            print(input$slider_clin1_num)
+            
+            print("NEW CLINICAL")
+            nn <- new_clinical_sheet[,input$select_clinical_infovar]
+            print(nn)
+            nn[nn < input$slider_clin1_num] <- paste0("<", input$slider_clin1_num)
+            print(nn)
+            nn[nn >= input$slider_clin1_num] <- paste0(">=", input$slider_clin1_num)
+            print(nn)
+            nn <- as.factor(nn)
+            
+            print("CLINICAL OTHER")
+            new_clinical_sheet <- cbind(new_clinical_sheet, other = nn)
+            print(new_clinical_sheet)
+            surv_clin <- "other"
+        }
+        
+        print(new_clinical_sheet)
+        if(input$select_clinical_infovar2 != "None"){
+        if(is.numeric(clinical_sheet_target()[,input$select_clinical_infovar2])){
+            print("SLIDER VALUE 2")
+            print(input$slider_clin2_num)
+            
+            print("NEW CLINICAL 2")
+            nn <- new_clinical_sheet[,input$select_clinical_infovar2]
+            print(nn)
+            nn[nn < input$slider_clin2_num] <- paste0("<", input$slider_clin2_num)
+            print(nn)
+            nn[nn >= input$slider_clin2_num] <- paste0(">=", input$slider_clin2_num)
+            print(nn)
+            nn <- as.factor(nn)
+            
+            print("CLINICAL OTHER 2")
+            new_clinical_sheet <- cbind(new_clinical_sheet, other2 = nn)
+            print(new_clinical_sheet)
+            surv_clin2 <- "other2"
+        }}}
+        
+        print("END CLIN")
+        print(new_clinical_sheet)
         
         
         if(input$select_meth_data == FALSE){
+            
+            print("NO METH")
             
             if(surv_clin == "None"){
                 showModal(
@@ -2565,6 +2664,9 @@ shinyServer(function(input, output, session) {
         
         else{
             
+            print("METH")
+            
+            
             if(input$cpg_input == ""){
                 surv_data <- surv_annotation()
             }
@@ -2591,8 +2693,8 @@ shinyServer(function(input, output, session) {
             print(surv$beta_median[surv$beta_median >= input$slider_meth_data_val])
             print(surv$beta_median)
             print(surv[beta_median])
-            surv$beta_median[surv$beta_median >= input$slider_meth_data_val] <- "Hypermethylated"
-            surv$beta_median[surv$beta_median < input$slider_meth_data_val] <- "Hypomethylated"
+            surv$beta_median[surv$beta_median >= input$slider_meth_data_val] <- "Hyper"
+            surv$beta_median[surv$beta_median < input$slider_meth_data_val] <- "Hypo"
             #surv$beta_median[surv$beta_median >= input$slider_meth_data_val] <- 1
             #surv$beta_median[surv$beta_median < input$slider_meth_data_val] <- 0
             surv$beta_median <- as.factor(surv$beta_median)
@@ -2637,6 +2739,12 @@ shinyServer(function(input, output, session) {
         print("my_text")
         print(my_text)
         
+        print("STRATA")
+        print(names(s_fit$strata))
+        print(s_fit$strata)
+        names(s_fit$strata) <- gsub("eval(parse(text = surv_clin))=", "Clin1: ", names(s_fit$strata), fixed = TRUE)
+        names(s_fit$strata) <- gsub("eval(parse(text = surv_clin2))=", "Clin2: ", names(s_fit$strata), fixed = TRUE)
+        names(s_fit$strata) <- gsub("beta_median=", "Meth: ", names(s_fit$strata))
         ggsurv <- survminer::ggsurvplot(
             fit = s_fit, 
             xlab = input$select_time_unit,
@@ -2648,9 +2756,13 @@ shinyServer(function(input, output, session) {
             #censor = FALSE,
             risk.table = TRUE,
             risk.table.y.text = TRUE,
+            risk.table.height = 0.35,
             pval = TRUE, 
             pval.method = TRUE)
-        ggsurv$plot <- ggsurv$plot + ggplot2::annotate("text", x = 30, y = 1, label = my_text)
+        print("STRATA")
+        print(names(s_fit$strata))
+        print(s_fit$strata)
+        ggsurv$plot <- ggsurv$plot + ggplot2::labs(subtitle = my_text) + ggplot2::theme(plot.subtitle = element_text(size = 12))
         ggsurv
         
     })

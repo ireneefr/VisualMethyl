@@ -862,41 +862,55 @@ shinyUI(
             mainPanel(width = 9,
               conditionalPanel("input.b_clinical_next > 0",
               box(title = "Options", width = 12, closable = FALSE, collapsible = TRUE, collapsed = FALSE, status = "primary",
+                  fluidRow(
                   column(width = 6,
                   selectInput("select_clinical_infovar","", c()),
-                  uiOutput("ui_slider_clin1")
+                  conditionalPanel(
+                    "output.clin1_num == 'numeric'",
+                    sliderInput("slider_clin1_num", "", min = 0, max = 1, value = 0)
+                  )
                   ),
                   column(width = 6,
-                  uiOutput("ui_select_clinical_infovar2")),
-                  column(width = 5, align = "center",
-                    switchInput(
-                      inputId = "select_meth_data",
-                      label = "Methylation Data",
-                      labelWidth = "100px",
-                      value = TRUE
-                    ),
-                    uiOutput("ui_meth_data_disabled"),
-                    style = "align-items: center; justify-content: center"),
-                    column(width = 7,
-                    conditionalPanel(
-                      "input.select_meth_data",
-                      sliderInput(
-                        inputId = "slider_meth_data_val",
-                        label = "Beta threshold",
-                        min = 0,
-                        max = 1,
-                        step = 0.01,
-                        value = 0.33
-                      ))),
                   conditionalPanel(
-                    "input.select_meth_data",
-                      selectizeInput("select_gene", "", c(),  options = list(maxOptions = 10)),
-                      radioButtons("select_group_island", "Other options", choices = c("None", "Genomic Region", "Relation to Island"), selected = "None", inline = TRUE),
-                      uiOutput("ui_group_island"),
-                      textInput("cpg_input", "Select CpG site:")
-                    ),
-                  #column(width = 12,
-                actionButton("b_run_survival", "Run Survival", class = "btn-primary")#)
+                    "output.clin2_active == 'active'",
+                    selectInput("select_clinical_infovar2", "", c())
+                  ),
+                  conditionalPanel(
+                    "output.clin2_num == 'numeric'",
+                    sliderInput("slider_clin2_num", "", min = 0, max = 1, value = 0)
+                  )
+                  )
+              ),
+              fluidRow(br()),
+              fluidRow(
+                column(width = 6, align = "center",
+                       switchInput(
+                         inputId = "select_meth_data",
+                         label = "Methylation Data",
+                         labelWidth = "100px",
+                         value = TRUE
+                       ),
+                       uiOutput("ui_meth_data_disabled"),
+                       conditionalPanel(
+                         "input.select_meth_data",
+                         selectizeInput("select_gene", "", c(),  options = list(maxOptions = 10)),
+                         radioButtons("select_group_island", "Other options", choices = c("None", "Genomic Region", "Relation to Island"), selected = "None", inline = TRUE),
+                         uiOutput("ui_group_island"),
+                         textInput("cpg_input", "Select CpG site:")
+                       ),
+                       actionButton("b_run_survival", "Run Survival", class = "btn-primary")),
+                column(width = 6,
+                       conditionalPanel(
+                         "input.select_meth_data",
+                         sliderInput(
+                           inputId = "slider_meth_data_val",
+                           label = "Beta threshold",
+                           min = 0,
+                           max = 1,
+                           step = 0.01,
+                           value = 0.33
+                         )))
+              )
               )),
               box(title = "Kaplan-Meier", width = 12, closable = FALSE, collapsible = FALSE, status = "primary",
                   conditionalPanel("input.b_run_survival > 0",
