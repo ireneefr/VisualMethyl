@@ -11,8 +11,11 @@ toc-title: "Table of contents"
 params:
   
   #checks
+  check_data: FALSE
   check_qc: FALSE
   check_exploratory_analysis: FALSE
+  check_functional_enrichment: FALSE
+  check_survival: FALSE
   
   #input 
   rval_sheet: NULL
@@ -88,6 +91,10 @@ params:
   filteredmcsea2heatmap: NULL
   table_sigdmrs: NULL
 
+
+  #survival
+  plot_survival: NULL
+  surv_stat: NULL
   
   #plots
 
@@ -131,21 +138,25 @@ params:
 
 ---
 
+
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{css, echo=FALSE}
 div, code {overflow-x:auto !important}
+div.main-container {max-width: 1600px;}
 ```
 
-## Data
+```{r data, echo=FALSE, eval=params$check_data==TRUE, results='asis'}
+cat("\n## Data")
 
-The group variable selected was __`r params$grouping_var`__, and the donor variable was __`r params$donor_var`__ .
+cat("\nThe group variable selected was ", params$grouping_var, " and the donor variable was ", params$donor_var, ".\n")
 
-Finally, the selected samples added to the RGSet file were:
-
-```{r sample_sheet, echo=FALSE, warning=FALSE, message = FALSE}
+cat("\nFinally, the selected samples added to the RGSet file were:")
+```
+```{r sample_sheet, echo=FALSE, warning=FALSE, eval=!is.null(params$rval_sheet_target), message = FALSE}
 DT::datatable(params$rval_sheet_target, extensions = 'Buttons',
     style = "bootstrap",
     rownames = FALSE,
@@ -153,21 +164,21 @@ DT::datatable(params$rval_sheet_target, extensions = 'Buttons',
     options = list(dom = 'Blfrtip',
     columnDefs = list(list(
       targets = match("Basename",colnames(params$rval_sheet_target)) - 1, visible = FALSE)),
-     #scrollX = TRUE,
     buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
     lengthMenu = list(c(10,25,50,-1), c(10,25,50,"All"))))
 ```
 
-The following samples were excluded for the analysis:
-
+```{r data_excluded, echo=FALSE, eval=params$check_data==TRUE, results='asis'}
+cat("\nThe following samples were excluded for the analysis:")
+```
 ```{r samples_excluded, echo=FALSE, warning=FALSE, message = FALSE, comment=NA}
-
 cat(params$rval_sheet[[params$name_var]][!(params$rval_sheet[[params$name_var]] %in% params$rval_sheet_target[[params$name_var]])], 
     sep = ", ")
-
 ```
 
-***
+```{r sep_data, echo=FALSE, eval=params$check_data==TRUE, results='asis'}
+cat("***")
+```
 
 ```{r quality_control, echo = FALSE, eval=params$check_qc==TRUE, results='asis'}
 cat("\n## Quality Control")
@@ -306,7 +317,9 @@ DT::datatable(params$table_corrplot, extensions = 'Buttons',
     c(10,25,50,"All"))))
 ```
 
-***
+```{r sep_quality_control, echo = FALSE, eval=params$check_qc==TRUE, results='asis'}
+cat("***")
+```
 
 ```{r exploratory_analysis, echo=FALSE, eval=params$check_exploratory_analysis==TRUE, results='asis'}
 cat("\n## Exploratory Analysis")
@@ -400,7 +413,9 @@ params$plot_hyper_hypo_relation_to_island
 params$plot_hyper_hypo_group
 ```
 
-***
+```{r sep_exploratory_analysis, echo=FALSE, eval=params$check_exploratory_analysis==TRUE, results='asis'}
+cat("***")
+```
 
 ```{r linear_model, echo = FALSE, eval = !is.null(params$filteredlist2heatmap), results = "asis"}
 cat("\n## DMPs and DMRs")
@@ -620,8 +635,11 @@ DT::datatable(params$table_sigdmrs,
 
 ***
 
-```{r functional_enrichment, echo = FALSE, eval = !is.null(params$kegg), results = "asis"}
+```{r functional_enrichment, echo = FALSE, eval =params$check_functional_enrichment==TRUE, results = "asis"}
 cat("\n## Functional enrichment")
+```
+
+```{r kegg, echo = FALSE, eval = !is.null(params$kegg), results = "asis"}
 cat("\n### KEGG")
 ```
 ```{r plot_kegg, echo = FALSE, warning = FALSE, message = FALSE, eval = !is.null(params$kegg), fig.width=15, fig.height=10}
@@ -656,7 +674,31 @@ cat("\n### Reactome")
 params$reactome
 ```
 
-***
+```{r sep_functional_enrichment, echo = FALSE, eval =params$check_functional_enrichment==TRUE, results = "asis"}
+cat("***")
+```
+
+```{r survival, echo=FALSE, eval=params$check_survival==TRUE, results='asis'}
+cat("\n## Survival")
+```
+
+```{r kaplan-meier, echo=FALSE, eval=!is.null(params$plot_survival), results='asis'}
+cat("\n### Kaplan-Meier")
+```
+```{r plot_survival, echo=FALSE, warning=FALSE, message=FALSE, eval=!is.null(params$plot_survival), fig.align='center', fig.height=10, fig.width=10}
+params$plot_survival
+```
+
+```{r statistics, echo=FALSE, eval=!is.null(params$surv_stat), results='asis'}
+cat("\n### Statistics")
+```
+```{r plot_statistics, echo=FALSE, warning=FALSE, message=FALSE, eval=!is.null(params$surv_stat)}
+params$surv_stat
+```
+
+```{r sep_survival, echo=FALSE, eval=params$check_survival==TRUE, results='asis'}
+cat("***")
+```
 
 ## System and analysis information
 

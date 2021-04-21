@@ -844,17 +844,20 @@ shinyUI(
         tabItem(
           tabName = "survival",
           fluidPage(
-            sidebarPanel(width = 3,
-                    downloadButton("clinical_template", "Download clinical template"),
-                    fileInput("input_clinical", "Upload clinical data (.csv)", multiple = FALSE, accept = ".csv"),
+            sidebarPanel(width = 3, style = "padding-top:30px;padding-bottom:30px;padding-right:30px;padding-left:30px;margin-right:-10px;margin-left:-10px",
+                    fileInput("input_clinical", HTML("Upload clinical data (.csv)", as.character(downloadLink("clinical_template", "Download template", style = "font-size:10px;padding-left:45px"))), multiple = FALSE, accept = ".csv"),
                     uiOutput("ui_clinical_data"),
                     conditionalPanel(
                       "input.b_clinical_data > 0",
-                      
+                      br(),
+                      br(),
                         selectInput("select_clinical_samplenamevar", "", c()),
+                      br(),
                         selectInput("select_clinical_timevar", "", c()),
-                        radioButtons("select_time_unit", "Time unit", choices = c("Days", "Months", "Years"), selected = "Months", inline = TRUE),
+                        div(radioButtons("select_time_unit", "Time unit", choices = c("Days", "Months", "Years"), selected = "Months", inline = TRUE), style = "font-size:12px;margin-top:-12px"),
+                      br(),
                         selectInput("select_clinical_statusvar", "", c()),
+                      br(),
                       uiOutput("ui_clinical_different"),
                         actionButton("b_clinical_next", "Continue to Survival", class = "btn-primary")
                     )
@@ -881,24 +884,26 @@ shinyUI(
                   )
                   )
               ),
-              fluidRow(br()),
+              fluidRow(hr()),
               fluidRow(
-                column(width = 6, align = "center",
+                column(width = 6,
+                       column(width = 6, align = "right",
+                              uiOutput("ui_meth_data_disabled")
+                       ),
+                       column(width = 6, 
                        switchInput(
                          inputId = "select_meth_data",
                          label = "Methylation Data",
-                         labelWidth = "100px",
                          value = TRUE
-                       ),
-                       uiOutput("ui_meth_data_disabled"),
+                       )),
+                       
                        conditionalPanel(
                          "input.select_meth_data",
                          selectizeInput("select_gene", "", c(),  options = list(maxOptions = 10)),
                          radioButtons("select_group_island", "Other options", choices = c("None", "Genomic Region", "Relation to Island"), selected = "None", inline = TRUE),
                          uiOutput("ui_group_island"),
                          textInput("cpg_input", "Select CpG site:")
-                       ),
-                       actionButton("b_run_survival", "Run Survival", class = "btn-primary")),
+                       )),
                 column(width = 6,
                        conditionalPanel(
                          "input.select_meth_data",
@@ -910,12 +915,25 @@ shinyUI(
                            step = 0.01,
                            value = 0.33
                          )))
-              )
+              ),
+              fluidRow(
+                       actionButton("b_run_survival", "Run Survival", class = "btn-primary"))
               )),
               box(title = "Kaplan-Meier", width = 12, closable = FALSE, collapsible = FALSE, status = "primary",
                   conditionalPanel("input.b_run_survival > 0",
-                  withSpinner(plotOutput("plot_survival")))
-                  )
+                  withSpinner(plotOutput("plot_survival", height = "800px")))
+                  ),
+              box(title = "Descriptive Statistics", width = 12, closable = FALSE, collapsible = TRUE, collapsed = TRUE, status = "primary",
+                  #selectInput("select_stat_surv", "", c()),
+                  #DT::DTOutput("plot_surv_stat")
+                  verbatimTextOutput("describe_surv_code")       
+                  ),
+              conditionalPanel(
+                "input.select_meth_data",
+                box(title = "Frequencies by Group", width = 12, closable = FALSE, collapsible = TRUE, collapsed = TRUE, status = "primary",
+                    verbatimTextOutput("freq_surv_code")
+                    )
+              )
             )
           )
         ),
@@ -1004,6 +1022,20 @@ shinyUI(
               ),
               checkboxGroupInput(
                 "check_group_functional_enrichment",
+                label = NULL,
+                choices = c(),
+                selected = c()
+              )
+            ),
+            column(
+              2,
+              checkboxInput(
+                "check_survival",
+                strong("Survival"),
+                value = FALSE
+              ),
+              checkboxGroupInput(
+                "check_group_survival",
                 label = NULL,
                 choices = c(),
                 selected = c()

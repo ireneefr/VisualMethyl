@@ -47,6 +47,8 @@ shinyServer(function(input, output, session) {
         shinyjs::disable("check_group_dmrs")
         shinyjs::disable("check_functional_enrichment")
         shinyjs::disable("check_group_functional_enrichment")
+        shinyjs::disable("check_survival")
+        shinyjs::disable("check_group_survival")
         })
     observeEvent(rval_gset(), {
         shinyjs::enable("check_qc")
@@ -63,6 +65,10 @@ shinyServer(function(input, output, session) {
     observeEvent(rval_mcsea(), {
         shinyjs::enable("check_dmrs")
         updateCheckboxInput(session, "check_dmrs", value = TRUE)
+    })
+    observeEvent(graph_survival(), {
+        shinyjs::enable("check_survival")
+        updateCheckboxInput(session, "check_survival", value = TRUE)
     })
     observe({
         req(rval_gset())
@@ -126,6 +132,17 @@ shinyServer(function(input, output, session) {
         } else{
             updateCheckboxGroupInput(session, "check_group_dmrs", c(), selected = 0)
             shinyjs::disable("check_group_dmrs")
+        }
+    })
+    observe({
+        req(graph_survival())
+        if(input$check_survival){
+            updateCheckboxGroupInput(session, "check_group_survival", choices = list("Kaplan-Meier" = 1,
+                                                                                     "Statistics" = 2), selected = c(1:2))
+            shinyjs::enable("check_group_survival")
+        } else{
+            updateCheckboxGroupInput(session, "check_group_survival", c(), selected = 0)
+            shinyjs::disable("check_group_survival")
         }
     })
     
@@ -2282,7 +2299,8 @@ shinyServer(function(input, output, session) {
     ###### SURVIVAL #####
     output$clinical_template <- downloadHandler(
         filename = paste("clinical_template", ".csv", sep = ""),
-        content = function(file) {write.csv(data.frame(Sample = rval_sheet_target()[[input$select_input_samplenamevar]], Time = NA, Status = NA), file, row.names = FALSE)}
+        content = ifelse(rval_sheet_target_done() == TRUE, function(file) {write.csv(data.frame(Sample = rval_sheet_target()[[input$select_input_samplenamevar]], Time = NA, Status = NA), file, row.names = FALSE)},
+                         function(file) {write.csv(data.frame(Sample = NA, Time = NA, Status = NA), file, row.names = FALSE)})
     )
     
     # Input button
@@ -2367,7 +2385,7 @@ shinyServer(function(input, output, session) {
     output$ui_clinical_different <- renderUI({
         if(input$select_clinical_samplenamevar==input$select_clinical_timevar | input$select_clinical_samplenamevar==input$select_clinical_statusvar | input$select_clinical_timevar==input$select_clinical_statusvar){
             shinyjs::disable("b_clinical_next")
-            return(helpText("Columns of Sample, Time and Status must be different"))
+            return(helpText("Columns of Sample, Time and Status must be different", style = "font-size:10px"))
         }
         else{
             shinyjs::enable("b_clinical_next")
@@ -2494,7 +2512,7 @@ shinyServer(function(input, output, session) {
         }
         else{
             updateSwitchInput(session, "select_meth_data", value = FALSE, disabled = TRUE)
-            return(helpText(HTML("Methylation options are disabled because", as.character(actionLink("norm_link", label = "normalization")), "is not done."), style = "font-size:11px"))
+            return(helpText(HTML("Methylation options are disabled <br> because", as.character(actionLink("norm_link", label = "normalization")), "is not done."), style = "font-size:11px;align-content:center"))
         }
     })
     
@@ -2594,9 +2612,9 @@ shinyServer(function(input, output, session) {
             nn <- as.factor(nn)
             
             print("CLINICAL OTHER")
-            new_clinical_sheet <- cbind(new_clinical_sheet, other = nn)
+            new_clinical_sheet <- cbind(new_clinical_sheet, Clin1 = nn)
             print(new_clinical_sheet)
-            surv_clin <- "other"
+            surv_clin <- "Clin1"
         }
         
         print(new_clinical_sheet)
@@ -2615,9 +2633,9 @@ shinyServer(function(input, output, session) {
             nn <- as.factor(nn)
             
             print("CLINICAL OTHER 2")
-            new_clinical_sheet <- cbind(new_clinical_sheet, other2 = nn)
+            new_clinical_sheet <- cbind(new_clinical_sheet, Clin2 = nn)
             print(new_clinical_sheet)
-            surv_clin2 <- "other2"
+            surv_clin2 <- "Clin2"
         }}}
         
         print("END CLIN")
@@ -2650,12 +2668,24 @@ shinyServer(function(input, output, session) {
                     log.rank.test <- survival::survdiff(survival::Surv(eval(parse(text = surv_time)), eval(parse(text = surv_status))) ~ eval(parse(text = surv_clin)), data = surv)
                     cox.fit <- summary(survival::coxph(survival::Surv(eval(parse(text = surv_time)), eval(parse(text = surv_status))) ~ eval(parse(text = surv_clin)), data = surv))
                     s_fit <- survminer::surv_fit(survival::Surv(eval(parse(text = surv_time)), eval(parse(text = surv_status)))  ~ eval(parse(text = surv_clin)), data = surv)
+                    print("CLASS")
+                    print(class(surv))
+                    print(surv_clin)
+                    print(surv$Sex)
+                    
+                    describe_surv <- Hmisc::describe(surv)
                 }
                 
                 else{
                     log.rank.test <- survival::survdiff(survival::Surv(eval(parse(text = surv_time)), eval(parse(text = surv_status))) ~ eval(parse(text = surv_clin)) + eval(parse(text = surv_clin2)), data = surv)
                     cox.fit <- summary(survival::coxph(survival::Surv(eval(parse(text = surv_time)), eval(parse(text = surv_status))) ~ eval(parse(text = surv_clin)) + eval(parse(text = surv_clin2)), data = surv))
                     s_fit <- survminer::surv_fit(survival::Surv(eval(parse(text = surv_time)), eval(parse(text = surv_status)))  ~ eval(parse(text = surv_clin)) + eval(parse(text = surv_clin2)), data = surv)
+                    print("CLASS")
+                    print(class(surv))
+                    print(surv_clin)
+                    print(surv$Sex)
+                                      
+                    describe_surv <- Hmisc::describe(surv)
                 }
 
             }
@@ -2692,12 +2722,26 @@ shinyServer(function(input, output, session) {
             
             print(surv$beta_median[surv$beta_median >= input$slider_meth_data_val])
             print(surv$beta_median)
-            print(surv[beta_median])
+            #print(surv[beta_median])
+            print("HYPER/HYPO")
             surv$beta_median[surv$beta_median >= input$slider_meth_data_val] <- "Hyper"
             surv$beta_median[surv$beta_median < input$slider_meth_data_val] <- "Hypo"
             #surv$beta_median[surv$beta_median >= input$slider_meth_data_val] <- 1
             #surv$beta_median[surv$beta_median < input$slider_meth_data_val] <- 0
             surv$beta_median <- as.factor(surv$beta_median)
+            print(unique(surv$beta_median))
+            print(length(unique(surv$beta_median)))
+            if(length(unique(surv$beta_median)) < 2){
+                showModal(
+                    modalDialog(
+                        title = "Methylation data error",
+                        "There is only one methylation level",
+                        easyClose = TRUE,
+                        footer = NULL
+                    )
+                )
+                return()
+            }
             print("surv")
             print(surv)
             
@@ -2706,6 +2750,20 @@ shinyServer(function(input, output, session) {
                 log.rank.test <- survival::survdiff(survival::Surv(eval(parse(text = surv_time)), eval(parse(text = surv_status))) ~ beta_median, data = surv)
                 cox.fit <- summary(survival::coxph(survival::Surv(eval(parse(text = surv_time)), eval(parse(text = surv_status))) ~ beta_median, data = surv))
                 s_fit <- survminer::surv_fit(survival::Surv(eval(parse(text = surv_time)), eval(parse(text = surv_status)))  ~ beta_median, data = surv)
+                print("CLASS")
+                print(class(surv))
+                print(surv_clin)
+                print(surv$Sex)
+                surv <- as.matrix(surv)
+                print(surv)
+                #surv <- as.data.frame(surv)
+                g <- input$select_input_groupingvar
+                print(g)
+                #group <- eval(parse(text = input$select_input_groupingvar))
+                #print(group)
+                #print(surv[g])
+                freq_surv <- compareGroups::descrTable("Sample_Group" ~ ., data = as.data.frame(surv))                    
+                describe_surv <- Hmisc::describe(surv)
             }
             
             else{
@@ -2714,12 +2772,42 @@ shinyServer(function(input, output, session) {
                     log.rank.test <- survival::survdiff(survival::Surv(eval(parse(text = surv_time)), eval(parse(text = surv_status))) ~ beta_median + eval(parse(text = surv_clin)), data = surv)
                     cox.fit <- summary(survival::coxph(survival::Surv(eval(parse(text = surv_time)), eval(parse(text = surv_status))) ~ beta_median + eval(parse(text = surv_clin)), data = surv))
                     s_fit <- survminer::surv_fit(survival::Surv(eval(parse(text = surv_time)), eval(parse(text = surv_status)))  ~ beta_median + eval(parse(text = surv_clin)), data = surv)
+                    print("CLASS")
+                    print(class(surv))
+                    print(surv_clin)
+                    print(surv$Sex)
+                    s <- as.matrix(surv)
+                    print(s)
+                    print(dim(s))
+                    print(dim(surv))
+                    print(dim(as.data.frame(s)))
+                    print(as.data.frame(s))
+                    table_surv <- compareGroups::compareGroups(as.data.frame(s))
+                    print(table_surv)
+                    table_surv <- compareGroups::createTable(table_surv)
+                    print(table_surv)                    
+                    describe_surv <- Hmisc::describe(surv)
                 }
                 
                 else{
                     log.rank.test <- survival::survdiff(survival::Surv(eval(parse(text = surv_time)), eval(parse(text = surv_status))) ~ beta_median + eval(parse(text = surv_clin)) + eval(parse(text = surv_clin2)), data = surv)
                     cox.fit <- summary(survival::coxph(survival::Surv(eval(parse(text = surv_time)), eval(parse(text = surv_status))) ~ beta_median + eval(parse(text = surv_clin)) + eval(parse(text = surv_clin2)), data = surv))
                     s_fit <- survminer::surv_fit(survival::Surv(eval(parse(text = surv_time)), eval(parse(text = surv_status)))  ~ beta_median + eval(parse(text = surv_clin)) + eval(parse(text = surv_clin2)), data = surv)
+                    print("CLASS")
+                    print(class(surv))
+                    print(surv_clin)
+                    print(surv$Sex)
+                    s <- as.matrix(surv)
+                    print(s)
+                    print(dim(s))
+                    print(dim(surv))
+                    print(dim(as.data.frame(s)))
+                    print(as.data.frame(s))
+                    table_surv <- compareGroups::compareGroups(as.data.frame(s))
+                    print(table_surv)
+                    table_surv <- compareGroups::createTable(table_surv)
+                    print(table_surv)                    
+                    describe_surv <- Hmisc::describe(surv)
                 }
             }
         }
@@ -2763,13 +2851,24 @@ shinyServer(function(input, output, session) {
         print(names(s_fit$strata))
         print(s_fit$strata)
         ggsurv$plot <- ggsurv$plot + ggplot2::labs(subtitle = my_text) + ggplot2::theme(plot.subtitle = element_text(size = 12))
-        ggsurv
+        #ggsurv
+        
+        #table_surv <- compareGroups::compareGroups(. ~ eval(parse(text = surv_clin)), data = surv)
+        #table_surv <- compareGroups::createTable(table_surv)
+        #
+        if(input$select_meth_data){
+        return(list(plot = ggsurv, freq = freq_surv, descr = describe_surv))
+        } else {
+            return(list(plot = ggsurv, descr = describe_surv))
+        }
         
     })
     
-    output$plot_survival <- renderPlot(graph_survival())
-    
-    
+    output$plot_survival <- renderPlot(graph_survival()[["plot"]])
+    #output$plot_surv_stat <- DT::renderDT(graph_survival()[["table"]])
+    #output$table_surv_code <- renderPrint(graph_survival()[["table"]])
+    output$freq_surv_code <- renderPrint(graph_survival()[["freq"]])
+    output$describe_surv_code <- renderPrint(graph_survival()[["descr"]])
     
     ##### DOWNLOADS #####
     
@@ -3065,55 +3164,46 @@ shinyServer(function(input, output, session) {
                 max = 3,
                 {
                     params <- list(
-                        rval_sheet = rval_sheet(),
-                        rval_sheet_target = rval_sheet_target(),
-                        name_var = input$select_input_samplenamevar,
-                        grouping_var = input$select_input_groupingvar,
-                        donor_var = input$select_input_donorvar,
-                        normalization_mode = input$select_minfi_norm,
-                        dropsnps = input$select_minfi_dropsnps,
-                        dropcphs = input$select_minfi_dropcphs,
-                        dropsex = input$select_minfi_chromosomes,
-                        maf = input$slider_minfi_maf,
-                        probes = rval_gsetprobes(),
+                        #plot_densityplotraw = rval_plot_densityplotraw(),
+                        #plot_densityplotraw_green = rval_plot_densityplotraw_green(),
+                        #plot_densityplotraw_red = rval_plot_densityplotraw_red(),
+                        #plot_densityplotraw_II = rval_plot_densityplotraw_II(),
                         
+                        #plot_densityplot = rval_plot_densityplot(),
+                        #plot_densityplot_green = rval_plot_densityplot_green(),
+                        #plot_densityplot_red = rval_plot_densityplot_red(),
+                        #plot_densityplot_II = rval_plot_densityplot_II(),
                         
-                        
-                        plot_densityplotraw = rval_plot_densityplotraw(),
-                        plot_densityplotraw_green = rval_plot_densityplotraw_green(),
-                        plot_densityplotraw_red = rval_plot_densityplotraw_red(),
-                        plot_densityplotraw_II = rval_plot_densityplotraw_II(),
-                        
-                        plot_densityplot = rval_plot_densityplot(),
-                        plot_densityplot_green = rval_plot_densityplot_green(),
-                        plot_densityplot_red = rval_plot_densityplot_red(),
-                        plot_densityplot_II = rval_plot_densityplot_II(),
-                        
-                      
                         #plot_pcaplot = rval_plot_pca()[["graph"]],
-                        
-                        
                         
                         #plot_boxplotraw = rval_plot_boxplotraw(),
                         #plot_boxplot = rval_plot_boxplot(),
                         #plot_qcraw = rval_plot_qcraw(),
                         #plot_bisulfiterawII = rval_plot_bisulfiterawII(),
                         
-                        plot_sexprediction = rval_plot_sexprediction()
-                        
-                        
                         #plot_plotSA = rval_plot_plotSA(),
                         #table_pcaplot = rval_plot_pca()[["info"]],
                         
-                        
-                        
                         #exploratory analysis
-                        
-
                     )
+                    
+                    if(rval_sheet_target_done() == TRUE){
+                        params[["check_data"]] <- TRUE
+                        params[["rval_sheet"]] <- rval_sheet()
+                        params[["rval_sheet_target"]] <- rval_sheet_target()
+                        params[["name_var"]] <- input$select_input_samplenamevar
+                        params[["grouping_var"]] <- input$select_input_groupingvar
+                        params[["donor_var"]] <- input$select_input_donorvar
+                    }
                     
                     if (input$check_qc){
                         params[["check_qc"]] <- TRUE
+                        params[["normalization_mode"]] <- input$select_minfi_norm
+                        params[["dropsnps"]] <- input$select_minfi_dropsnps
+                        params[["dropcphs"]] <- input$select_minfi_dropcphs
+                        params[["dropsex"]] <- input$select_minfi_chromosomes
+                        params[["maf"]] <- input$slider_minfi_maf
+                        params[["probes"]] <- rval_gsetprobes()
                         if("1" %in% input$check_group_qc){
                             params[["plot_green_intensities"]] <- boxplot_intensities_green()
                             params[["plot_red_intensities"]] <- boxplot_intensities_red()
@@ -3129,6 +3219,7 @@ shinyServer(function(input, output, session) {
                             params[["plot_snpheatmap"]] <- rval_plot_snpheatmap()
                         }
                         if("5" %in% input$check_group_qc){
+                            params[["plot_sexprediction"]] <- rval_plot_sexprediction()
                             params[["data_sexprediction"]] <- as.data.frame(minfi::pData(rval_gset()))[["predictedSex"]]
                         }
                         if("6" %in% input$check_group_qc){
@@ -3192,8 +3283,6 @@ shinyServer(function(input, output, session) {
                         params[["table_annotation"]] <- table_annotation()
                     }
                     
-                    
-                    
                     # if DMR analysis has been done, we add specific parameters
                     if (rval_dmrs_finished()) {
                         params[["dmrs_contrasts"]] <- input$select_dmrs_contrasts
@@ -3215,19 +3304,34 @@ shinyServer(function(input, output, session) {
                     }
                     
                     # functional analysis
-                    if(rval_analysis_finished()) {
-                        params[["kegg"]] <- dotplot_kegg()
-                        params[["go_mf"]] <- dotplot_go_mf()
-                        params[["go_bp"]] <- dotplot_go_bp()
-                        params[["go_cc"]] <- dotplot_go_cc()
-                        params[["reactome"]] <- dotplot_reactome()
+                    if(input$check_functional_enrichment) {
+                        params[["check_functional_enrichment"]] <- TRUE
+                        if("1" %in% input$check_group_functional_enrichment){
+                            params[["kegg"]] <- dotplot_kegg()
+                        }
+                        if("2" %in% input$check_group_functional_enrichment){
+                            params[["go_mf"]] <- dotplot_go_mf()
+                            params[["go_bp"]] <- dotplot_go_bp()
+                            params[["go_cc"]] <- dotplot_go_cc()
+                        }
+                        if("3" %in% input$check_group_functional_enrichment){
+                            params[["reactome"]] <- dotplot_reactome()
+                        }
                         #params[["gmt_kegg"]] <- dotplot_gmt_kegg()
                         #params[["gmt_go_mf"]] <- dotplot_gmt_go_mf()
                         #params[["gmt_go_bp"]] <- dotplot_gmt_go_bp()
                         #params[["gmt_go_cc"]] <- dotplot_gmt_go_cc()
                     }
                     
-                    
+                    if(input$check_survival){
+                        params[["check_survival"]] <- TRUE
+                        if("1" %in% input$check_group_survival){
+                            params[["plot_survival"]] <- graph_survival()
+                        }
+                        if("2" %in% input$check_group_survival){
+                            params[["surv_stat"]] <- TRUE
+                        }
+                    }
                     
 
                     newenv <- new.env(parent = globalenv())
