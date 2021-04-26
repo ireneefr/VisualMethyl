@@ -68,24 +68,35 @@ shinyUI(
         ), "analysis"),
         menuItem("Export", tabName = "export"),
         menuItem("Help", tabName = "help")
-      )
+      ),
+      actionButton("help_tour", label = "HELP TOUR")
     ),
 
     dashboardBody(
       includeCSS("www/style.css"),
+      introjsUI(),
       tabItems(
         tabItem(
           tabName = "data",
           verticalLayout(
             box(
               title = "INPUT DATA", width = 12, collapsible = FALSE, status = "primary",
-              fileInput("input_data", "Upload input data (.zip)", multiple = FALSE, accept = ".zip"),
-              uiOutput("ui_input_data")
+              introBox(
+                fileInput("input_data", "Upload input data (.zip)", multiple = FALSE, accept = ".zip"),
+            data.step = 1,
+            data.intro = "Input data"
+            ),
+            introBox(
+              uiOutput("ui_input_data"),
+              data.step = 2,
+              data.intro = "Load data"
+            )
             ),
             fluidRow(
               style = "margin-left: 2px; margin-right: 2px",
               conditionalPanel(
                 "input.b_input_data > 0",
+                introBox(
                 box(
                   title = "SELECTION OPTIONS", id = "selection_options",
                   collapsible = FALSE, status = "primary",
@@ -107,6 +118,9 @@ shinyUI(
                   selectInput("select_input_sex", "", c()),
                   selectInput("select_input_age", "", c()),
                   actionButton("button_input_next", "Continue to Analysis", class = "btn-primary")
+                ),
+                data.step = 4,
+                data.intro = "options"
                 )
               ),
 
@@ -115,7 +129,10 @@ shinyUI(
                 "input.b_input_data > 0",
                 box(
                   title = "SAMPLES TABLE", collapsible = FALSE, status = "primary", width = 9,
-                  withSpinner(DT::DTOutput("samples_table"))
+                  introBox(
+                  withSpinner(DT::DTOutput("samples_table")),
+                              data.step = 3, data.intro = "Samples table", data.hint = "hint samples table"
+                  )
                 )
               )
             )
@@ -237,9 +254,16 @@ shinyUI(
                 ),
                 box(
                   title = "PREDICTED SEX", width = 12, collapsible = TRUE, collapsed = TRUE, status = "primary",
-                  h4("X vs Y chromosomes signal plot"),
-                  withSpinner(plotly::plotlyOutput("graph_minfi_sex")),
-                  withSpinner(DT::DTOutput("table_minfi_sex"))
+                  column(
+                    width = 9,
+                    h4("X vs Y chromosomes signal plot"),
+                    withSpinner(plotly::plotlyOutput("graph_minfi_sex"))
+                  ),
+                  column(
+                    width = 3,
+                    h4("Sex table"),
+                    withSpinner(DT::DTOutput("table_minfi_sex"))
+                  )
                 ),
                 box(
                   title = "DENSITY PLOT", width = 12, collapsible = TRUE, collapsed = TRUE, status = "primary",
@@ -283,22 +307,19 @@ shinyUI(
                 title = "PRINCIPAL COMPONENT ANALYSIS", width = 12, collapsible = TRUE, collapsed = TRUE, status = "primary",
                 withSpinner(plotly::plotlyOutput("graph_minfi_pcaplot")),
                 withSpinner(DT::DTOutput("table_minfi_pcaplot")),
-                column(
-                  6,
+                column(6,
                   selectInput(
                     inputId = "select_minfi_pcaplot_pcx",
                     choices = c(),
                     label = "Select x variable"
                   ),
-
                   selectInput(
                     inputId = "select_minfi_pcaplot_color",
                     choices = c(),
                     label = "Select color variable"
                   )
                 ),
-                column(
-                  6,
+                column(6,
                   selectInput(
                     inputId = "select_minfi_pcaplot_pcy",
                     choices = c(),
@@ -844,7 +865,7 @@ shinyUI(
         tabItem(
           tabName = "survival",
           fluidPage(
-            sidebarPanel(width = 3, style = "padding-top:30px;padding-bottom:30px;padding-right:30px;padding-left:30px;margin-right:-10px;margin-left:-10px",
+            sidebarPanel(width = 3, 
                     fileInput("input_clinical", HTML("Upload clinical data (.csv)", as.character(downloadLink("clinical_template", "Download template", style = "font-size:10px;padding-left:45px"))), multiple = FALSE, accept = ".csv"),
                     uiOutput("ui_clinical_data"),
                     conditionalPanel(

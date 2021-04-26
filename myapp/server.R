@@ -4,7 +4,7 @@ source("utils_analysis.R")
 source("utils_graphs.R")
 source("utils_download.R")
 library(ggplot2)
-
+library(rintrojs)
 
 shinyServer(function(input, output, session) {
     # INITIALIZE REACTIVE VARIABLES
@@ -24,17 +24,7 @@ shinyServer(function(input, output, session) {
     options(shiny.maxRequestSize = 8000 * 1024^2) # 5MB getShinyOption("shiny.maxRequestSize") | 30*1024^2 = 30MB
     n_cores <- parallel::detectCores() / 2
     
-    
-    output$arrow1 <- renderImage(list(src = "img/arrow3.png", contentType = "image/png"), deleteFile = FALSE)
-    output$arrow2 <- renderImage(list(src = "img/arrow3.png", contentType = "image/png"), deleteFile = FALSE)
-    output$arrow3 <- renderImage(list(src = "img/arrow4.png", contentType = "image/png"), deleteFile = FALSE)
-    output$arrow4 <- renderImage(list(src = "img/arrow4.png", contentType = "image/png"), deleteFile = FALSE)
-    
-    output$arrow1_ <- renderImage(list(src = "img/arrow3.png", contentType = "image/png"), deleteFile = FALSE)
-    output$arrow3_ <- renderImage(list(src = "img/arrow4.png", contentType = "image/png"), deleteFile = FALSE)
-    output$arrow4_ <- renderImage(list(src = "img/arrow4.png", contentType = "image/png"), deleteFile = FALSE)
-    
-    
+    observeEvent(input$help_tour, introjs(session, options = list("showBullets"="true", "showProgress"="true", "showStepNumbers"="false","nextLabel"="Next","prevLabel"="Prev","skipLabel"="Skip")))
     
     observe({
         shinyjs::disable("check_qc")
@@ -266,8 +256,7 @@ shinyServer(function(input, output, session) {
     })
     
     
-    rval_sheet_target <- eventReactive(
-        input$button_input_next, {
+    rval_sheet_target <- eventReactive(input$button_input_next, {
             rval_sheet_target_done(TRUE)
         rval_sheet()[rval_sheet()[[input$select_input_samplenamevar]] %in% input$selected_samples, ]
         }
@@ -613,8 +602,6 @@ shinyServer(function(input, output, session) {
         
     })
     
-    
-    
     # filtered probes info
     
     rval_gsetprobes <- eventReactive(input$button_minfi_select, {
@@ -651,121 +638,101 @@ shinyServer(function(input, output, session) {
     
     ##### INTENSITIES BOXPLOTS #####
 
-    boxplot_intensities_green <- reactive(create_boxplot_intensities_green(rval_rgset()))
-    boxplot_intensities_red <- reactive(create_boxplot_intensities_red(rval_rgset()))
+    boxplot_intensities_green <- eventReactive(rval_rgset(), create_boxplot_intensities_green(rval_rgset()))
+    boxplot_intensities_red <- eventReactive(rval_rgset(), create_boxplot_intensities_red(rval_rgset()))
     output$green_intensities_plot <- renderPlot(boxplot_intensities_green())
     output$red_intensities_plot <- renderPlot(boxplot_intensities_red())
     
     ########## FAILURE RATE PLOT ##########
     
-    failure_plot <- reactive(create_failure(rval_rgset(), rval_rgset_getBeta()))
+    failure_plot <- eventReactive(rval_rgset_getBeta(), create_failure(rval_rgset(), rval_rgset_getBeta()))
     output$failure_rate_plot <- plotly::renderPlotly(failure_plot()[["graph"]])
     output$failure_rate_table <- DT::renderDT(failure_plot()[["info"]])
     
     ########## CONTROL TYPE PLOTS ##########
     
-    control_type <- reactive(create_control_type(rval_rgset(), rval_sheet_target(), input$controlType, input$select_slide))
+    control_type <- eventReactive(list(rval_rgset(),input$controlType, input$select_slide), create_control_type(rval_rgset(), rval_sheet_target(), input$controlType, input$select_slide))
     output$controlTypePlotGreen <- renderPlot(control_type()[["green"]])
     output$controlTypePlotRed <- renderPlot(control_type()[["red"]])
     
     
     ###### SEX PREDICTION #####
     
-    # Sex prediction
+    rval_plot_sexprediction <- eventReactive(rval_gset(), create_pred_sexplot(rval_gset(), rval_sheet_target()[, input$select_input_samplenamevar]))
     
-    rval_plot_sexprediction <- reactive({
-        req(rval_gset())
-        create_pred_sexplot(rval_gset(), rval_sheet_target()[, input$select_input_samplenamevar])
-    })
-    
-    rval_plot_sextable <- reactive({
-        req(rval_gset())
+    rval_plot_sextable <- eventReactive(rval_gset(), {
         if(input$select_input_sex == "None"){
             data.frame(name = rval_sheet_target()[[input$select_input_samplenamevar]], predictedSex = as.data.frame(minfi::pData(rval_gset()))[["predictedSex"]])
-        }
-        else{
+        }else{
         data.frame(name = rval_sheet_target()[[input$select_input_samplenamevar]], sex = rval_sheet_target()[[input$select_input_sex]], predictedSex = as.data.frame(minfi::pData(rval_gset()))[["predictedSex"]])
         }   
     })
     
     output$graph_minfi_sex <- plotly::renderPlotly(rval_plot_sexprediction())
     
-    output$table_minfi_sex <- DT::renderDT(
-        rval_plot_sextable(),
-        rownames = FALSE,
-        selection = "single",
-        style = "bootstrap",
-        caption = "Predicted sex:",
-        options = list(
-            pageLength = 10,
-            scrollX = TRUE,
-            autoWidth = TRUE
-        )
-    )
+    output$table_minfi_sex <- DT::renderDT(rval_plot_sextable())
     
     ########## DENSITY PLOT #####################
     
     channel <- reactive(getProbeInfo(rval_rgset(), type = input$probeType)[, "Name"])
     
     ###
-    channel_green <- reactive(getProbeInfo(rval_rgset(), type = "I-Green")[, "Name"])
-    channel_red <- reactive(getProbeInfo(rval_rgset(), type = "I-Red")[, "Name"])
-    channel_II <- reactive(getProbeInfo(rval_rgset(), type = "II")[, "Name"])
+    #channel_green <- reactive(getProbeInfo(rval_rgset(), type = "I-Green")[, "Name"])
+    #channel_red <- reactive(getProbeInfo(rval_rgset(), type = "I-Red")[, "Name"])
+    #channel_II <- reactive(getProbeInfo(rval_rgset(), type = "II")[, "Name"])
     #
-    beta_raw_green <- reactive(subset(rval_rgset_getBeta(), rownames(rval_rgset_getBeta()) %in% channel_green()))
-    beta_raw_red <- reactive(subset(rval_rgset_getBeta(), rownames(rval_rgset_getBeta()) %in% channel_red()))
-    beta_raw_II <- reactive(subset(rval_rgset_getBeta(), rownames(rval_rgset_getBeta()) %in% channel_II()))
-    n_raw_green <- reactive(ifelse(nrow(beta_raw_green()) < 20000, nrow(beta_raw_green()), 20000))
-    n_raw_red <- reactive(ifelse(nrow(beta_raw_red()) < 20000, nrow(beta_raw_red()), 20000))
-    n_raw_II <- reactive(ifelse(nrow(beta_raw_II()) < 20000, nrow(beta_raw_II()), 20000))
-    rval_plot_densityplotraw_green <- reactive(create_densityplot(beta_raw_green(), n_raw_green()))
-    rval_plot_densityplotraw_red <- reactive(create_densityplot(beta_raw_red(), n_raw_red()))
-    rval_plot_densityplotraw_II <- reactive(create_densityplot(beta_raw_II(), n_raw_II()))
+    #beta_raw_green <- reactive(subset(rval_rgset_getBeta(), rownames(rval_rgset_getBeta()) %in% channel_green()))
+    #beta_raw_red <- reactive(subset(rval_rgset_getBeta(), rownames(rval_rgset_getBeta()) %in% channel_red()))
+    #beta_raw_II <- reactive(subset(rval_rgset_getBeta(), rownames(rval_rgset_getBeta()) %in% channel_II()))
+    #n_raw_green <- reactive(ifelse(nrow(beta_raw_green()) < 20000, nrow(beta_raw_green()), 20000))
+    #n_raw_red <- reactive(ifelse(nrow(beta_raw_red()) < 20000, nrow(beta_raw_red()), 20000))
+    #n_raw_II <- reactive(ifelse(nrow(beta_raw_II()) < 20000, nrow(beta_raw_II()), 20000))
+    #rval_plot_densityplotraw_green <- reactive(create_densityplot(beta_raw_green(), n_raw_green()))
+    #rval_plot_densityplotraw_red <- reactive(create_densityplot(beta_raw_red(), n_raw_red()))
+    #rval_plot_densityplotraw_II <- reactive(create_densityplot(beta_raw_II(), n_raw_II()))
     #
-    beta_normalized_green <- reactive(rval_gset_getBeta()[rownames(rval_gset_getBeta()) %in% channel_green(),])
-    beta_normalized_red <- reactive(rval_gset_getBeta()[rownames(rval_gset_getBeta()) %in% channel_red(),])
-    beta_normalized_II <- reactive(rval_gset_getBeta()[rownames(rval_gset_getBeta()) %in% channel_II(),])
-    n_normalized_green <- reactive(ifelse(nrow(beta_normalized_green()) < 20000, nrow(beta_normalized_green()), 20000))
-    n_normalized_red <- reactive(ifelse(nrow(beta_normalized_red()) < 20000, nrow(beta_normalized_red()), 20000))
-    n_normalized_II <- reactive(ifelse(nrow(beta_normalized_II()) < 20000, nrow(beta_normalized_II()), 20000))
-    rval_plot_densityplot_green <- reactive(create_densityplot(beta_normalized_green(), n_normalized_green()))
-    rval_plot_densityplot_red <- reactive(create_densityplot(beta_normalized_red(), n_normalized_red()))
-    rval_plot_densityplot_II <- reactive(create_densityplot(beta_normalized_II(), n_normalized_II()))
+    #beta_normalized_green <- reactive(rval_gset_getBeta()[rownames(rval_gset_getBeta()) %in% channel_green(),])
+    #beta_normalized_red <- reactive(rval_gset_getBeta()[rownames(rval_gset_getBeta()) %in% channel_red(),])
+    #beta_normalized_II <- reactive(rval_gset_getBeta()[rownames(rval_gset_getBeta()) %in% channel_II(),])
+    #n_normalized_green <- reactive(ifelse(nrow(beta_normalized_green()) < 20000, nrow(beta_normalized_green()), 20000))
+    #n_normalized_red <- reactive(ifelse(nrow(beta_normalized_red()) < 20000, nrow(beta_normalized_red()), 20000))
+    #n_normalized_II <- reactive(ifelse(nrow(beta_normalized_II()) < 20000, nrow(beta_normalized_II()), 20000))
+    #rval_plot_densityplot_green <- reactive(create_densityplot(beta_normalized_green(), n_normalized_green()))
+    #rval_plot_densityplot_red <- reactive(create_densityplot(beta_normalized_red(), n_normalized_red()))
+    #rval_plot_densityplot_II <- reactive(create_densityplot(beta_normalized_II(), n_normalized_II()))
     ###
     n_raw_all <- reactive(ifelse(nrow(rval_rgset_getBeta()) < 20000, nrow(rval_rgset_getBeta()), 20000))
     rval_plot_densityplotraw_all <- reactive(create_densityplot(rval_rgset_getBeta(), n_raw_all()))
     n_normalized_all <- reactive(ifelse(nrow(rval_gset_getBeta()) < 20000, nrow(rval_gset_getBeta()), 20000))
-    rval_plot_densityplot_all <- reactive(create_densityplot(rval_gset_getBeta(), n_normalized()))
+    rval_plot_densityplot_all <- reactive(create_densityplot(rval_gset_getBeta(), n_normalized_all()))
     ###
     
-    
-    beta_raw <- reactive(subset(rval_rgset_getBeta(), rownames(rval_rgset_getBeta()) %in% channel()))
+    beta_raw <- eventReactive(list(rval_rgset_getBeta(), channel()), subset(rval_rgset_getBeta(), rownames(rval_rgset_getBeta()) %in% channel()))
     n_raw <- reactive(ifelse(nrow(beta_raw()) < 20000, nrow(beta_raw()), 20000))
     rval_plot_densityplotraw <- reactive(create_densityplot(beta_raw(), n_raw()))
     
-    beta_normalized <- reactive(rval_gset_getBeta()[rownames(rval_gset_getBeta()) %in% channel(),])
+    beta_normalized <- eventReactive(list(rval_gset_getBeta(), channel()), rval_gset_getBeta()[rownames(rval_gset_getBeta()) %in% channel(),])
     n_normalized <- reactive(ifelse(nrow(beta_normalized()) < 20000, nrow(beta_normalized()), 20000))
     rval_plot_densityplot <- reactive(create_densityplot(beta_normalized(), n_normalized()))
     
-    # Density plots
-    #rval_plot_densityplotraw <- reactive(create_densityplot(rval_rgset_getBeta(), 200000))
-    #rval_plot_densityplot <- reactive(create_densityplot(rval_gset_getBeta(), 200000))
-    
     output$graph_minfi_densityplotraw <- plotly::renderPlotly(rval_plot_densityplotraw())
     output$graph_minfi_densityplot <- plotly::renderPlotly(rval_plot_densityplot())
+    
+    
     ##### SNP HEATMAP #####
-    rval_plot_snpheatmap <- reactive(
+    
+    rval_plot_snpheatmap <- eventReactive(rval_rgset(),
         create_snpheatmap(
             minfi::getSnpBeta(rval_rgset()),
             rval_sheet_target()[, input$select_input_samplenamevar],
             rval_sheet_target()[, input$select_input_donorvar]
         )
     )
-    
     output$graph_minfi_snps <- plotly::renderPlotly(rval_plot_snpheatmap())
     
     ##### BATCH EFECTS #####
-    rval_plot_corrplot <- reactive(
+    
+    rval_plot_corrplot <- eventReactive(list(rval_gset_getBeta(), input$select_minfi_typecorrplot),
         create_corrplot(
             rval_gset_getBeta(),
             rval_clean_sheet_target(),
@@ -785,43 +752,15 @@ shinyServer(function(input, output, session) {
     
     ########## VIOLIN PLOT #####################
     
-    create_violinplot <- function(Bvalues, n = 200000) {
-        # Creating density plot using a sample of n CpGs
-        
-        Bvalues[sample(seq_len(nrow(Bvalues)), n), ] %>%
-            tidyr::pivot_longer(
-                cols = seq_len(ncol(Bvalues)),
-                names_to = "sample",
-                values_to = "Bvalues"
-            ) %>% 
-            ggplot2::ggplot(ggplot2::aes(
-                x = .data$Bvalues, y = .data$sample, color = .data$sample
-            )) +
-            ggplot2::geom_violin() +
-            ggplot2::geom_vline(xintercept = 0.5, 
-                                linetype = "dashed", 
-                                alpha = 0.5) +
-            ggplot2::stat_summary(fun = mean, 
-                                  geom = "crossbar") +
-            ggplot2::xlab("Beta") +
-            ggplot2::ylab("") +
-            ggplot2::theme_bw() +
-            ggplot2::theme(legend.position = "none",
-                           panel.grid.major = ggplot2::element_blank(),
-                           panel.grid.minor = ggplot2::element_blank())
-    }
-    
-    rval_plot_violin_raw <- reactive(create_violinplot(rval_rgset_getBeta(), nrow(rval_rgset_getBeta())))
+    rval_plot_violin_raw <- eventReactive(rval_rgset_getBeta(), create_violinplot(rval_rgset_getBeta(), nrow(rval_rgset_getBeta())))
     output$graph_violin_raw <- renderPlot(rval_plot_violin_raw())
     
-    rval_plot_violin_normalized <- reactive(create_violinplot(rval_gset_getBeta(), nrow(rval_gset_getBeta())))
+    rval_plot_violin_normalized <- eventReactive(rval_gset_getBeta(), create_violinplot(rval_gset_getBeta(), nrow(rval_gset_getBeta())))
     output$graph_violin_normalized <- renderPlot(rval_plot_violin_normalized())
-    
-    
+
     ########## PCA PLOT ##########
     
-    rval_plot_pca <- eventReactive(
-        list(input$button_pca_update, input$button_minfi_select),
+    rval_plot_pca <- eventReactive(list(input$button_pca_update, rval_gset_getBeta()),
         create_pca(
             Bvalues = rval_gset_getBeta(),
             pheno_info = as.data.frame(minfi::pData(rval_gset())),
@@ -833,11 +772,10 @@ shinyServer(function(input, output, session) {
     )
     
     output$graph_minfi_pcaplot <- plotly::renderPlotly(rval_plot_pca()[["graph"]])
-    
     output$table_minfi_pcaplot <- DT::renderDT(
         format(rval_plot_pca()[["info"]], digits = 2),
         rownames = TRUE,
-        selection = "single",
+        selection = NULL,
         style = "bootstrap",
         options = list(
             autoWidth = TRUE,
@@ -849,41 +787,39 @@ shinyServer(function(input, output, session) {
         )
     )
     
-    ##### DECONVOLUTION #####
-    deconvolution <- reactive(estimateCellCounts(rval_rgset()))
+    ##### HEATMAP #####
     
+    plot_random_heatmap <- eventReactive(rval_rgset_getBeta(), create_random_heatmap(rval_rgset_getBeta()))
+    plot_top_heatmap <- eventReactive(rval_rgset_getBeta(), create_top_heatmap(rval_rgset_getBeta()))
+    
+    output$graph_random_heatmap <- renderPlot(plot_random_heatmap())
+    output$graph_top_heatmap <- renderPlot(plot_top_heatmap())
+    
+    ##### DECONVOLUTION #####
+    
+    deconvolution <- eventReactive(rval_rgset(), estimateCellCounts(rval_rgset()))
     graph_deconvolution <- reactive(pheatmap::pheatmap(deconvolution()))
     
     output$deconvolution_heatmap <- renderPlot(graph_deconvolution())
     
-    
-    ##### HEATMAP #####
-    
-    plot_random_heatmap <- reactive(create_random_heatmap(rval_rgset_getBeta()))
-    plot_top_heatmap <- reactive(create_top_heatmap(rval_rgset_getBeta()))
-    output$graph_random_heatmap <- renderPlot(plot_random_heatmap())
-    output$graph_top_heatmap <- renderPlot(plot_top_heatmap())
-
-    
     ##### AGE #####
     
-    age_data <- reactive(create_age(rval_rgset_getBeta(), rval_sheet_target(), input$select_input_age))
+    age_data <- eventReactive(rval_rgset_getBeta(), create_age(rval_rgset_getBeta(), rval_sheet_target(), input$select_input_age))
     
     output$table_age <- DT::renderDT(age_data())
     
-    
     ##### HYPER/HYPO PLOTS #####
     
-    graph_hyper_hypo <- eventReactive(list(input$button_hyper_hypo_update, input$button_input_next), create_hyper_hypo(rval_rgset(), rval_rgset_getBeta(), input$slider_beta, input$selected_samples_h))
+    graph_hyper_hypo <- eventReactive(list(input$button_hyper_hypo_update, rval_rgset_getBeta()), create_hyper_hypo(rval_rgset(), rval_rgset_getBeta(), input$slider_beta, input$selected_samples_h))
+    
     output$plot_chr <- renderPlot(graph_hyper_hypo()[["chr"]])
     output$plot_relation_to_island <- renderPlot(graph_hyper_hypo()[["relation_to_island"]])
     output$plot_group <- renderPlot(graph_hyper_hypo()[["group"]])
     
     
-    
-    
     # Update of next form and move to Limma 
     observeEvent(input$button_minfi_select, {
+        
         # check if normalization has been performed
         req(rval_gset())
         

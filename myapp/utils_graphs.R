@@ -359,6 +359,36 @@ create_corrplot <- function(Bvalues, clean_sample_sheet, sample_target_sheet, p.
   return(list(info = corr_info, graph = corr_graph))
 }
 
+##### VIOLIN PLOT ######
+
+create_violinplot <- function(Bvalues, n = 200000) {
+  # Creating density plot using a sample of n CpGs
+  
+  Bvalues[sample(seq_len(nrow(Bvalues)), n), ] %>%
+    tidyr::pivot_longer(
+      cols = seq_len(ncol(Bvalues)),
+      names_to = "sample",
+      values_to = "Bvalues"
+    ) %>% 
+    ggplot2::ggplot(ggplot2::aes(
+      x = .data$Bvalues, y = .data$sample, color = .data$sample
+    )) +
+    ggplot2::geom_violin() +
+    ggplot2::geom_vline(xintercept = 0.5, 
+                        linetype = "dashed", 
+                        alpha = 0.5) +
+    ggplot2::stat_summary(fun = mean, 
+                          geom = "crossbar") +
+    ggplot2::xlab("Beta") +
+    ggplot2::ylab("") +
+    ggplot2::theme_bw() +
+    ggplot2::theme(legend.position = "none",
+                   panel.grid.major = ggplot2::element_blank(),
+                   panel.grid.minor = ggplot2::element_blank())
+}
+
+
+
 
 create_random_heatmap <- function(bvalues) {
   random1000 <- bvalues[sample(seq_len(nrow(bvalues)), 1000), ]
