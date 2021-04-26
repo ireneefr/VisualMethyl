@@ -14,6 +14,8 @@ params:
   check_data: FALSE
   check_qc: FALSE
   check_exploratory_analysis: FALSE
+  check_dmps: FALSE
+  check_dmrs: FALSE
   check_functional_enrichment: FALSE
   check_survival: FALSE
   
@@ -82,7 +84,7 @@ params:
   dmrs_clusteralg: NULL
   dmrs_groups2plot: NULL
   dmrs_contrasts2plot: NULL
-  dmrs_regions2plot: NULL
+  #dmrs_regions2plot: NULL
   dmrs_Colv: NULL
   dmrs_distance: NULL
   dmrs_scale: NULL
@@ -94,7 +96,8 @@ params:
 
   #survival
   plot_survival: NULL
-  surv_stat: NULL
+  descr_surv: NULL
+  freq_surv: NULL
   
   #plots
 
@@ -288,7 +291,7 @@ cat("\nDepending on the average chromosome Y signal and the average chromosome X
 params$plot_sexprediction
 ```
 ```{r tale_sex_prediction, echo=FALSE, warning=FALSE, message = FALSE, eval=!is.null(params$data_sexprediction)}
-knitr::kable(data.frame(name=params$rval_sheet_target[[params$name_var]],sex=params$data_sexprediction))
+DT::datatable(data.frame(name=params$rval_sheet_target[[params$name_var]],sex=params$data_sexprediction))
 ```
 
 ```{r batch_effects, echo=FALSE, eval=!is.null(params$plot_corrplot), results='asis'}
@@ -368,13 +371,13 @@ cat("\n### Heatmaps\n")
 
 cat("\n__Random 1000 CpGs__\n")
 ```
-```{r plot_heatmap_random, echo = FALSE, warning = FALSE, message = FALSE, eval=!is.null(params$plot_random_heatmap)}
+```{r plot_heatmap_random, echo = FALSE, warning = FALSE, message = FALSE, eval=!is.null(params$plot_random_heatmap), fig.height=7, fig.width=10}
 params$plot_random_heatmap
 ```
 ```{r heatmap_top, echo=FALSE, eval=!is.null(params$plot_top_heatmap), results='asis'}
 cat("\n__Top 1000 variable CpGs__\n")
 ```
-```{r plot_heatmap_top, echo = FALSE, warning = FALSE, message = FALSE, eval=!is.null(params$plot_top_heatmap)}
+```{r plot_heatmap_top, echo = FALSE, warning = FALSE, message = FALSE, eval=!is.null(params$plot_top_heatmap), fig.height=7, fig.width=10}
 params$plot_top_heatmap
 ```
 
@@ -407,7 +410,7 @@ cat("\n")
 
 cat("\n### Hypo/Hyper plots\n")
 ```
-```{r plot_hypo_hyper, echo = FALSE, warning = FALSE, message = FALSE, eval=!is.null(params$plot_hyper_hypo_chr)}
+```{r plot_hypo_hyper, echo = FALSE, warning = FALSE, message = FALSE, eval=!is.null(params$plot_hyper_hypo_chr), fig.height=7, fig.width=15}
 params$plot_hyper_hypo_chr
 params$plot_hyper_hypo_relation_to_island
 params$plot_hyper_hypo_group
@@ -417,7 +420,7 @@ params$plot_hyper_hypo_group
 cat("***")
 ```
 
-```{r linear_model, echo = FALSE, eval = !is.null(params$filteredlist2heatmap), results = "asis"}
+```{r linear_model, echo = FALSE, eval = params$check_dmps==TRUE, results = "asis"}
 cat("\n## DMPs and DMRs")
 
 cat("\n### Linear Model")
@@ -427,7 +430,7 @@ cat("\nThe linear model was generated using ", params$limma_voi, " as variable o
 cat("\nThe resulting design matrix was:")
 ```
 
-```{r design, echo=FALSE, warning=FALSE, message = FALSE, eval = !is.null(params$filteredlist2heatmap)}
+```{r design, echo=FALSE, warning=FALSE, message = FALSE, eval = params$check_dmps==TRUE}
 if (!is.na(params$rval_design)){
 DT::datatable(
   params$rval_design,
@@ -442,11 +445,11 @@ DT::datatable(
 )}
 ```
 
-```{r array_weights, echo = FALSE, eval = !is.null(params$filteredlist2heatmap), results = "asis"}
+```{r array_weights, echo = FALSE, eval = params$check_dmps==TRUE, results = "asis"}
 cat("\nOptionally, ArrayWeights can be activated to weight the value of each sample depending on their adjust to the linear model:")
 ```
 
-```{r limma, echo=!is.null(params$filteredlist2heatmap), eval=FALSE}
+```{r limma, echo=params$check_dmps==TRUE, eval=FALSE}
  
       if (weights_option){
         try({weights = limma::arrayWeights(MValues, design = design})
@@ -456,45 +459,47 @@ cat("\nOptionally, ArrayWeights can be activated to weight the value of each sam
       fit = limma::lmFit(MValues, design, weights = weights)
 ```
 
-```{r array_weights_option, echo = FALSE, eval = !is.null(params$filteredlist2heatmap), results = "asis"}
+```{r array_weights_option, echo = FALSE, eval = params$check_dmps==TRUE, results = "asis"}
 cat("\nWhere `weights` is the option specified in the form. In this case, weights is ", params$limma_arrayweights)
 ```
 
-```{r contrasts, echo = FALSE, eval = !is.null(params$filteredlist2heatmap), results = "asis"}
+```{r contrasts, echo = FALSE, eval = params$check_dmps==TRUE, results = "asis"}
 cat("\nWith the sample groups selected, the possible contrasts were:\n")
 cat(params$rval_contrasts, sep = "\n")
 ```
 
-```{r contrasts_statistics, echo = FALSE, eval = !is.null(params$filteredlist2heatmap),results='asis'}
+```{r contrasts_statistics, echo = FALSE, eval = params$check_dmps==TRUE, results='asis'}
 cat("\nUsing the calculated model, the t-statistics and p.values are obtained automatically for each contrast:")
 ```
 
-```{r ebayes, eval=FALSE, echo=!is.null(params$filteredlist2heatmap)}
+```{r ebayes, eval=FALSE, echo=params$check_dmps==TRUE}
   mcontrast = makeContrasts(contrasts=contrast, levels = design)
   fitting = contrasts.fit(fit, mcontrast)
   fitting = eBayes(fitting, trend=trend, robust=robust)
   toptable = topTable(fitting, coef= 1,  adjust.method = "fdr", number =  Inf)
 ```
 
-```{r ebayes_options, echo = FALSE, eval = !is.null(params$filteredlist2heatmap), results = "asis"}
+```{r ebayes_options, echo = FALSE, eval = params$check_dmps==TRUE, results = "asis"}
 cat("\nWhere `trend` and `robust` are the options specified in the form. In this case, trend is ", params$limma_ebayes_trend, " and robust is ", params$limma_ebayes_robust)
+
+cat("<br>")
 ```
 
-<br>
 
-```{r dmp_options, echo = FALSE, eval = !is.null(params$filteredlist2heatmap), results = "asis"}
+```{r dmp_options, echo = FALSE, eval = params$check_dmps==TRUE, results = "asis"}
 cat("\n### DMPs")
 cat("\n#### Options (DMPs)")
 cat("\nFor each contrast (", paste(params$rval_contrasts, collapse=", "), " ), the statistics for each CpG were generated and, after, filtered with these criteria:\n")
-cat("* Max. FDR: ", params$max_fdr,
+cat("\n* Max. FDR: ", params$max_fdr,
 "\n* Min. Δβ: ", params$min_deltabeta,
 "\n* Max. pvalue: ", params$max_pvalue, "\n")
-
-cat("\n#### Table with all contrasts (DMPs)")
 ```
 
-```{r filtered_table_all,echo=FALSE,message=FALSE, warning=FALSE}
-if(!is.null(params$filteredlist2heatmap)) knitr::kable(params$table_dmps)
+```{r dmp_table, echo=FALSE, eval=!is.null(params$table_dmps), results='asis'}
+cat("\n#### Table with all contrasts (DMPs)")
+```
+```{r filtered_table_all,echo=FALSE,message=FALSE, warning=FALSE, eval=!is.null(params$table_dmps)}
+DT::datatable(params$table_dmps)
 ```
 
 ```{r dmp_custom_heatmap, echo = FALSE, eval = !is.null(params$filteredlist2heatmap), results = "asis"}
@@ -506,9 +511,8 @@ cat("\n* Column dendogram: ", params$Colv,
 
 cat("\nThe data used for the representation are ", if(params$removebatch == FALSE) "the normalized beta values" else "the normalized beta values after removing covariable effects on the data (with the limma removeBatchEffect function), preserving the variable of interest")
 
-cat("\nIn the custom heatmap the selected contrasts to plot were: ", paste(params$contrasts2plot, collapse=", "), " and the groups were: ", paste(params$groups2plot, collapse=", "))
+cat("\nIn the custom heatmap the selected contrasts to plot were: ", paste(params$contrasts2plot, collapse=", "), " and the groups were: ", paste(params$groups2plot, collapse=", "), "\n")
 ```
-
 ```{r heatmap_dmps,echo=FALSE,message=FALSE, warning=FALSE, fig.width = 9, fig.height = 12, eval = !is.null(params$filteredlist2heatmap)}
     if(!is.null(params$filteredlist2heatmap)){
       create_heatmap(params$filteredlist2heatmap, 
@@ -525,30 +529,14 @@ cat("\nIn the custom heatmap the selected contrasts to plot were: ", paste(param
         cat("Differences are not in the plotting range (<12000, >1)"
             )}
 ```
-
 ```{r num_dmps_heatmap, echo = FALSE, eval = !is.null(params$filteredlist2heatmap), results = "asis"}
 cat("\nDMPs in heatmap: ", nrow(params$filteredlist2heatmap))
 ```
 
-```{r manhattan, echo=FALSE, eval=!is.null(params$filteredlist2heatmap), results='asis'}
-cat("\n#### Manhattan plot")
-```
-```{r plot_manhattan, echo=FALSE, warning=FALSE, message=FALSE, eval=!is.null(params$filteredlist2heatmap)}
-qqman::manhattan(params$table_annotation_manhattan, chr = "chr", bp = "pos", snp = "gene", p = "pvalue",
-                                                 annotatePval = 1, suggestiveline = T, genomewideline = T, annotateTop = T)
-```
-
-```{r volcano, echo=FALSE, eval=!is.null(params$filteredlist2heatmap), results='asis'}
-cat("\n#### Volcano plot")
-```
-```{r plot_volcano, echo=FALSE, message=FALSE, warning=FALSE, eval=!is.null(params$filteredlist2heatmap)}
-params$plot_volcano
-```
-
-```{r annotation_dmps, echo=FALSE, eval=!is.null(params$filteredlist2heatmap), results='asis'}
+```{r annotation_dmps, echo=FALSE, eval=!is.null(params$table_annotation), results='asis'}
 cat("\n#### Annotation (DMPs)")
 ```
-```{r table_annotation_dmps, echo=FALSE, warning=FALSE, message=FALSE, eval=!is.null(params$filteredlist2heatmap)}
+```{r table_annotation_dmps, echo=FALSE, warning=FALSE, message=FALSE, eval=!is.null(params$table_annotation)}
 DT::datatable(params$table_annotation,
         extensions = "Buttons",
         rownames = FALSE,
@@ -565,23 +553,40 @@ DT::datatable(params$table_annotation,
         ))
 ```
 
-<br>
+```{r manhattan, echo=FALSE, eval=!is.null(params$table_annotation_manhattan), results='asis'}
+cat("\n#### Manhattan plot")
+```
+```{r plot_manhattan, echo=FALSE, warning=FALSE, message=FALSE, eval=!is.null(params$table_annotation_manhattan), fig.width=12}
+qqman::manhattan(params$table_annotation_manhattan, chr = "chr", bp = "pos", snp = "gene", p = "pvalue",
+                                                 annotatePval = 1, suggestiveline = T, genomewideline = T, annotateTop = T)
+```
+
+```{r volcano, echo=FALSE, eval=!is.null(params$plot_volcano), results='asis'}
+cat("\n#### Volcano plot")
+```
+```{r plot_volcano, echo=FALSE, message=FALSE, warning=FALSE, eval=!is.null(params$plot_volcano), fig.width=12}
+params$plot_volcano
+```
+
 
 ```{r filt_res, echo=FALSE, eval=!is.null(params$dmrs_contrasts), results="asis"}
+cat("<br>")
+
 cat("\n### DMRs")
 cat("\n#### Options (DMRs)")
-cat("\nFor each contrast (", paste(params$rval_contrasts, collapse=", "))
+cat("\nFor each contrast (", paste(params$dmrs_contrasts, collapse=", "))
 cat(" ) the statistics for each CpG were generated and, after, filtered with these criteria: \n
 * Max. FDR: ", params$dmrs_max_fdr, "\n* Min. Δβ: ", params$dmrs_min_deltabeta, "\n* Max. pvalue: ", params$dmrs_max_pvalue, "\n")
+```
+
+```{r dmr_table, echo=FALSE, eval=!is.null(params$table_dmrs), results='asis'}
 cat("\n#### Table with all contrasts (DMRs)")
 ```
-
-```{r filtered_table_all_dmrs,echo=FALSE,message=FALSE, warning=FALSE}
-if(!is.null(params$dmrs_contrasts)) knitr::kable(params$table_dmrs)
+```{r filtered_table_all_dmrs,echo=FALSE,message=FALSE, warning=FALSE, eval=!is.null(params$table_dmrs)}
+DT::datatable(params$table_dmrs)
 ```
 
-
-```{r custom_heatmap, echo=FALSE, eval=!is.null(params$dmrs_contrasts), results="asis"}
+```{r custom_heatmap, echo=FALSE, eval=!is.null(params$filteredmcsea2heatmap), results="asis"}
 cat("\n#### Custom heatmap (DMRs)")
 cat("\n* Column dendogram:", params$dmrs_Colv,
 "\n* Scale:", params$dmrs_scale,
@@ -591,8 +596,7 @@ cat("\n* Column dendogram:", params$dmrs_Colv,
 "\nIn the custom heatmap the selected contrasts to plot were: ", paste(params$dmrs_contrasts2plot, collapse=", "),
 " and the groups were: ", paste(params$dmrs_groups2plot, collapse=", "))
 ```
-
-```{r heatmap_dmrs,echo=FALSE,message=FALSE, warning=FALSE, fig.width = 9, fig.height = 12}
+```{r heatmap_dmrs,echo=FALSE,message=FALSE, warning=FALSE, fig.width = 9, fig.height = 12, eval=!is.null(params$filteredmcsea2heatmap)}
 if(!is.null(params$filteredmcsea2heatmap) & !is.null(params$dmrs_contrasts)){
   create_heatmap(params$filteredmcsea2heatmap,
                  factorgroups =  factor(params$rval_voi[params$rval_voi %in% params$dmrs_groups2plot], levels = params$dmrs_groups2plot),
@@ -607,15 +611,14 @@ if(!is.null(params$filteredmcsea2heatmap) & !is.null(params$dmrs_contrasts)){
   }
   
 ```
-
 ```{r num_heatmap_dmrs, echo = FALSE, eval = !is.null(params$filteredmcsea2heatmap), results = "asis"}
 cat("\nDMRs in heatmap: ", nrow(params$filteredmcsea2heatmap))
 ```
 
-```{r annotation_dmrs, echo=FALSE, eval=!is.null(params$filteredmcsea2heatmap), results='asis'}
+```{r annotation_dmrs, echo=FALSE, eval=!is.null(params$table_sigdmrs), results='asis'}
 cat("\n#### Annotation (DMRs)")
 ```
-```{r table_annotation_dmrs, echo=FALSE, warning=FALSE, message=FALSE, eval=!is.null(params$filteredmcsea2heatmap)}
+```{r table_annotation_dmrs, echo=FALSE, warning=FALSE, message=FALSE, eval=!is.null(params$table_sigdmrs)}
 DT::datatable(params$table_sigdmrs,
         rownames = TRUE,
         extensions = "Buttons",
@@ -633,7 +636,10 @@ DT::datatable(params$table_sigdmrs,
     )
 ```
 
-***
+```{r sep_dmp, echo=FALSE, eval=params$check_dmps==TRUE, results='asis'}
+cat("***")
+```
+
 
 ```{r functional_enrichment, echo = FALSE, eval =params$check_functional_enrichment==TRUE, results = "asis"}
 cat("\n## Functional enrichment")
@@ -678,6 +684,7 @@ params$reactome
 cat("***")
 ```
 
+
 ```{r survival, echo=FALSE, eval=params$check_survival==TRUE, results='asis'}
 cat("\n## Survival")
 ```
@@ -689,11 +696,18 @@ cat("\n### Kaplan-Meier")
 params$plot_survival
 ```
 
-```{r statistics, echo=FALSE, eval=!is.null(params$surv_stat), results='asis'}
-cat("\n### Statistics")
+```{r descr_stat, echo=FALSE, eval=!is.null(params$descr_surv), results='asis'}
+cat("\n### Descriptive Statistics")
 ```
-```{r plot_statistics, echo=FALSE, warning=FALSE, message=FALSE, eval=!is.null(params$surv_stat)}
-params$surv_stat
+```{r descr_stat_code, echo=FALSE, warning=FALSE, message=FALSE, eval=!is.null(params$descr_surv)}
+params$descr_surv
+```
+
+```{r freq_stat, echo=FALSE, eval=!is.null(params$freq_surv), results='asis'}
+cat("\n### Frequencies by Group")
+```
+```{r freq_stat_code, echo=FALSE, warning=FALSE, message=FALSE, eval=!is.null(params$freq_surv)}
+params$freq_surv
 ```
 
 ```{r sep_survival, echo=FALSE, eval=params$check_survival==TRUE, results='asis'}
