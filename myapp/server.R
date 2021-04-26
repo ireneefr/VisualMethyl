@@ -178,24 +178,24 @@ shinyServer(function(input, output, session) {
                          "survival" = "analysis")
         updateTabItems(session, "menu", newtab)
     })
-    observeEvent(input$b_predicted_models, {
-        newtab <- switch(input$menu,
-                         "analysis" = "predicted_models",
-                         "predicted_models" = "analysis")
-        updateTabItems(session, "menu", newtab)
-    })
-    observeEvent(input$b_external_sources, {
-        newtab <- switch(input$menu,
-                         "analysis" = "external_sources",
-                         "external_sources" = "analysis")
-        updateTabItems(session, "menu", newtab)
-    })
-    observeEvent(input$b_genome_browser, {
-        newtab <- switch(input$menu,
-                         "analysis" = "genome_browser",
-                         "genome_browser" = "analysis")
-        updateTabItems(session, "menu", newtab)
-    })
+    #observeEvent(input$b_predicted_models, {
+    #    newtab <- switch(input$menu,
+    #                     "analysis" = "predicted_models",
+    #                     "predicted_models" = "analysis")
+    #    updateTabItems(session, "menu", newtab)
+    #})
+    #observeEvent(input$b_external_sources, {
+    #    newtab <- switch(input$menu,
+    #                     "analysis" = "external_sources",
+    #                     "external_sources" = "analysis")
+    #    updateTabItems(session, "menu", newtab)
+    #})
+    #observeEvent(input$b_genome_browser, {
+    #    newtab <- switch(input$menu,
+    #                     "analysis" = "genome_browser",
+    #                     "genome_browser" = "analysis")
+    #    updateTabItems(session, "menu", newtab)
+    #})
     observeEvent(input$button_input_next, {
         newtab <- switch(input$menu,
                          "data" = "analysis",
@@ -2754,15 +2754,10 @@ shinyServer(function(input, output, session) {
                 print(class(surv))
                 print(surv_clin)
                 print(surv$Sex)
-                surv <- as.matrix(surv)
                 print(surv)
-                #surv <- as.data.frame(surv)
-                g <- input$select_input_groupingvar
-                print(g)
-                #group <- eval(parse(text = input$select_input_groupingvar))
-                #print(group)
-                #print(surv[g])
-                freq_surv <- compareGroups::descrTable("Sample_Group" ~ ., data = as.data.frame(surv))                    
+                freq_surv <- compareGroups::compareGroups(as.formula(paste(input$select_input_groupingvar," ~ ",".")), data = surv)
+                freq_surv <- compareGroups::createTable(freq_surv)
+                print(freq_surv)
                 describe_surv <- Hmisc::describe(surv)
             }
             
@@ -2776,16 +2771,9 @@ shinyServer(function(input, output, session) {
                     print(class(surv))
                     print(surv_clin)
                     print(surv$Sex)
-                    s <- as.matrix(surv)
-                    print(s)
-                    print(dim(s))
-                    print(dim(surv))
-                    print(dim(as.data.frame(s)))
-                    print(as.data.frame(s))
-                    table_surv <- compareGroups::compareGroups(as.data.frame(s))
-                    print(table_surv)
-                    table_surv <- compareGroups::createTable(table_surv)
-                    print(table_surv)                    
+                    freq_surv <- compareGroups::compareGroups(as.formula(paste(input$select_input_groupingvar," ~ ",".")), data = surv)
+                    freq_surv <- compareGroups::createTable(freq_surv)
+                    print(freq_surv)                   
                     describe_surv <- Hmisc::describe(surv)
                 }
                 
@@ -2797,16 +2785,9 @@ shinyServer(function(input, output, session) {
                     print(class(surv))
                     print(surv_clin)
                     print(surv$Sex)
-                    s <- as.matrix(surv)
-                    print(s)
-                    print(dim(s))
-                    print(dim(surv))
-                    print(dim(as.data.frame(s)))
-                    print(as.data.frame(s))
-                    table_surv <- compareGroups::compareGroups(as.data.frame(s))
-                    print(table_surv)
-                    table_surv <- compareGroups::createTable(table_surv)
-                    print(table_surv)                    
+                    freq_surv <- compareGroups::compareGroups(as.formula(paste(input$select_input_groupingvar," ~ ",".")), data = surv)
+                    freq_surv <- compareGroups::createTable(freq_surv)
+                    print(freq_surv)                  
                     describe_surv <- Hmisc::describe(surv)
                 }
             }
@@ -2865,270 +2846,25 @@ shinyServer(function(input, output, session) {
     })
     
     output$plot_survival <- renderPlot(graph_survival()[["plot"]])
-    #output$plot_surv_stat <- DT::renderDT(graph_survival()[["table"]])
-    #output$table_surv_code <- renderPrint(graph_survival()[["table"]])
     output$freq_surv_code <- renderPrint(graph_survival()[["freq"]])
     output$describe_surv_code <- renderPrint(graph_survival()[["descr"]])
     
-    ##### DOWNLOADS #####
     
-    # Markdown Report
-    output$download_html <- downloadHandler(
-        filename = "Report.html",
-        content = function(file) {
-            #tempReport <- file.path(tempdir(), "Report.Rmd")
-            #print(tempReport)
-            #file.copy("report.Rmd", getwd(), overwrite = TRUE)
-            src <- normalizePath('report_html.Rmd')
-            print(src)
-            owd <- setwd(tempdir())
-            print(owd)
-            on.exit(setwd(owd))
-            print("on.exit")
-            file.copy(src, 'report_html.Rmd', overwrite = TRUE)
-            print("file.copy")
-            shinyjs::disable("download_html")
-            print("start")
-            
-            showModal(modalDialog(
-                title = NULL, footer = NULL,
-                div(
-                    img(src="https://upload.wikimedia.org/wikipedia/commons/7/7d/Pedro_luis_romani_ruiz.gif"),
-                    p("Generating Report..."),
-                    style = "margin: auto; text-align: center"
-                )
-            ))
-            
-            withProgress(
-                message = "Generating Report...",
-                value = 1,
-                max = 3,
-                {
-                    params <- list(
-                        rval_sheet = rval_sheet(),
-                        rval_sheet_target = rval_sheet_target(),
-                        name_var = input$select_input_samplenamevar,
-                        grouping_var = input$select_input_groupingvar,
-                        donor_var = input$select_input_donorvar,
-                        normalization_mode = input$select_minfi_norm,
-                        dropsnps = input$select_minfi_dropsnps,
-                        dropcphs = input$select_minfi_dropcphs,
-                        dropsex = input$select_minfi_chromosomes,
-                        maf = input$slider_minfi_maf,
-                        probes = rval_gsetprobes(),
-                        
-                        
-                        
-                        
-                        #limma_voi = input$select_limma_voi,
-                        #limma_covar = input$checkbox_limma_covariables,
-                        #limma_inter = input$checkbox_limma_interactions,
-                        #limma_arrayweights = input$select_limma_weights,
-                        #limma_ebayes_trend = input$select_limma_trend,
-                        #limma_ebayes_robust = input$select_limma_robust,
-                        #rval_design = rval_fit()$design,
-                        #rval_contrasts = rval_contrasts(),
-                        #rval_voi = rval_voi(),
-                        #rval_dendrogram = rval_dendrogram(),
-                        #min_deltabeta = input$slider_limma_deltab,
-                        #max_fdr = input$slider_limma_adjpvalue,
-                        #max_pvalue = input$slider_limma_pvalue,
-                        #clusteralg = input$select_limma_clusteralg,
-                        #grups2plot = input$select_limma_groups2plot,
-                        #contrasts2plot = input$select_limma_contrasts2plot,
-                        #Colv = input$select_limma_colv,
-                        #distance = input$select_limma_clusterdist,
-                        #scale = input$select_limma_scale,
-                        #removebatch = input$select_limma_removebatch,
-                        
-                        
-                        
-                        
-                        plot_green_intensities = boxplot_intensities_green(),
-                        plot_red_intensities = boxplot_intensities_red(),
-                        plot_failed_probes = failure_plot()[["graph"]],
-                        plot_densityplotraw = rval_plot_densityplotraw(),
-                        plot_densityplotraw_green = rval_plot_densityplotraw_green(),
-                        plot_densityplotraw_red = rval_plot_densityplotraw_red(),
-                        plot_densityplotraw_II = rval_plot_densityplotraw_II(),
-                        plot_densityplotraw_all = rval_plot_densityplotraw_all(),
-                        plot_densityplot = rval_plot_densityplot(),
-                        plot_densityplot_green = rval_plot_densityplot_green(),
-                        plot_densityplot_red = rval_plot_densityplot_red(),
-                        plot_densityplot_II = rval_plot_densityplot_II(),
-                        plot_densityplot_all = rval_plot_densityplot_all(),
-                        
-                        
-                        
-                        
-                        #plot_pcaplot = rval_plot_pca()[["graph"]],
-                        
-                        
-                        
-                        plot_corrplot = rval_plot_corrplot()[["graph"]],
-                        
-                        
-                        
-                        #plot_boxplotraw = rval_plot_boxplotraw(),
-                        #plot_boxplot = rval_plot_boxplot(),
-                        #plot_qcraw = rval_plot_qcraw(),
-                        #plot_bisulfiterawII = rval_plot_bisulfiterawII(),
-                        
-                        
-                        
-                        plot_sexprediction = rval_plot_sexprediction(),
-                        plot_snpheatmap = rval_plot_snpheatmap(),
-                        
-                        
-                        
-                        #plot_plotSA = rval_plot_plotSA(),
-                        #table_pcaplot = rval_plot_pca()[["info"]],
-                        
-                        
-                        
-                        table_corrplot = rval_plot_corrplot()[["info"]],
-                        data_sexprediction = as.data.frame(minfi::pData(rval_gset()))[["predictedSex"]]
-                        
-                        
-                        
-                        #table_dmps = make_table(),
-                        #filteredlist2heatmap = rval_filteredlist2heatmap()
-                    )
-                    
-                    print(params)
-                    newenv <- new.env(parent = globalenv())
-                    #newenv$create_heatmap <- create_heatmap
-                    print(newenv)
+    
+    
+    
+    
+    
+    
+    
+    
 
-                    render_file <- rmarkdown::render(
-                        #tempReport,
-                        input = "report_html.Rmd",
-                        output_file = file,
-                        run_pandoc = TRUE,
-                        params = params,
-                        envir = newenv
-                    )
-                    
-                    shinyjs::enable("download_html")
-                }
-            )
-            shinyjs::enable("download_html")
-            removeModal()
-        }
-    )
-   
     
     
-    output$download_pdf <- downloadHandler(
-        filename = "Report.pdf",
-        content = function(file) {
-            #tempReport <- file.path(tempdir(), "Report.Rmd")
-            #print(tempReport)
-            #file.copy("report.Rmd", getwd(), overwrite = TRUE)
-            src <- normalizePath('report_pdf.Rmd')
-            owd <- setwd(tempdir())
-            on.exit(setwd(owd))
-            file.copy(src, 'report_pdf.Rmd', overwrite = TRUE)
-            shinyjs::disable("download_pdf")
-            
-            showModal(modalDialog(
-                title = NULL, footer = NULL,
-                div(
-                    img(src="https://upload.wikimedia.org/wikipedia/commons/7/7d/Pedro_luis_romani_ruiz.gif"),
-                    p("Generating Report..."),
-                    style = "margin: auto; text-align: center"
-                )
-            ))
-            
-            withProgress(
-                message = "Generating Report...",
-                value = 1,
-                max = 3,
-                {
-                    params <- list(
-                        rval_sheet = rval_sheet(),
-                        rval_sheet_target = rval_sheet_target(),
-                        name_var = input$select_input_samplenamevar,
-                        grouping_var = input$select_input_groupingvar,
-                        donor_var = input$select_input_donorvar,
-                        normalization_mode = input$select_minfi_norm,
-                        dropsnps = input$select_minfi_dropsnps,
-                        dropcphs = input$select_minfi_dropcphs,
-                        dropsex = input$select_minfi_chromosomes,
-                        maf = input$slider_minfi_maf,
-                        probes = rval_gsetprobes(),
-                        #limma_voi = input$select_limma_voi,
-                        #limma_covar = input$checkbox_limma_covariables,
-                        #limma_inter = input$checkbox_limma_interactions,
-                        #limma_arrayweights = input$select_limma_weights,
-                        #limma_ebayes_trend = input$select_limma_trend,
-                        #limma_ebayes_robust = input$select_limma_robust,
-                        #rval_design = rval_fit()$design,
-                        #rval_contrasts = rval_contrasts(),
-                        #rval_voi = rval_voi(),
-                        #rval_dendrogram = rval_dendrogram(),
-                        #min_deltabeta = input$slider_limma_deltab,
-                        #max_fdr = input$slider_limma_adjpvalue,
-                        #max_pvalue = input$slider_limma_pvalue,
-                        #clusteralg = input$select_limma_clusteralg,
-                        #grups2plot = input$select_limma_groups2plot,
-                        #contrasts2plot = input$select_limma_contrasts2plot,
-                        #Colv = input$select_limma_colv,
-                        #distance = input$select_limma_clusterdist,
-                        #scale = input$select_limma_scale,
-                        #removebatch = input$select_limma_removebatch,
-                        plot_green_intensities = green_intensities_graph(),
-                        plot_red_intensities = red_intensities_graph(),
-                        plot_failed_probes = failure_plot(),
-                        plot_densityplotraw = rval_plot_densityplotraw(),
-                        plot_densityplotraw_green = rval_plot_densityplotraw_green(),
-                        plot_densityplotraw_red = rval_plot_densityplotraw_red(),
-                        plot_densityplotraw_II = rval_plot_densityplotraw_II(),
-                        plot_densityplotraw_all = rval_plot_densityplotraw_all(),
-                        plot_densityplot = rval_plot_densityplot(),
-                        plot_densityplot_green = rval_plot_densityplot_green(),
-                        plot_densityplot_red = rval_plot_densityplot_red(),
-                        plot_densityplot_II = rval_plot_densityplot_II(),
-                        plot_densityplot_all = rval_plot_densityplot_all(),
-                        #plot_pcaplot = rval_plot_pca()[["graph"]],
-                        plot_corrplot = rval_plot_corrplot()[["graph"]],
-                        #plot_boxplotraw = rval_plot_boxplotraw(),
-                        #plot_boxplot = rval_plot_boxplot(),
-                        #plot_qcraw = rval_plot_qcraw(),
-                        #plot_bisulfiterawII = rval_plot_bisulfiterawII(),
-                        plot_sexprediction = rval_plot_sexprediction(),
-                        plot_snpheatmap = rval_plot_snpheatmap(),
-                        #plot_plotSA = rval_plot_plotSA(),
-                        #table_pcaplot = rval_plot_pca()[["info"]],
-                        table_corrplot = rval_plot_corrplot()[["info"]],
-                        data_sexprediction = as.data.frame(minfi::pData(rval_gset()))[["predictedSex"]]
-                        #table_dmps = make_table(),
-                        #filteredlist2heatmap = rval_filteredlist2heatmap()
-                    )
-                    
-                    
-                    newenv <- new.env(parent = globalenv())
-                    #newenv$create_heatmap <- create_heatmap
-                    print(newenv)
-                    print(params)
-                    
-                    render_file <- rmarkdown::render(
-                        #tempReport,
-                        input = "report_pdf.Rmd",
-                        output_file = file,
-                        run_pandoc = TRUE,
-                        params = params,
-                        envir = newenv
-                    )
-                    
-                    shinyjs::enable("download_pdf")
-                }
-            )
-            removeModal()
-        }
-    )
     
     
+    
+    ##### DOWNLOADS #####
     
     #Complete report
     output$complete_report_html <- downloadHandler(
@@ -3183,10 +2919,9 @@ shinyServer(function(input, output, session) {
                         
                         #plot_plotSA = rval_plot_plotSA(),
                         #table_pcaplot = rval_plot_pca()[["info"]],
-                        
-                        #exploratory analysis
                     )
                     
+                    # data
                     if(rval_sheet_target_done() == TRUE){
                         params[["check_data"]] <- TRUE
                         params[["rval_sheet"]] <- rval_sheet()
@@ -3196,6 +2931,7 @@ shinyServer(function(input, output, session) {
                         params[["donor_var"]] <- input$select_input_donorvar
                     }
                     
+                    # quality control
                     if (input$check_qc){
                         params[["check_qc"]] <- TRUE
                         params[["normalization_mode"]] <- input$select_minfi_norm
@@ -3228,6 +2964,7 @@ shinyServer(function(input, output, session) {
                         }
                     }
                     
+                    # exploratory analysis
                     if(input$check_exploratory_analysis){
                         params[["check_exploratory_analysis"]] <- TRUE
                         if("1" %in% input$check_group_exploratory_analysis){
@@ -3254,8 +2991,9 @@ shinyServer(function(input, output, session) {
                         }
                     }
 
-                    # if DMP analysis has been done, we add specific parameters
-                    if (rval_analysis_finished()) {
+                    # DMP analysis
+                    if(input$check_dmps) {
+                        params[["check_dmps"]] <- TRUE
                         params[["limma_voi"]] <- input$select_limma_voi
                         params[["limma_covar"]] <- input$checkbox_limma_covariables
                         params[["limma_inter"]] <- input$checkbox_limma_interactions
@@ -3263,44 +3001,63 @@ shinyServer(function(input, output, session) {
                         params[["limma_ebayes_trend"]] <- input$select_limma_trend
                         params[["limma_ebayes_robust"]] <- input$select_limma_robust
                         params[["rval_design"]] <- rval_fit()$design
-                        params[["rval_contrasts"]] <- rval_contrasts()
                         params[["rval_voi"]] <- rval_voi()
-                        params[["rval_dendrogram"]] <- rval_dendrogram()
-                        params[["min_deltabeta"]] <- input$slider_limma_deltab
+                        params[["rval_contrasts"]] <- rval_contrasts()
                         params[["max_fdr"]] <- input$slider_limma_adjpvalue
+                        params[["min_deltabeta"]] <- input$slider_limma_deltab
                         params[["max_pvalue"]] <- input$slider_limma_pvalue
-                        params[["clusteralg"]] <- input$select_limma_clusteralg
-                        params[["groups2plot"]] <- input$select_limma_groups2plot
-                        params[["contrasts2plot"]] <- input$select_limma_contrasts2plot
-                        params[["Colv"]] <- input$select_limma_colv
-                        params[["distance"]] <- input$select_limma_clusterdist
-                        params[["scale"]] <- input$select_limma_scale
-                        params[["removebatch"]] <- input$select_limma_removebatch
-                        params[["table_dmps"]] <- make_table()
-                        params[["filteredlist2heatmap"]] <- rval_filteredlist2heatmap()
-                        params[["table_annotation_manhattan"]] <- table_annotation_manhattan()
-                        params[["plot_volcano"]] <- volcano_graph()
-                        params[["table_annotation"]] <- table_annotation()
+                        
+                        if("1" %in% input$check_group_dmps){
+                            params[["table_dmps"]] <- make_table()
+                        }
+                        if("2" %in% input$check_group_dmps){
+                            params[["Colv"]] <- input$select_limma_colv
+                            params[["scale"]] <- input$select_limma_scale
+                            params[["clusteralg"]] <- input$select_limma_clusteralg
+                            params[["distance"]] <- input$select_limma_clusterdist
+                            params[["removebatch"]] <- input$select_limma_removebatch
+                            params[["contrasts2plot"]] <- input$select_limma_contrasts2plot
+                            params[["groups2plot"]] <- input$select_limma_groups2plot
+                            params[["filteredlist2heatmap"]] <- rval_filteredlist2heatmap()
+                            params[["rval_dendrogram"]] <- rval_dendrogram()
+                        }
+                        if("3" %in% input$check_group_dmps){
+                            params[["table_annotation"]] <- table_annotation()
+                        }
+                        if("4" %in% input$check_group_dmps){
+                            params[["table_annotation_manhattan"]] <- table_annotation_manhattan()
+                        }
+                        if("5" %in% input$check_group_dmps){
+                            params[["plot_volcano"]] <- volcano_graph()
+                        }
                     }
                     
-                    # if DMR analysis has been done, we add specific parameters
-                    if (rval_dmrs_finished()) {
+                    # DMR analysis
+                    if(input$check_dmrs) {
+                        params[["check_dmrs"]] <- TRUE
                         params[["dmrs_contrasts"]] <- input$select_dmrs_contrasts
-                        params[["dmrs_rval_dendrogram"]] <- rval_dendrogram_dmrs()
-                        params[["dmrs_min_deltabeta"]] <- input$slider_dmrs_deltab
                         params[["dmrs_max_fdr"]] <- input$slider_dmrs_adjpvalue
+                        params[["dmrs_min_deltabeta"]] <- input$slider_dmrs_deltab
                         params[["dmrs_max_pvalue"]] <- input$slider_dmrs_pvalue
-                        params[["dmrs_clusteralg"]] <- input$select_dmrs_clusteralg
-                        params[["dmrs_groups2plot"]] <- input$select_dmrs_groups2plot
-                        params[["dmrs_contrasts2plot"]] <- input$select_dmrs_contrasts2plot
-                        params[["dmrs_regions2plot"]] <- input$select_dmrs_regions2plot
-                        params[["dmrs_Colv"]] <- input$select_dmrs_colv
-                        params[["dmrs_distance"]] <- input$select_dmrs_clusterdist
-                        params[["dmrs_scale"]] <- input$select_dmrs_scale
-                        params[["dmrs_removebatch"]] <- input$select_dmrs_removebatch
-                        params[["table_dmrs"]] <- make_table_dmrscount()
-                        params[["filteredmcsea2heatmap"]] <- rval_filteredmcsea2heatmap()
-                        params[["table_sigdmrs"]] <- rval_table_sigdmrs()
+                        
+                        if("1" %in% input$check_group_dmrs){
+                            params[["table_dmrs"]] <- make_table_dmrscount()
+                        }
+                        if("2" %in% input$check_group_dmrs){
+                            params[["dmrs_Colv"]] <- input$select_dmrs_colv
+                            params[["dmrs_scale"]] <- input$select_dmrs_scale
+                            params[["dmrs_clusteralg"]] <- input$select_dmrs_clusteralg
+                            params[["dmrs_distance"]] <- input$select_dmrs_clusterdist
+                            params[["dmrs_removebatch"]] <- input$select_dmrs_removebatch
+                            params[["dmrs_contrasts2plot"]] <- input$select_dmrs_contrasts2plot
+                            params[["dmrs_groups2plot"]] <- input$select_dmrs_groups2plot
+                            params[["filteredmcsea2heatmap"]] <- rval_filteredmcsea2heatmap()
+                            params[["dmrs_rval_dendrogram"]] <- rval_dendrogram_dmrs()
+                        }
+                        if("3" %in% input$check_group_dmrs){
+                            params[["table_sigdmrs"]] <- rval_table_sigdmrs()
+                        }
+                        #params[["dmrs_regions2plot"]] <- input$select_dmrs_regions2plot
                     }
                     
                     # functional analysis
@@ -3323,14 +3080,19 @@ shinyServer(function(input, output, session) {
                         #params[["gmt_go_cc"]] <- dotplot_gmt_go_cc()
                     }
                     
+                    # 
                     if(input$check_survival){
                         params[["check_survival"]] <- TRUE
                         if("1" %in% input$check_group_survival){
-                            params[["plot_survival"]] <- graph_survival()
+                            params[["plot_survival"]] <- graph_survival()[["plot"]]
                         }
                         if("2" %in% input$check_group_survival){
-                            params[["surv_stat"]] <- TRUE
+                            params[["descr_surv"]] <- graph_survival()[["descr"]]
+                            if(input$select_meth_data){
+                                params[["freq_surv"]] <- graph_survival()[["freq"]]
+                            }
                         }
+                        
                     }
                     
 

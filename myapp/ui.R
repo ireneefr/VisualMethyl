@@ -61,10 +61,10 @@ shinyUI(
           menuSubItem("Exploratory Analysis", tabName = "exploratory_analysis"),
           menuSubItem("DMPs/DMRs", tabName = "dmp_dmr"),
           menuSubItem("Functional Enrichment", tabName = "functional_enrichment"),
-          menuSubItem("Survival", tabName = "survival"),
-          menuSubItem("Predicted Models", tabName = "predicted_models"),
-          menuSubItem("External Sources", tabName = "external_sources"),
-          menuSubItem("Genome Browser", tabName = "genome_browser")
+          menuSubItem("Survival", tabName = "survival")#,
+          #menuSubItem("Predicted Models", tabName = "predicted_models"),
+          #menuSubItem("External Sources", tabName = "external_sources"),
+          #menuSubItem("Genome Browser", tabName = "genome_browser")
         ), "analysis"),
         menuItem("Export", tabName = "export"),
         menuItem("Help", tabName = "help")
@@ -134,21 +134,21 @@ shinyUI(
             ),
             column(3,
               align = "center",
-              actionButton("b_exploratory_analysis", label = HTML("Exploratory <br/> Analysis"), class = "btn-info"),
-              br(),
-              actionButton("b_predicted_models", label = HTML("Predicted <br/> Models"), class = "btn-info")
+              actionButton("b_exploratory_analysis", label = HTML("Exploratory <br/> Analysis"), class = "btn-info")#,
+              #br(),
+              #actionButton("b_predicted_models", label = HTML("Predicted <br/> Models"), class = "btn-info")
             ),
             column(3,
               align = "center",
-              actionButton("b_dmp_dmr", label = HTML("DMPs <br/> DMRs"), class = "btn-info"),
-              br(),
-              actionButton("b_external_sources", label = HTML("External <br/> Sources"), class = "btn-info")
+              actionButton("b_dmp_dmr", label = HTML("DMPs <br/> DMRs"), class = "btn-info")#,
+              #br(),
+              #actionButton("b_external_sources", label = HTML("External <br/> Sources"), class = "btn-info")
             ),
             column(3,
               align = "center",
-              actionButton("b_functional_enrichment", label = HTML("Functional <br/> Enrichment"), class = "btn-info"),
-              br(),
-              actionButton("b_genome_browser", label = HTML("Genome <br/> Browser"), class = "btn-info")
+              actionButton("b_functional_enrichment", label = HTML("Functional <br/> Enrichment"), class = "btn-info")#,
+              #br(),
+              #actionButton("b_genome_browser", label = HTML("Genome <br/> Browser"), class = "btn-info")
             )
           )
         ),
@@ -937,18 +937,18 @@ shinyUI(
             )
           )
         ),
-        tabItem(
-          tabName = "predicted_models",
-          fluidPage(h1("Predicted Models"))
-        ),
-        tabItem(
-          tabName = "external_sources",
-          fluidPage(h1("External Sources"))
-        ),
-        tabItem(
-          tabName = "genome_browser",
-          fluidPage(h1("Genome Browser"))
-        ),
+        #tabItem(
+        #  tabName = "predicted_models",
+        #  fluidPage(h1("Predicted Models"))
+        #),
+        #tabItem(
+        #  tabName = "external_sources",
+        #  fluidPage(h1("External Sources"))
+        #),
+        #tabItem(
+        #  tabName = "genome_browser",
+        #  fluidPage(h1("Genome Browser"))
+        #),
         tabItem(
           tabName = "export",
           fluidPage(
