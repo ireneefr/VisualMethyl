@@ -1615,6 +1615,48 @@ shinyServer(function(input, output, session) {
     output$volcano_plot <- renderPlot(volcano_graph())
     
     
+    
+    ##### CIRCOS #####
+    
+    observeEvent(rval_filteredlist(),
+    updatePickerInput(
+        session,
+        "select_chr_circos",
+        selected = unique(rval_annotation()$chr),
+        choices = unique(rval_annotation()$chr)
+    ))
+    
+    
+    
+    circos_plot <- eventReactive(list(rval_filteredlist(), input$button_circos_update), {
+        
+        labelname <- data.frame(chr = rval_annotation()$chr, start = rval_annotation()$pos, end = rval_annotation()$pos, label = rval_annotation()$Name)
+
+        chr_remove <- unique(labelname$chr[!(labelname$chr %in% input$select_chr_circos)])
+        print(chr_remove)
+        chr_remove <- c(chr_remove, "chrX", "chrY")
+        labelname[labelname$chr %in% input$select_chr_circos,]
+        
+        list <- rval_filteredlist()$`MAC-MO`
+        label_list <- labelname[labelname$label %in% list$cpg,]
+        
+        data(UCSC.HG19.Human.CytoBandIdeogram)
+        RCircos::RCircos.Set.Core.Components(cyto.info = UCSC.HG19.Human.CytoBandIdeogram, chr.exclude = chr_remove)  
+        
+        RCircos::RCircos.Set.Plot.Area()
+        RCircos::RCircos.Chromosome.Ideogram.Plot()
+        
+        name.col <- 4
+        side <- "in"
+        track.num <- 1
+        RCircos::RCircos.Gene.Connector.Plot(label_list, track.num, side)
+        track.num <- 2
+        RCircos::RCircos.Gene.Name.Plot(label_list, name.col,track.num, side)
+    })
+    
+    
+    output$circos <- renderPlot(circos_plot())
+    
 
     
     ###### DMRs #####

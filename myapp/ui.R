@@ -46,6 +46,7 @@ library(shinydashboardPlus)
 library(shinyWidgets)
 library(shinycssloaders)
 library(dplyr)
+library(rintrojs)
 
 shinyUI(
   dashboardPage(
@@ -592,6 +593,22 @@ shinyUI(
                     title = "DMP VOLCANO", width = 12, closable = FALSE, collapsible = TRUE, collapsed = TRUE, status = "primary",
                     selectInput(inputId = "select_anncontrast_volcano", label = "", choices = "", selected = ""),
                     withSpinner(plotOutput("volcano_plot"))
+                  ),
+                  box(
+                    title = "DMP CIRCOS", width = 12, closable = FALSE, collapsible = TRUE, collapsed = TRUE, status = "primary",
+                    pickerInput(
+                      inputId = "select_chr_circos",
+                      label = "Select chr. to plot",
+                      choices = c(),
+                      options = list(
+                        `actions-box` = TRUE,
+                        size = 10,
+                        `selected-text-format` = "count > 3"
+                      ),
+                      multiple = TRUE
+                    ),
+                    actionButton("button_circos_update", label = "Update"),
+                    withSpinner(plotOutput("circos", height = "800px"))
                   )
                 )
               )),
