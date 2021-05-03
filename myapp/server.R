@@ -278,32 +278,27 @@ print("1")
         updateSelectInput(
             session,
             "select_input_samplenamevar",
-            label = "Select Sample Names Column:",
             choices = colnames(rval_sheet())
         )
         
         updateSelectInput(
             session,
             "select_input_groupingvar",
-            label = "Select Variable of Interest:",
             choices = colnames(rval_sheet())
         )
         updateSelectInput(
             session,
             "select_input_donorvar",
-            label = "Select Donor Variable:",
             choices = colnames(rval_sheet())
         )
         updateSelectInput(
             session,
             "select_input_sex",
-            label = "Select Sex Column",
             choices = c("None", colnames(rval_sheet()))
         )
         updateSelectInput(
             session,
             "select_input_age",
-            label = "Select Age Column",
             choices = c("None", colnames(rval_sheet()))
         )
         
@@ -318,7 +313,6 @@ print("1")
         updatePickerInput(
             session,
             "selected_samples",
-            label = "Select Samples to Process:",
             selected = rval_sheet()[, input$select_input_samplenamevar],
             choices = rval_sheet()[, input$select_input_samplenamevar],
             choicesOpt = list(subtext = paste("Group: ", rval_sheet()[, input$select_input_groupingvar]))
@@ -327,6 +321,18 @@ print("1")
     
     # when samples selected are changed, continue button is enabled again
     observeEvent(input$selected_samples, shinyjs::enable("button_input_next"))
+    
+    output$ui_select_options <- renderUI({
+        if((input$select_input_samplenamevar %in% c(input$select_input_groupingvar, input$select_input_sex, input$select_input_age)) | (input$select_input_groupingvar %in% c(input$select_input_donorvar, input$select_input_sex, input$select_input_age)) | (input$select_input_donorvar %in% c(input$select_input_sex, input$select_input_age)) | (input$select_input_sex != "None" & input$select_input_sex == input$select_input_age)){
+            shinyjs::disable("button_input_next")
+            return(helpText("Columns of Sample Names, Variable of Interest, Sex and Age must be different", style = "font-size:10px"))
+        }
+        else{
+            shinyjs::enable("button_input_next")
+            return()
+        }
+    })
+    
     
     # The dataframe is rendered
     output$samples_table <- DT::renderDT(
@@ -344,6 +350,32 @@ print("1")
         )
     )
     
+    observe({
+        if(input$select_input_samplenamevar != ""){
+        if(anyDuplicated(rval_sheet()[, input$select_input_samplenamevar]) > 0) {
+            shinyjs::disable("button_input_next")
+            showFeedbackWarning(
+                inputId = "select_input_samplenamevar",
+                text = "Sample Name Variable should not have duplicated values"
+            )  
+        } else {
+            shinyjs::enable("button_input_next")
+            hideFeedback("select_input_samplenamevar")
+        }}
+    })
+    observe({
+        if(input$select_input_groupingvar != ""){
+        if(anyDuplicated(rval_sheet()[, input$select_input_groupingvar]) == 0) {
+            shinyjs::disable("button_input_next")
+            showFeedbackWarning(
+                inputId = "select_input_groupingvar",
+                text = "Grouping variable should have groups greater than 1"
+            )  
+        } else {
+            shinyjs::enable("button_input_next")
+            hideFeedback("select_input_groupingvar")
+        }}
+    })
     
     
     ########## rval_rgset() RGCHANNEL ##########

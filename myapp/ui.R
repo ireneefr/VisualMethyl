@@ -48,6 +48,7 @@ library(shinyWidgets)
 library(shinycssloaders)
 library(dplyr)
 library(rintrojs)
+library(shinyFeedback)
 
 shinyUI(
   dashboardPage(
@@ -81,7 +82,7 @@ shinyUI(
     dashboardBody(
       includeCSS("www/style.css"),
       introjsUI(),
-      use_cicerone(),
+      useShinyFeedback(),
       tabItems(
         tabItem(
           tabName = "data",
@@ -90,7 +91,7 @@ shinyUI(
               title = "INPUT DATA", width = 12, collapsible = FALSE, status = "primary",
               introBox(
                 fileInput("input_data", p("Upload input data (.zip)", span(icon("info-circle"), id = "info_input")), multiple = FALSE, accept = ".zip"),
-                tippy::tippy_this(elementId = "info_input", tooltip = "\n INFO DATA \n hollllll", placement = "right-start"),
+                tippy::tippy_this(elementId = "info_input", tooltip = "INFO DATA", placement = "right-start"),
             data.step = 1,
             data.intro = "Upload methylation data"
             ),
@@ -109,25 +110,17 @@ shinyUI(
                   title = "SELECTION OPTIONS", id = "selection_options",
                   collapsible = FALSE, status = "primary",
                   width = 3,
+                  div(
                 introBox(
-                  selectInput(inputId = "select_input_samplenamevar", "", c()),
-                data.step = 4,
-                data.intro = "Select sample names column."
-                ),
-                introBox(
-                  selectInput("select_input_groupingvar", "", c()),
-                  data.step = 5,
-                  data.intro = "Select group column."
-                ),
-                introBox(
-                  selectInput("select_input_donorvar", "", c()),
-                  data.step = 6,
-                  data.intro = "Select donor column."
-                ),
-                introBox(
+                  selectInput(inputId = "select_input_samplenamevar", label = p("Sample Names:", span(icon("info-circle"), id = "info_names")), c()),
+                  tippy::tippy_this(elementId = "info_names", tooltip = "Select Sample Names Column. Names must be unique", placement = "right"),
+                  selectInput("select_input_groupingvar", label = p("Variable of Interest:", span(icon("info-circle"), id = "info_group")), c()),
+                  tippy::tippy_this(elementId = "info_group", tooltip = "Select Variable of Interest", placement = "right"),
+                  selectInput("select_input_donorvar", label = p("Donor:", span(icon("info-circle"), id = "info_donor")), c()),
+                  tippy::tippy_this(elementId = "info_donor", tooltip = "Select Donor Column. If there is no Donor, select Sample Names Column", placement = "right"),
                   pickerInput(
                     inputId = "selected_samples",
-                    label = "",
+                    label = p("Select Samples to Process:", span(icon("info-circle"), id = "info_samples")),
                     choices = c(),
                     options = list(
                       `actions-box` = TRUE,
@@ -136,25 +129,17 @@ shinyUI(
                     ),
                     multiple = TRUE
                   ),
-                  data.step = 7,
-                  data.intro = "Select samples to analyse."
-                ),
-                introBox(
-                  selectInput("select_input_sex", "", c()),
-                  data.step = 8,
-                  data.intro = "Select sex column."
-                ),
-                introBox(
-                  selectInput("select_input_age", "", c()),
-                  data.step = 9,
-                  data.intro = "Select age column."
-                ),
-                introBox(
-                  actionButton("button_input_next", "Continue to Analysis", class = "btn-primary"),
-                  data.step = 10,
-                  data.intro = "Click button Continue to Analysis",
+                  tippy::tippy_this(elementId = "info_samples", tooltip = "Select Samples to analyse", placement = "right"),
+                  selectInput("select_input_sex", label = p("Sex", span(icon("info-circle"), id = "info_sex")), c()),
+                  tippy::tippy_this(elementId = "info_sex", tooltip = "Select Sex Column", placement = "right"),
+                  selectInput("select_input_age", label = p("Age", span(icon("info-circle"), id = "info_age")), c()),
+                  tippy::tippy_this(elementId = "info_age", tooltip = "Select Age Column", placement = "right"),
+                  data.step = 4,
+                  data.intro = "Select options",
                   disable.interaction = TRUE
-                )
+                )),
+                uiOutput("ui_select_options"),
+                actionButton("button_input_next", "Continue to Analysis", class = "btn-primary")
                 )
               ),
 
