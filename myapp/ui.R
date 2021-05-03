@@ -39,6 +39,7 @@ convertMenuItem <- function(mi, tabName) {
   }
   mi
 }
+library(cicerone)
 
 library(shiny)
 library(shinydashboard)
@@ -53,6 +54,7 @@ shinyUI(
     dashboardHeader(title = "VisualMethyl"),
 
     dashboardSidebar(
+      
       sidebarMenu(
         id = "menu",
         menuItem("Data", tabName = "data"),
@@ -70,25 +72,31 @@ shinyUI(
         menuItem("Export", tabName = "export"),
         menuItem("Help", tabName = "help")
       ),
+      actionButton("startHelp", "help"),
+      
       actionButton("help_tour", label = "HELP TOUR")
+      
     ),
 
     dashboardBody(
       includeCSS("www/style.css"),
       introjsUI(),
+      use_cicerone(),
       tabItems(
         tabItem(
           tabName = "data",
           verticalLayout(
-            box(
+            box(id = "firstbox",
               title = "INPUT DATA", width = 12, collapsible = FALSE, status = "primary",
               introBox(
-                fileInput("input_data", "Upload input data (.zip)", multiple = FALSE, accept = ".zip"),
+                fileInput("input_data", p("Upload input data (.zip)", span(icon("info-circle"), id = "info_input")), multiple = FALSE, accept = ".zip"),
+                tippy::tippy_this(elementId = "info_input", tooltip = "\n INFO DATA \n hollllll", placement = "right-start"),
             data.step = 1,
-            data.intro = "Input data"
+            data.intro = "Upload methylation data"
             ),
             introBox(
               uiOutput("ui_input_data"),
+              tippy::tippy_this(elementId = "ui_input_data", tooltip = "LOAD DATA", placement = "right"),
               data.step = 2,
               data.intro = "Load data"
             )
@@ -97,14 +105,26 @@ shinyUI(
               style = "margin-left: 2px; margin-right: 2px",
               conditionalPanel(
                 "input.b_input_data > 0",
-                introBox(
                 box(
                   title = "SELECTION OPTIONS", id = "selection_options",
                   collapsible = FALSE, status = "primary",
                   width = 3,
-                  selectInput("select_input_samplenamevar", "", c()),
+                introBox(
+                  selectInput(inputId = "select_input_samplenamevar", "", c()),
+                data.step = 4,
+                data.intro = "Select sample names column."
+                ),
+                introBox(
                   selectInput("select_input_groupingvar", "", c()),
+                  data.step = 5,
+                  data.intro = "Select group column."
+                ),
+                introBox(
                   selectInput("select_input_donorvar", "", c()),
+                  data.step = 6,
+                  data.intro = "Select donor column."
+                ),
+                introBox(
                   pickerInput(
                     inputId = "selected_samples",
                     label = "",
@@ -116,12 +136,25 @@ shinyUI(
                     ),
                     multiple = TRUE
                   ),
-                  selectInput("select_input_sex", "", c()),
-                  selectInput("select_input_age", "", c()),
-                  actionButton("button_input_next", "Continue to Analysis", class = "btn-primary")
+                  data.step = 7,
+                  data.intro = "Select samples to analyse."
                 ),
-                data.step = 4,
-                data.intro = "options"
+                introBox(
+                  selectInput("select_input_sex", "", c()),
+                  data.step = 8,
+                  data.intro = "Select sex column."
+                ),
+                introBox(
+                  selectInput("select_input_age", "", c()),
+                  data.step = 9,
+                  data.intro = "Select age column."
+                ),
+                introBox(
+                  actionButton("button_input_next", "Continue to Analysis", class = "btn-primary"),
+                  data.step = 10,
+                  data.intro = "Click button Continue to Analysis",
+                  disable.interaction = TRUE
+                )
                 )
               ),
 

@@ -1,4 +1,3 @@
-
 library(shiny)
 source("utils_analysis.R")
 source("utils_graphs.R")
@@ -23,6 +22,9 @@ shinyServer(function(input, output, session) {
     # Max size
     options(shiny.maxRequestSize = 8000 * 1024^2) # 5MB getShinyOption("shiny.maxRequestSize") | 30*1024^2 = 30MB
     n_cores <- parallel::detectCores() / 2
+    
+    
+    
     
     observeEvent(input$help_tour, introjs(session, options = list("showBullets"="true", "showProgress"="true", "showStepNumbers"="false","nextLabel"="Next","prevLabel"="Prev","skipLabel"="Skip")))
     
@@ -216,10 +218,11 @@ shinyServer(function(input, output, session) {
     
     # When you press button_input_load, the data is unzipped and the metharray sheet is loaded
     rval_sheet <- eventReactive(input$b_input_data, {
-
+print("1")
+        print(tools::file_ext(input$input_data$datapath))
         # Check if updated file is .zip
         validate(need(tools::file_ext(input$input_data$datapath) == "zip", "File extension should be .zip"))
-        
+        print("2")
         shinyjs::disable("button_input_load") # disable the load button to avoid multiple clicks
         
         if (dir.exists(paste0(tempdir(), "/experiment_data"))) {
