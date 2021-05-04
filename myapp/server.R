@@ -26,9 +26,10 @@ shinyServer(function(input, output, session) {
     n_cores <- parallel::detectCores() / 2
     
     
-    
+    intro <- data.frame(element = c("#select_minfi_norm-label", "#button_minfi_select"), intro = c("This is norm", "This is button"))
     
     observeEvent(input$help_tour, introjs(session, options = list("showBullets"="true", "showProgress"="true", "showStepNumbers"="false","nextLabel"="Next","prevLabel"="Prev","skipLabel"="Skip")))
+    observeEvent(input$help_tour2, introjs(session, options = list(steps = intro, "showBullets"="true", "showProgress"="true", "showStepNumbers"="false","nextLabel"="Next","prevLabel"="Prev","skipLabel"="Skip")))
     
     observe({
         shinyjs::disable("check_qc")

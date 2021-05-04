@@ -72,11 +72,7 @@ shinyUI(
         ), "analysis"),
         menuItem("Export", tabName = "export"),
         menuItem("Help", tabName = "help")
-      ),
-      actionButton("startHelp", "help"),
-      
-      actionButton("help_tour", label = "HELP TOUR")
-      
+      )
     ),
 
     dashboardBody(
@@ -88,7 +84,7 @@ shinyUI(
           tabName = "data",
           verticalLayout(
             box(id = "firstbox",
-              title = "INPUT DATA", width = 12, collapsible = FALSE, status = "primary",
+              title = HTML("INPUT DATA", as.character(actionButton("help_tour", label = "HELP TOUR", style = "margin-left:65vw"))), width = 12, collapsible = FALSE, status = "primary",
               introBox(
                 fileInput("input_data", p("Upload input data (.zip)", span(icon("info-circle"), id = "info_input")), multiple = FALSE, accept = ".zip"),
                 tippy::tippy_this(elementId = "info_input", tooltip = "INFO DATA", placement = "right-start"),
@@ -250,7 +246,11 @@ shinyUI(
             # Box1
             sidebarPanel(
               width = 3,
+              introBox(
               selectInput("select_minfi_norm", "Select Normalization", norm_options),
+              data.step = 6,
+              data.intro = "hello"
+              ),
               div(
                 margin_left = "50px",
                 switchInput(
@@ -292,7 +292,8 @@ shinyUI(
 
               shinyjs::disabled(actionButton("button_minfi_select", "Run Normalization", class = "btn-primary")),
               h4(),
-              textOutput("text_minfi_probes")
+              textOutput("text_minfi_probes"),
+              actionButton("help_tour2", "HELP TOUR")
             ),
 
             mainPanel(
