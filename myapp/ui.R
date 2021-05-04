@@ -162,29 +162,85 @@ shinyUI(
           fluidPage(
             br(),
             br(),
-            column(3,
-              align = "center",
-              actionButton("b_qc", label = "QC", class = "btn-info"),
-              br(),
-              actionButton("b_survival", label = "Survival", class = "btn-info")
+            fluidRow(
+              column(3, align = "center",
+                     actionButton("b_qc", label = "QC", class = "btn-info")
+              ),
+              column(2, align = "center",
+                     actionButton("b_qc_info", label = icon("info-circle"))
+              ),
+              column(4, align = "center",
+                     conditionalPanel("input.b_qc_info % 2 != 0",
+                       p("Quality Control ................................... \n
+                         Requirements: \n
+                         -Upload Data")
+                     )
+              )
             ),
-            column(3,
-              align = "center",
-              actionButton("b_exploratory_analysis", label = HTML("Exploratory <br/> Analysis"), class = "btn-info")#,
-              #br(),
-              #actionButton("b_predicted_models", label = HTML("Predicted <br/> Models"), class = "btn-info")
+            fluidRow(
+              column(3, align = "center",
+                     actionButton("b_exploratory_analysis", label = HTML("Exploratory <br/> Analysis"), class = "btn-info")
+              ),
+              column(2, align = "center",
+                     actionButton("b_exploratory_analysis_info", label = icon("info-circle"))
+              ),
+              column(4, align = "center",
+                     conditionalPanel("input.b_exploratory_analysis_info % 2 != 0",
+                                      p("Exploratory Analysis .............................. \n
+                                        Requirements: \n
+                                        -Upload Data \n
+                                        -Normalization in Quality Control")
+                     )
+              )
             ),
-            column(3,
-              align = "center",
-              actionButton("b_dmp_dmr", label = HTML("DMPs <br/> DMRs"), class = "btn-info")#,
-              #br(),
-              #actionButton("b_external_sources", label = HTML("External <br/> Sources"), class = "btn-info")
+            fluidRow(
+              column(3, align = "center",
+                     actionButton("b_dmp_dmr", label = HTML("DMPs <br/> DMRs"), class = "btn-info")
+              ),
+              column(2, align = "center",
+                     actionButton("b_dmp_dmr_info", label = icon("info-circle"))
+              ),
+              column(4, align = "center",
+                     conditionalPanel("input.b_dmp_dmr_info % 2 != 0",
+                                      p("DMPs and DMRs ........................... \n
+                                        Requirements: \n
+                                        -Upload Data \n
+                                        -Normalization in Quality Control"), style = "background-color:red;border-color:black;border:5px"
+                     )
+              )
             ),
-            column(3,
-              align = "center",
-              actionButton("b_functional_enrichment", label = HTML("Functional <br/> Enrichment"), class = "btn-info")#,
-              #br(),
-              #actionButton("b_genome_browser", label = HTML("Genome <br/> Browser"), class = "btn-info")
+            fluidRow(
+              column(3, align = "center",
+                     actionButton("b_functional_enrichment", label = HTML("Functional <br/> Enrichment"), class = "btn-info")
+              ),
+              column(2, align = "center",
+                     actionButton("b_functional_enrichment_info", label = icon("info-circle"))
+              ),
+              column(4, align = "center",
+                     conditionalPanel("input.b_functional_enrichment_info % 2 != 0",
+                                      p("Functional Enrichment .............................. \n
+                                        Requirements: \n
+                                        -Upload Data \n
+                                        -Normalization in Qualiy Control \n
+                                        -DMPs calculation in DMPs/DMRs")
+                     )
+              )
+            ),
+            fluidRow(
+              column(3, align = "center",
+                     actionButton("b_survival", label = "Survival", class = "btn-info")
+              ),
+              column(2, align = "center",
+                     actionButton("b_survival_info", label = icon("info-circle"))
+              ),
+              column(4, align = "center",
+                     conditionalPanel("input.b_survival_info % 2 != 0",
+                                      p("Survival ........................... \n
+                                        Requirements (only to use methylation data): \n
+                                        -Upload Data \n
+                                        -Normalization in Quality Control")
+                     )
+              )
             )
           )
         ),

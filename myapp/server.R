@@ -17,7 +17,9 @@ shinyServer(function(input, output, session) {
     rval_dmrs_finished <- reactiveVal(value = FALSE)
     rval_dmrs_ready2heatmap <- reactiveVal(value = FALSE)
     rval_dmrs_ready2mcsea <- reactiveVal(value = FALSE)
-    
+    correct_variables_name <- reactiveVal(value = FALSE)
+    correct_variables_group <- reactiveVal(value = FALSE)
+    correct_variables_diff <- reactiveVal(value = FALSE)
     
     # Max size
     options(shiny.maxRequestSize = 8000 * 1024^2) # 5MB getShinyOption("shiny.maxRequestSize") | 30*1024^2 = 30MB
@@ -218,11 +220,9 @@ shinyServer(function(input, output, session) {
     
     # When you press button_input_load, the data is unzipped and the metharray sheet is loaded
     rval_sheet <- eventReactive(input$b_input_data, {
-print("1")
         print(tools::file_ext(input$input_data$datapath))
         # Check if updated file is .zip
         validate(need(tools::file_ext(input$input_data$datapath) == "zip", "File extension should be .zip"))
-        print("2")
         shinyjs::disable("button_input_load") # disable the load button to avoid multiple clicks
         
         if (dir.exists(paste0(tempdir(), "/experiment_data"))) {
@@ -259,7 +259,7 @@ print("1")
     })
     
     
-    rval_sheet_target <- eventReactive(input$button_input_next, {
+    rval_sheet_target <- reactive({
             rval_sheet_target_done(TRUE)
         rval_sheet()[rval_sheet()[[input$select_input_samplenamevar]] %in% input$selected_samples, ]
         }
@@ -301,8 +301,7 @@ print("1")
             "select_input_age",
             choices = c("None", colnames(rval_sheet()))
         )
-        
-        
+
         shinyjs::enable("button_input_next") # Enable button continue
     })
     
@@ -320,15 +319,15 @@ print("1")
     )
     
     # when samples selected are changed, continue button is enabled again
-    observeEvent(input$selected_samples, shinyjs::enable("button_input_next"))
+    #observeEvent(input$selected_samples, shinyjs::enable("button_input_next"))
     
     output$ui_select_options <- renderUI({
         if((input$select_input_samplenamevar %in% c(input$select_input_groupingvar, input$select_input_sex, input$select_input_age)) | (input$select_input_groupingvar %in% c(input$select_input_donorvar, input$select_input_sex, input$select_input_age)) | (input$select_input_donorvar %in% c(input$select_input_sex, input$select_input_age)) | (input$select_input_sex != "None" & input$select_input_sex == input$select_input_age)){
-            shinyjs::disable("button_input_next")
+            correct_variables_diff(TRUE)
             return(helpText("Columns of Sample Names, Variable of Interest, Sex and Age must be different", style = "font-size:10px"))
         }
         else{
-            shinyjs::enable("button_input_next")
+            correct_variables_diff(FALSE)
             return()
         }
     })
@@ -352,29 +351,37 @@ print("1")
     
     observe({
         if(input$select_input_samplenamevar != ""){
-        if(anyDuplicated(rval_sheet()[, input$select_input_samplenamevar]) > 0) {
-            shinyjs::disable("button_input_next")
-            showFeedbackWarning(
+        if(anyDuplicated(rval_sheet_target()[, input$select_input_samplenamevar]) > 0) {
+            correct_variables_name(TRUE)
+            showFeedbackDanger(
                 inputId = "select_input_samplenamevar",
                 text = "Sample Name Variable should not have duplicated values"
             )  
         } else {
-            shinyjs::enable("button_input_next")
+            correct_variables_name(FALSE)
             hideFeedback("select_input_samplenamevar")
         }}
     })
     observe({
         if(input$select_input_groupingvar != ""){
-        if(anyDuplicated(rval_sheet()[, input$select_input_groupingvar]) == 0) {
-            shinyjs::disable("button_input_next")
-            showFeedbackWarning(
+        if(anyDuplicated(rval_sheet_target()[, input$select_input_groupingvar]) == 0) {
+            correct_variables_group(TRUE)
+            showFeedbackDanger(
                 inputId = "select_input_groupingvar",
                 text = "Grouping variable should have groups greater than 1"
             )  
         } else {
-            shinyjs::enable("button_input_next")
+            correct_variables_group(FALSE)
             hideFeedback("select_input_groupingvar")
         }}
+    })
+    
+    observe({
+        if(correct_variables_name() | correct_variables_group() | correct_variables_diff()){
+            shinyjs::disable("button_input_next")
+        } else {
+            shinyjs::enable("button_input_next")
+        }
     })
     
     
@@ -899,7 +906,7 @@ print("1")
     ###### LIMMA #####
     
     # Variable of interest
-    rval_voi <- reactive(factor(make.names(minfi::pData(rval_gset())[, input$select_limma_voi])))
+    rval_voi <- eventReactive(input$button_limma_calculatemodel, factor(make.names(minfi::pData(rval_gset())[, input$select_limma_voi])))
     
     # Calculation of contrasts
     rval_contrasts <- reactive({
@@ -1292,7 +1299,7 @@ print("1")
         
     })
     
-    rval_list <- reactive({
+    rval_list <- eventReactive(rval_finddifcpgs(), {
         showModal(modalDialog(
             title = NULL, footer = NULL,
             div(
@@ -1346,7 +1353,7 @@ print("1")
         }
     })
     
-    rval_cpgcount_heatmap <- eventReactive(list(input$button_limma_calculatedifs, input$button_limma_heatmapcalc), nrow(rval_filteredlist2heatmap()))
+    rval_cpgcount_heatmap <- eventReactive(list(input$button_limma_calculatedifs, input$button_limma_heatmapcalc, rval_filteredlist2heatmap()), nrow(rval_filteredlist2heatmap()))
     
     rval_dendrogram <- eventReactive(list(input$button_limma_calculatedifs, input$button_limma_heatmapcalc), {
         if (input$select_limma_rowsidecolors) {
@@ -2279,11 +2286,11 @@ print("1")
         egmtcc
     })
     
-    dotplot_kegg <- reactive(enrichplot::dotplot(kegg(), font.size = 12, title = "KEGG"))
-    dotplot_go_mf <- reactive(enrichplot::dotplot(go_mf(), font.size = 12, title = "GO - Molecular Function"))
-    dotplot_go_bp <- reactive(enrichplot::dotplot(go_bp(), font.size = 12, title = "GO - Biological Process"))
-    dotplot_go_cc <- reactive(enrichplot::dotplot(go_cc(), font.size = 12, title = "GO - Cellular Component"))
-    dotplot_reactome <- reactive(enrichplot::dotplot(reactome(), font.size = 12, title = "Reactome"))
+    dotplot_kegg <- eventReactive(kegg(), enrichplot::dotplot(kegg(), font.size = 12, title = "KEGG"))
+    dotplot_go_mf <- eventReactive(go_mf(), enrichplot::dotplot(go_mf(), font.size = 12, title = "GO - Molecular Function"))
+    dotplot_go_bp <- eventReactive(go_bp(), enrichplot::dotplot(go_bp(), font.size = 12, title = "GO - Biological Process"))
+    dotplot_go_cc <- eventReactive(go_cc(), enrichplot::dotplot(go_cc(), font.size = 12, title = "GO - Cellular Component"))
+    dotplot_reactome <- eventReactive(reactome(), enrichplot::dotplot(reactome(), font.size = 12, title = "Reactome"))
     dotplot_gmt_kegg <- reactive(enrichplot::dotplot(gmt_kegg(), font.size = 12, title = "MSigDB KEGG"))
     dotplot_gmt_go_mf <- reactive(enrichplot::dotplot(gmt_go_mf(), font.size = 12, title = "MSigDB GO - Molecular Function"))
     dotplot_gmt_go_bp <- reactive(enrichplot::dotplot(gmt_go_bp(), font.size = 12, title = "MSigDB GO - Biological Process"))
