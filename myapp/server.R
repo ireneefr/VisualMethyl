@@ -20,6 +20,7 @@ shinyServer(function(input, output, session) {
     correct_variables_name <- reactiveVal(value = FALSE)
     correct_variables_group <- reactiveVal(value = FALSE)
     correct_variables_diff <- reactiveVal(value = FALSE)
+    rval_downloaded_report <- reactiveVal(value = FALSE)
 
     # Max size
     options(shiny.maxRequestSize = 8000 * 1024^2) # 5MB getShinyOption("shiny.maxRequestSize") | 30*1024^2 = 30MB
@@ -52,6 +53,40 @@ shinyServer(function(input, output, session) {
         }
     })
     
+    observeEvent(rval_fit(), {
+        if(input$help_tour > 0){
+            session$sendCustomMessage(type = "intro_steps_continue3", message = list(""))
+            session$sendCustomMessage(type = "intro_continue3", message = list(""))
+        }
+    })
+    
+    observeEvent(rval_filteredlist(), {
+        if(input$help_tour > 0){
+            session$sendCustomMessage(type = "intro_steps_continue4", message = list(""))
+            session$sendCustomMessage(type = "intro_continue4", message = list(""))
+        }
+    })
+    
+    observeEvent(rval_mcsea(), {
+        if(input$help_tour > 0){
+            session$sendCustomMessage(type = "intro_steps_continue5", message = list(""))
+            session$sendCustomMessage(type = "intro_continue5", message = list(""))
+        }
+    }) 
+    
+    observeEvent(clinical_sheet_target(), {
+        if(input$help_tour > 0){
+            session$sendCustomMessage(type = "intro_steps_continue6", message = list(""))
+            session$sendCustomMessage(type = "intro_continue6", message = list(""))
+        }
+    }) 
+    
+    observeEvent(rval_downloaded_report() == TRUE, {
+        if(input$help_tour > 0){
+            session$sendCustomMessage(type = "intro_steps_continue7", message = list(""))
+            session$sendCustomMessage(type = "intro_continue7", message = list(""))
+        }
+    })
 
     
     
@@ -282,6 +317,7 @@ shinyServer(function(input, output, session) {
         
         sheet
     })
+    
     
     
     rval_sheet_target <- reactive({
@@ -1085,8 +1121,9 @@ shinyServer(function(input, output, session) {
     
     output$button_limma_calculatedifs_container <- renderUI({
         if (rval_generated_limma_model()) {
-            return(tagList(
-                br(),
+            return(fluidPage(br(),
+                div(id="div_contrast_options",
+                fluidRow(
                 
                 h4("Contrasts options"),
                 
@@ -1102,9 +1139,9 @@ shinyServer(function(input, output, session) {
                     label = "eBayes Robust",
                     labelWidth = "80px",
                     value = FALSE
-                ),
-                
-                actionButton("button_limma_calculatedifs", "Calc. Contrasts")
+                ))),
+                fluidRow(
+                actionButton("button_limma_calculatedifs", "Calc. Contrasts"))
             ))
         } else {
             return()
@@ -2092,55 +2129,6 @@ shinyServer(function(input, output, session) {
             )
         )
     )
-    
-    
-    
-    
-    
-    
-    
-    # Disable or enable buttons depending on software state
-    observeEvent(
-        rval_analysis_finished(),
-        if (rval_analysis_finished()) {
-            shinyjs::enable("download_export_robjects")
-            shinyjs::enable("download_export_filteredbeds")
-            shinyjs::enable("download_export_markdown")
-            shinyjs::enable("download_export_script")
-            shinyjs::enable("button_dmrs_calculate")
-            
-            updatePickerInput(
-                session,
-                "select_dmrs_contrasts",
-                selected = rval_contrasts(),
-                choices = rval_contrasts()
-            )
-            updatePickerInput(
-                session,
-                "select_dmrs_platform",
-                selected = if (nrow(rval_finddifcpgs()[[1]]) > 500000) {
-                    "EPIC"
-                } else {
-                    "450k"
-                },
-                choices = c("450k", "EPIC")
-            )
-        }
-        
-        else {
-            shinyjs::disable("download_export_robjects")
-            shinyjs::disable("download_export_filteredbeds")
-            shinyjs::disable("download_export_markdown")
-            shinyjs::disable("download_export_script")
-            shinyjs::disable("download_export_heatmaps")
-            shinyjs::disable("button_dmrs_calculate")
-        }
-    )
-    
-    
-    
-    
-    
     
     
     
@@ -3154,6 +3142,7 @@ shinyServer(function(input, output, session) {
                     )
                     
                     shinyjs::enable("complete_report_html")
+                    rval_downloaded_report(TRUE)
                 }
             )
             removeModal()

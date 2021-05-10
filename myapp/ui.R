@@ -77,6 +77,7 @@ shinyUI(
     dashboardBody(
       includeCSS("www/style.css"),
       includeCSS("js/introjs.min.css"),
+      #includeCSS("js/introjs_style.css"),
       includeScript("js/intro.min.js"),
       includeScript("js/tour.js"),
       useShinyFeedback(),
@@ -85,7 +86,7 @@ shinyUI(
           tabName = "data",
           verticalLayout(
             box(id = "firstbox",
-              title = HTML("INPUT DATA", as.character(actionButton("help_tour", label = "HELP TOUR", style = "margin-left:65vw"))), width = 12, collapsible = FALSE, status = "primary",
+              title = HTML("INPUT DATA", as.character(actionButton("help_tour", label = "HELP TOUR", style = "margin-left:10px"))), width = 12, collapsible = FALSE, status = "primary",
               div(id = "div_upload_data",
                 fileInput("input_data", p("Upload input data (.zip)", span(icon("info-circle"), id = "info_input")), multiple = FALSE, accept = ".zip"),
                 tippy::tippy_this(elementId = "info_input", tooltip = "INFO DATA", placement = "right-start")
@@ -147,7 +148,7 @@ shinyUI(
           fluidPage(
             br(),
             br(),
-            fluidRow(id="div_btn_qc",
+            fluidRow(
               column(3, align = "center",
                      
                      actionButton("b_qc", label = "QC", class = "btn-info")
@@ -278,6 +279,8 @@ shinyUI(
                 labelWidth = "fit",
                 value = TRUE
               )),
+              
+              br(),
 
               shinyjs::disabled(actionButton("button_minfi_select", "Run Normalization", class = "btn-primary")),
               h4(),
@@ -452,8 +455,10 @@ shinyUI(
               tabPanel("DMPs", style = "margin-top: 10px;", sidebarLayout(
                 sidebarPanel(
                   width = 3,
-                  h4("Linear Model Options"),
-
+                  fluidPage(
+                  div(id = "div_model_options",
+                  fluidRow(
+                    h4("Linear Model Options"),
                   pickerInput(
                     inputId = "select_limma_voi",
                     label = "Select Variable of Interest",
@@ -490,21 +495,27 @@ shinyUI(
                     label = "Array Weights",
                     labelWidth = "80px",
                     value = FALSE
-                  ),
-
-
+                  ))),
+                  fluidRow(
                   shinyjs::disabled(
                     actionButton("button_limma_calculatemodel", "Generate Model")
-                  ),
-                  tags$br(),
+                  ))),
+
                   uiOutput("button_limma_calculatedifs_container")
+                  
                 ),
                 mainPanel(
                   width = 9,
+                  fluidPage(
+                  fluidRow(
                   box(
                     title = "DMP TABLE AND OPTIONS", width = 12, closable = FALSE, collapsible = FALSE, status = "primary",
+                    fluidPage(
+                    div(id = "div_dmp_table",
+                    fluidRow(
                     h4("DMP counts in each contrast"),
-                    tableOutput("table_limma_difcpgs") %>% shinycssloaders::withSpinner(),
+                    tableOutput("table_limma_difcpgs") %>% shinycssloaders::withSpinner())),
+                    div(id ="div_dmp_options",
                     fluidRow(
                       column(
                         6,
@@ -540,10 +551,13 @@ shinyUI(
                         sliderInput("slider_limma_deltab", "Min. DeltaBeta", 0, 1, 0.2),
                         sliderInput("slider_limma_adjpvalue", "Max. FDR", 0, 1, 0.05),
                         sliderInput("slider_limma_pvalue", "Max. p-value", 0, 1, 1)
-                      ),
+                      ))),
+                    fluidRow(
                       actionButton("button_limma_tablecalc", "Update")
                     )
-                  ),
+                  ))),
+                  div(id = "div_dmp_plots",
+                  fluidRow(
                   box(
                     title = "DMP HEATMAP", width = 12, closable = FALSE, collapsible = TRUE, collapsed = TRUE, status = "primary",
                     textOutput("text_limma_heatmapcount"),
@@ -673,13 +687,14 @@ shinyUI(
                     ),
                     actionButton("button_circos_update", label = "Update"),
                     withSpinner(plotOutput("circos", height = "800px"))
-                  )
-                )
+                  )))
+                ))
               )),
-              tabPanel("DMRs", style = "margin-top: 10px;", sidebarLayout(
+              tabPanel("DMRs", style = "margin-top: 10px;", 
+                sidebarLayout(
                 sidebarPanel(
                   width = 3,
-
+                  div(id = "div_dmr_calculation_options",
                   pickerInput(
                     inputId = "select_dmrs_contrasts",
                     label = "Contrasts to calculate",
@@ -727,7 +742,7 @@ shinyUI(
                     min = 1000,
                     max = 100000,
                     value = 50000
-                  ),
+                  )),
 
                   shinyjs::disabled(actionButton("button_dmrs_calculate", "Calculate"))
                 ),
@@ -735,8 +750,10 @@ shinyUI(
                   width = 9,
                   box(
                     title = "DMR TABLE AND OPTIONS", width = 12, closable = FALSE, collapsible = FALSE,
+                    div(id = "div_dmr_table",
                     h4("DMRs counts in each contrast"),
-                    tableOutput("table_dmrs_count") %>% shinycssloaders::withSpinner(),
+                    tableOutput("table_dmrs_count") %>% shinycssloaders::withSpinner()),
+                    div(id = "div_dmr_options",
                     fluidRow(
                       column(
                         6,
@@ -783,10 +800,13 @@ shinyUI(
                         sliderInput("slider_dmrs_deltab", "Min. DeltaBeta", 0, 1, 0),
                         sliderInput("slider_dmrs_adjpvalue", "Max. FDR", 0, 1, 0.05),
                         sliderInput("slider_dmrs_pvalue", "Max. p-value", 0, 1, 1)
-                      ),
+                      ))),
+                    fluidRow(
                       actionButton("button_dmrs_tablecalc", "Update")
                     )
                   ),
+                  div(id = "div_dmr_plots",
+                      fluidRow(
                   box(
                     title = "DMR HEATMAP", width = 12, closable = FALSE, collapsible = TRUE, collapsed = TRUE, status = "primary",
                     h4("DMRs Heatmap"),
@@ -911,7 +931,7 @@ shinyUI(
                     br(),
 
                     actionButton("button_dmrs_graphsingle", "Plot")
-                  )
+                  )))
                 )
               ))
             )
@@ -920,6 +940,7 @@ shinyUI(
         tabItem(
           tabName = "functional_enrichment",
           fluidPage(
+            div(id = "div_functional_enrichment_plots",
             box(
               title = "KEGG", width = 12, closable = FALSE, collapsible = TRUE, collapsed = TRUE, status = "primary",
               withSpinner(plotOutput("plot_kegg"))
@@ -933,7 +954,7 @@ shinyUI(
             box(
               title = "REACTOME", width = 12, closable = FALSE, collapsible = TRUE, collapsed = TRUE, status = "primary",
               withSpinner(plotOutput("plot_reactome"))
-            ) # ,
+            )) # ,
             # box(
             #  title = "MSigDB", width = 12, closable = FALSE, collapsible = TRUE, collapsed = TRUE, status = "primary",
             #  withSpinner(plotOutput("plot_gmt_kegg")),
@@ -947,11 +968,14 @@ shinyUI(
           tabName = "survival",
           fluidPage(
             sidebarPanel(width = 3, 
-                    fileInput("input_clinical", HTML("Upload clinical data (.csv)", as.character(downloadLink("clinical_template", "Download template", style = "font-size:10px;padding-left:45px"))), multiple = FALSE, accept = ".csv"),
+                    div(id = "div_upload_clinical",
+                    fileInput("input_clinical", HTML("Upload clinical data (.csv)", as.character(downloadLink("clinical_template", "Download template", style = "font-size:10px;padding-left:45px"))), multiple = FALSE, accept = ".csv")
+                    ),
                     uiOutput("ui_clinical_data"),
                     conditionalPanel(
                       "input.b_clinical_data > 0",
                       br(),
+                      div(id = "div_clinical_options",
                       br(),
                         selectInput("select_clinical_samplenamevar", "", c()),
                       br(),
@@ -960,13 +984,14 @@ shinyUI(
                       br(),
                         selectInput("select_clinical_statusvar", "", c()),
                       br(),
-                      uiOutput("ui_clinical_different"),
+                      uiOutput("ui_clinical_different")),
                         actionButton("b_clinical_next", "Continue to Survival", class = "btn-primary")
                     )
             ),
             mainPanel(width = 9,
               conditionalPanel("input.b_clinical_next > 0",
               box(title = "Options", width = 12, closable = FALSE, collapsible = TRUE, collapsed = FALSE, status = "primary",
+                  div(id = "div_clin_meth_options",
                   fluidRow(
                   column(width = 6,
                   selectInput("select_clinical_infovar","", c()),
@@ -1017,10 +1042,11 @@ shinyUI(
                            step = 0.01,
                            value = 0.33
                          )))
-              ),
+              )),
               fluidRow(
                        actionButton("b_run_survival", "Run Survival", class = "btn-primary"))
               )),
+              div(id = "div_survival_plots",
               box(title = "Kaplan-Meier", width = 12, closable = FALSE, collapsible = FALSE, status = "primary",
                   conditionalPanel("input.b_run_survival > 0",
                   withSpinner(plotOutput("plot_survival", height = "800px")))
@@ -1035,7 +1061,7 @@ shinyUI(
                 box(title = "Frequencies by Group", width = 12, closable = FALSE, collapsible = TRUE, collapsed = TRUE, status = "primary",
                     verbatimTextOutput("freq_surv_code")
                     )
-              )
+              ))
             )
           )
         ),
@@ -1055,6 +1081,7 @@ shinyUI(
           tabName = "export",
           fluidPage(
             shinyjs::useShinyjs(),
+            div(id = "div_export",
             h3("Download Report"),
             column(
               2,
@@ -1143,7 +1170,7 @@ shinyUI(
                 selected = c()
               )
             )
-          )
+          ))
         ),
         tabItem(
           tabName = "help",
