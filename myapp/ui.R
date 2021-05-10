@@ -47,7 +47,6 @@ library(shinydashboardPlus)
 library(shinyWidgets)
 library(shinycssloaders)
 library(dplyr)
-library(rintrojs)
 library(shinyFeedback)
 
 shinyUI(
@@ -77,7 +76,9 @@ shinyUI(
 
     dashboardBody(
       includeCSS("www/style.css"),
-      introjsUI(),
+      includeCSS("js/introjs.min.css"),
+      includeScript("js/intro.min.js"),
+      includeScript("js/tour.js"),
       useShinyFeedback(),
       tabItems(
         tabItem(
@@ -85,18 +86,13 @@ shinyUI(
           verticalLayout(
             box(id = "firstbox",
               title = HTML("INPUT DATA", as.character(actionButton("help_tour", label = "HELP TOUR", style = "margin-left:65vw"))), width = 12, collapsible = FALSE, status = "primary",
-              introBox(
+              div(id = "div_upload_data",
                 fileInput("input_data", p("Upload input data (.zip)", span(icon("info-circle"), id = "info_input")), multiple = FALSE, accept = ".zip"),
-                tippy::tippy_this(elementId = "info_input", tooltip = "INFO DATA", placement = "right-start"),
-            data.step = 1,
-            data.intro = "Upload methylation data"
+                tippy::tippy_this(elementId = "info_input", tooltip = "INFO DATA", placement = "right-start")
             ),
-            introBox(
               uiOutput("ui_input_data"),
               tippy::tippy_this(elementId = "ui_input_data", tooltip = "LOAD DATA", placement = "right"),
-              data.step = 2,
-              data.intro = "Load data"
-            )
+              actionButton("b_example", "Load example")
             ),
             fluidRow(
               style = "margin-left: 2px; margin-right: 2px",
@@ -106,8 +102,7 @@ shinyUI(
                   title = "SELECTION OPTIONS", id = "selection_options",
                   collapsible = FALSE, status = "primary",
                   width = 3,
-                  div(
-                introBox(
+                  div(id = "div_select_options",
                   selectInput(inputId = "select_input_samplenamevar", label = p("Sample Names:", span(icon("info-circle"), id = "info_names")), c()),
                   tippy::tippy_this(elementId = "info_names", tooltip = "Select Sample Names Column. Names must be unique", placement = "right"),
                   selectInput("select_input_groupingvar", label = p("Variable of Interest:", span(icon("info-circle"), id = "info_group")), c()),
@@ -130,11 +125,7 @@ shinyUI(
                   tippy::tippy_this(elementId = "info_sex", tooltip = "Select Sex Column", placement = "right"),
                   selectInput("select_input_age", label = p("Age", span(icon("info-circle"), id = "info_age")), c()),
                   tippy::tippy_this(elementId = "info_age", tooltip = "Select Age Column", placement = "right"),
-                  data.step = 4,
-                  data.intro = "Select options",
-                  disable.interaction = TRUE
-                )),
-                uiOutput("ui_select_options"),
+                uiOutput("ui_select_options")),
                 actionButton("button_input_next", "Continue to Analysis", class = "btn-primary")
                 )
               ),
@@ -144,10 +135,8 @@ shinyUI(
                 "input.b_input_data > 0",
                 box(
                   title = "SAMPLES TABLE", collapsible = FALSE, status = "primary", width = 9,
-                  introBox(
-                  withSpinner(DT::DTOutput("samples_table")),
-                              data.step = 3, data.intro = "Samples table", data.hint = "hint samples table"
-                  )
+                  div(id="div_samples_table",
+                  withSpinner(DT::DTOutput("samples_table")))
                 )
               )
             )
@@ -158,9 +147,11 @@ shinyUI(
           fluidPage(
             br(),
             br(),
-            fluidRow(
+            fluidRow(id="div_btn_qc",
               column(3, align = "center",
+                     
                      actionButton("b_qc", label = "QC", class = "btn-info")
+                     
               ),
               column(2, align = "center",
                      actionButton("b_qc_info", label = icon("info-circle"))
@@ -246,11 +237,9 @@ shinyUI(
             # Box1
             sidebarPanel(
               width = 3,
-              introBox(
-              selectInput("select_minfi_norm", "Select Normalization", norm_options),
-              data.step = 6,
-              data.intro = "hello"
-              ),
+              div(id="div_norm_type",
+              selectInput("select_minfi_norm", "Select Normalization", norm_options)),
+              div(id = "div_norm_options",
               div(
                 margin_left = "50px",
                 switchInput(
@@ -288,7 +277,7 @@ shinyUI(
                 label = "Drop X/Y Chr.",
                 labelWidth = "fit",
                 value = TRUE
-              ),
+              )),
 
               shinyjs::disabled(actionButton("button_minfi_select", "Run Normalization", class = "btn-primary")),
               h4(),
@@ -296,7 +285,7 @@ shinyUI(
               actionButton("help_tour2", "HELP TOUR")
             ),
 
-            mainPanel(
+            mainPanel(id = "vertical",
               width = 9,
               verticalLayout(
                 box(
@@ -370,7 +359,7 @@ shinyUI(
         ),
         tabItem(
           tabName = "exploratory_analysis",
-          fluidPage(
+          fluidPage(id = "exploratory_plots",
             verticalLayout(
               box(
                 title = "VIOLIN PLOT", width = 12, collapsible = TRUE, collapsed = TRUE, status = "primary",

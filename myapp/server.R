@@ -20,16 +20,40 @@ shinyServer(function(input, output, session) {
     correct_variables_name <- reactiveVal(value = FALSE)
     correct_variables_group <- reactiveVal(value = FALSE)
     correct_variables_diff <- reactiveVal(value = FALSE)
-    
+
     # Max size
     options(shiny.maxRequestSize = 8000 * 1024^2) # 5MB getShinyOption("shiny.maxRequestSize") | 30*1024^2 = 30MB
     n_cores <- parallel::detectCores() / 2
     
     
-    intro <- data.frame(element = c("#select_minfi_norm-label", "#button_minfi_select"), intro = c("This is norm", "This is button"))
+    #intro <- data.frame(element = c("#select_minfi_norm-label", "#button_minfi_select"), intro = c("This is norm", "This is button"))
     
-    observeEvent(input$help_tour, introjs(session, options = list("showBullets"="true", "showProgress"="true", "showStepNumbers"="false","nextLabel"="Next","prevLabel"="Prev","skipLabel"="Skip")))
-    observeEvent(input$help_tour2, introjs(session, options = list(steps = intro, "showBullets"="true", "showProgress"="true", "showStepNumbers"="false","nextLabel"="Next","prevLabel"="Prev","skipLabel"="Skip")))
+    #observeEvent(input$help_tour, introjs(session, options = list("showBullets"="true", "showProgress"="true", "showStepNumbers"="false","nextLabel"="Next","prevLabel"="Prev","skipLabel"="Skip")))
+    #observeEvent(input$help_tour2, introjs(session, options = list(steps = intro, "showBullets"="true", "showProgress"="true", "showStepNumbers"="false","nextLabel"="Next","prevLabel"="Prev","skipLabel"="Skip")))
+    
+    
+    
+    observeEvent(input$help_tour,{
+        session$sendCustomMessage(type = "intro_steps", message = list(""))
+        session$sendCustomMessage(type = "intro_start", message = list(""))
+    })
+    
+    observeEvent(rval_rgset(), {
+        if(input$help_tour > 0){
+            session$sendCustomMessage(type = "intro_steps_continue1", message = list(""))
+            session$sendCustomMessage(type = "intro_continue1", message = list(""))
+        }
+    })
+    
+    observeEvent(rval_gset(), {
+        if(input$help_tour > 0){
+            session$sendCustomMessage(type = "intro_steps_continue2", message = list(""))
+            session$sendCustomMessage(type = "intro_continue2", message = list(""))
+        }
+    })
+    
+
+    
     
     observe({
         shinyjs::disable("check_qc")
@@ -421,7 +445,7 @@ shinyServer(function(input, output, session) {
         
         showModal(modalDialog(
             title = NULL, footer = NULL,
-            div(
+            div(id  = "shiny_modal",
                 img(src="https://upload.wikimedia.org/wikipedia/commons/7/7d/Pedro_luis_romani_ruiz.gif"),
                 p("Reading array data..."),
                 style = "margin: auto; text-align: center"
