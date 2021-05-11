@@ -35,6 +35,7 @@ shinyServer(function(input, output, session) {
     
     
     observeEvent(input$help_tour,{
+        updateMaterialSwitch(session, "select_example", value = TRUE)
         session$sendCustomMessage(type = "intro_steps", message = list(""))
         session$sendCustomMessage(type = "intro_start", message = list(""))
     })
@@ -232,24 +233,7 @@ shinyServer(function(input, output, session) {
                          "survival" = "analysis")
         updateTabItems(session, "menu", newtab)
     })
-    #observeEvent(input$b_predicted_models, {
-    #    newtab <- switch(input$menu,
-    #                     "analysis" = "predicted_models",
-    #                     "predicted_models" = "analysis")
-    #    updateTabItems(session, "menu", newtab)
-    #})
-    #observeEvent(input$b_external_sources, {
-    #    newtab <- switch(input$menu,
-    #                     "analysis" = "external_sources",
-    #                     "external_sources" = "analysis")
-    #    updateTabItems(session, "menu", newtab)
-    #})
-    #observeEvent(input$b_genome_browser, {
-    #    newtab <- switch(input$menu,
-    #                     "analysis" = "genome_browser",
-    #                     "genome_browser" = "analysis")
-    #    updateTabItems(session, "menu", newtab)
-    #})
+
     observeEvent(input$button_input_next, {
         newtab <- switch(input$menu,
                          "data" = "analysis",
@@ -265,7 +249,7 @@ shinyServer(function(input, output, session) {
     
     # Input button
     output$ui_input_data <- renderUI({
-        if (!is.null(input$input_data$datapath)) {
+        if (!is.null(input$input_data$datapath) | input$select_example == TRUE) {
             return(actionButton("b_input_data", "Load Data"))
         } else {
             return()
@@ -280,21 +264,35 @@ shinyServer(function(input, output, session) {
     
     # When you press button_input_load, the data is unzipped and the metharray sheet is loaded
     rval_sheet <- eventReactive(input$b_input_data, {
-        print(tools::file_ext(input$input_data$datapath))
+        
+        print("hel")
+
+        if(input$select_example == TRUE){
+            datapath <- paste0(getwd(), "/example/Li_NAR_2019.zip")
+        }
+        else{
+            datapath <- input$input_data$datapath
+        }
+        print(datapath)
+        print(getwd())
+        print(tempdir())
+        print(paste0(tempdir(), "/experiment_data"))
+        print(dir.exists(paste0(tempdir(), "/experiment_data")))
         # Check if updated file is .zip
-        validate(need(tools::file_ext(input$input_data$datapath) == "zip", "File extension should be .zip"))
+        validate(need(tools::file_ext(datapath) == "zip", "File extension should be .zip"))
         shinyjs::disable("button_input_load") # disable the load button to avoid multiple clicks
         
         if (dir.exists(paste0(tempdir(), "/experiment_data"))) {
             unlink(paste0(tempdir(), "/experiment_data"), recursive = TRUE) # remove current files in target directory
+            print("unlink")
         }
         
-        zip::unzip(input$input_data$datapath,
+        zip::unzip(datapath,
                    exdir = paste0(tempdir(), "/experiment_data")
         ) # extracting zip
         
         sheet <- minfi::read.metharray.sheet(paste0(tempdir(), "/experiment_data"))
-        
+        print(sheet)
         # We check if sheet is correct
         # This is to prevent app crashes when zip updated is not correct.
         validate(
@@ -450,7 +448,8 @@ shinyServer(function(input, output, session) {
     
     # rval_rgset loads RGSet using read.metharray.exp and the sample sheet (rval_sheet())
     rval_rgset <- eventReactive(input$button_input_next, ignoreNULL = FALSE, {
-        validate(need(input$input_data != "", "Data has not been uploaded yet"))
+        if(input$select_example == FALSE){
+        validate(need(input$input_data != "", "Data has not been uploaded yet"))}
 
         # Prior check to test variable selection
         if (anyDuplicated(rval_sheet_target()[, input$select_input_samplenamevar]) > 0 |
@@ -1015,9 +1014,10 @@ shinyServer(function(input, output, session) {
         
         print("fit")
         
+        if(input$select_example == FALSE){
         validate(
             need(input$input_data != "", "DMP calculation has not been performed or data has not been uploaded.")
-        )
+        )}
         print("ok")
         req(design)
         
@@ -1079,74 +1079,84 @@ shinyServer(function(input, output, session) {
 
     # rval_fit() has NAs, we remove the option to trend or robust in eBayes to prevent failure
     observeEvent(input$button_limma_calculatemodel, {
-        print("next")
-        if (any(vapply(rval_fit(), function(x) {
-            any(is.na(unlist(x)) |
-                unlist(x) == Inf | unlist(x) == -Inf)
-        }, logical(1)))) {
-            message("NAs or Inf values detected, trend and robust options are disabled.")
-            
-            updateSwitchInput(session,
-                              "select_limma_trend",
-                              value = FALSE,
-                              disabled = TRUE
-            )
-            
-            updateSwitchInput(session,
-                              "select_limma_robust",
-                              value = FALSE,
-                              disabled = TRUE
-            )
-        }
         
-        else {
-            message("NAs or Inf values not detected, trend and robust options are enabled")
+        output$ebayes_help <- renderUI({
             
-            updateSwitchInput(session,
-                              "select_limma_trend",
-                              value = FALSE,
-                              disabled = FALSE
-            )
+            if (any(vapply(rval_fit(), function(x) {
+                any(is.na(unlist(x)) |
+                    unlist(x) == Inf | unlist(x) == -Inf)
+            }, logical(1)))) {
+                message("NAs or Inf values detected, trend and robust options are disabled.")
+                
+                #updateSwitchInput(session,
+                #                  "select_limma_trend",
+                #                  value = FALSE,
+                #                  disabled = TRUE
+                #)
+            #    
+                #updateSwitchInput(session,
+                #                  "select_limma_robust",
+                #                  value = FALSE,
+                #                  disabled = TRUE
+                #)
+                return(helpText("NAs or Inf values detected, trend and robust options are disabled."))
+            }
             
-            updateSwitchInput(session,
-                              "select_limma_robust",
-                              value = FALSE,
-                              disabled = FALSE
-            )
-        }
+            else {
+                message("NAs or Inf values not detected, trend and robust options are enabled")
+                
+                #updateSwitchInput(session,
+                #                  "select_limma_trend",
+                #                  value = FALSE,
+                #                  disabled = FALSE
+                #)
+            #    
+                #updateSwitchInput(session,
+                #                  "select_limma_robust",
+                #                  value = FALSE,
+                #                  disabled = FALSE
+                #)
+                return()
+            }
+            
+            
+        })
+        
+        print("next")
+       
         print("final")
         # Creating calculate differences button
         rval_generated_limma_model(TRUE)
     })
     
-    output$button_limma_calculatedifs_container <- renderUI({
-        if (rval_generated_limma_model()) {
-            return(fluidPage(br(),
-                div(id="div_contrast_options",
-                fluidRow(
-                
-                h4("Contrasts options"),
-                
-                switchInput(
-                    inputId = "select_limma_trend",
-                    label = "eBayes Trend",
-                    labelWidth = "80px",
-                    value = FALSE
-                ),
-                
-                switchInput(
-                    inputId = "select_limma_robust",
-                    label = "eBayes Robust",
-                    labelWidth = "80px",
-                    value = FALSE
-                ))),
-                fluidRow(
-                actionButton("button_limma_calculatedifs", "Calc. Contrasts"))
-            ))
-        } else {
-            return()
-        }
-    })
+  #  output$button_limma_calculatedifs_container <- renderUI({
+  #      if (rval_generated_limma_model()) {
+  #          return(fluidPage(br(),
+  #              div(id="div_contrast_options",
+  #              fluidRow(
+  #              
+  #              h4("Contrasts options"),
+  #              
+  #              switchInput(
+  #                  inputId = "select_limma_trend",
+  #                  label = "eBayes Trend",
+  #                  labelWidth = "80px",
+  #                  value = FALSE
+  #              ),
+  #              
+  #              switchInput(
+  #                  inputId = "select_limma_robust",
+  #                  label = "eBayes Robust",
+  #                  labelWidth = "80px",
+  #                  value = FALSE
+  #              ))),
+  #              fluidRow(
+  #              actionButton("button_limma_calculatedifs", "Calc. Contrasts"))
+  #          ))
+  #      } else {
+  #          return()
+  #      }
+  #  })
     
     
     # render of plots and tables
@@ -1168,7 +1178,7 @@ shinyServer(function(input, output, session) {
     
     
     # Calculation of global difs
-    rval_globaldifs <- eventReactive(input$button_limma_calculatedifs, {
+    rval_globaldifs <- eventReactive(rval_fit(), {
         print("enter globaldifs")
         try({
             globaldifs <- calculate_global_difs(rval_gset_getBeta(), rval_voi(), rval_contrasts(),
@@ -1199,14 +1209,24 @@ shinyServer(function(input, output, session) {
     })
     
     # Calculation of differences (eBayes)
-    rval_finddifcpgs <- eventReactive(input$button_limma_calculatedifs, {
+    rval_finddifcpgs <- eventReactive(rval_fit(), {
+        if (any(vapply(rval_fit(), function(x) {
+            any(is.na(unlist(x)) |
+                unlist(x) == Inf | unlist(x) == -Inf)
+        }, logical(1)))) {
+            trend <- FALSE
+            robust <- FALSE
+        }else{
+            trend <- input$select_limma_trend
+            robust <- input$select_limma_robust
+        }
         try({
             dif_cpgs <- find_dif_cpgs(
                 design = rval_fit()$design,
                 fit = rval_fit(),
                 contrasts = rval_contrasts(),
-                trend = as.logical(input$select_limma_trend),
-                robust = as.logical(input$select_limma_robust),
+                trend = as.logical(trend),
+                robust = as.logical(robust),
                 cores = n_cores
             )
         })
@@ -1242,7 +1262,7 @@ shinyServer(function(input, output, session) {
     })
     
     # Update of heatmap controls
-    observeEvent(input$button_limma_calculatedifs, {
+    observeEvent(rval_fit(), {
         updateTabItems(session, "tabset_limma", "differential_cpgs")
         
         updateSelectInput(
@@ -1346,8 +1366,8 @@ shinyServer(function(input, output, session) {
                 setProgress(message = "Calculating eBayes...", value = 4)
                 rval_finddifcpgs()
                 setProgress(message = "Calculating filtered list...", value = 5)
-                removeModal()
-                create_filtered_list(
+                
+                filtered_list <- create_filtered_list(
                     rval_finddifcpgs(),
                     rval_globaldifs(),
                     deltaB = input$slider_limma_deltab,
@@ -1355,7 +1375,8 @@ shinyServer(function(input, output, session) {
                     p.value = input$slider_limma_pvalue,
                     cores = n_cores
                 )
-               
+                removeModal()
+               filtered_list
             }
         )
         
@@ -1415,9 +1436,9 @@ shinyServer(function(input, output, session) {
         }
     })
     
-    rval_cpgcount_heatmap <- eventReactive(list(input$button_limma_calculatedifs, input$button_limma_heatmapcalc, rval_filteredlist2heatmap()), nrow(rval_filteredlist2heatmap()))
+    rval_cpgcount_heatmap <- eventReactive(list(rval_fit(), input$button_limma_heatmapcalc, rval_filteredlist2heatmap()), nrow(rval_filteredlist2heatmap()))
     
-    rval_dendrogram <- eventReactive(list(input$button_limma_calculatedifs, input$button_limma_heatmapcalc), {
+    rval_dendrogram <- eventReactive(list(rval_fit(), input$button_limma_heatmapcalc), {
         if (input$select_limma_rowsidecolors) {
             print("if dendogram")
             # check if dendrogram cutting works (k should be minor than heatmap rows)
@@ -1458,7 +1479,7 @@ shinyServer(function(input, output, session) {
         dendrogram # returning the dendrogram classification
     })
     
-    plot_heatmap <- eventReactive(list(input$button_limma_calculatedifs, input$button_limma_heatmapcalc), ignoreNULL = FALSE, {
+    plot_heatmap <- eventReactive(list(rval_fit(), input$button_limma_heatmapcalc), ignoreNULL = FALSE, {
         validate(
             need(
                !is.null(rval_filteredlist2heatmap()),
@@ -1487,7 +1508,7 @@ shinyServer(function(input, output, session) {
         )
     })
     
-    make_table <- eventReactive(list(input$button_limma_calculatedifs, input$button_limma_tablecalc), {
+    make_table <- eventReactive(list(rval_fit(), input$button_limma_tablecalc), {
         default_df <- data.frame(
             contrast = rval_contrasts(),
             Hypermethylated = 0,
@@ -1563,7 +1584,7 @@ shinyServer(function(input, output, session) {
     
     output$table_limma_difcpgs <- renderTable(make_table(), digits = 0)
     
-    table_annotation <- eventReactive(list(input$button_limma_calculatedifs, input$button_limma_heatmapcalc, input$select_limma_anncontrast), {
+    table_annotation <- eventReactive(list(rval_fit(), input$button_limma_heatmapcalc, input$select_limma_anncontrast), {
         req(rval_filteredlist())
         print("TABLE ANNOTATION")
         dif_target <- paste("dif",
@@ -1763,6 +1784,48 @@ shinyServer(function(input, output, session) {
     
 
     
+    
+    
+    # Disable or enable buttons depending on software state
+    observeEvent(rval_analysis_finished(),
+        if (rval_analysis_finished()) {
+            shinyjs::enable("download_export_robjects")
+            shinyjs::enable("download_export_filteredbeds")
+            shinyjs::enable("download_export_markdown")
+            shinyjs::enable("download_export_script")
+            shinyjs::enable("button_dmrs_calculate")
+            
+            updatePickerInput(
+                session,
+                "select_dmrs_contrasts",
+                selected = rval_contrasts(),
+                choices = rval_contrasts(),
+            )
+            updatePickerInput(
+                session,
+                "select_dmrs_platform",
+                selected = if (nrow(rval_finddifcpgs()[[1]]) > 500000) {
+                    "EPIC"
+                } else {
+                    "450k"
+                },
+                choices = c("450k", "EPIC")
+            )
+        }
+        
+        else {
+            shinyjs::disable("download_export_robjects")
+            shinyjs::disable("download_export_filteredbeds")
+            shinyjs::disable("download_export_markdown")
+            shinyjs::disable("download_export_script")
+            shinyjs::disable("download_export_heatmaps")
+            shinyjs::disable("button_dmrs_calculate")
+        }
+    )
+    
+    
+    
+    
     ###### DMRs #####
     
     rval_mcsea <- eventReactive(input$button_dmrs_calculate, {
@@ -1948,10 +2011,11 @@ shinyServer(function(input, output, session) {
         )
         
         validate(
+            if(input$select_example == FALSE){
             need(
                 input$input_data != "",
                 "DMR calculation has not been performed or data has not been uploaded."
-            ),
+            )},
             need(
                 !is.null(input$select_dmrs_groups2plot) &
                     input$select_dmrs_groups2plot != "",
@@ -3031,8 +3095,8 @@ shinyServer(function(input, output, session) {
                         params[["limma_covar"]] <- input$checkbox_limma_covariables
                         params[["limma_inter"]] <- input$checkbox_limma_interactions
                         params[["limma_arrayweights"]] <- input$select_limma_weights
-                        params[["limma_ebayes_trend"]] <- input$select_limma_trend
-                        params[["limma_ebayes_robust"]] <- input$select_limma_robust
+                        params[["limma_ebayes_trend"]] <- trend
+                        params[["limma_ebayes_robust"]] <- robust
                         params[["rval_design"]] <- rval_fit()$design
                         params[["rval_voi"]] <- rval_voi()
                         params[["rval_contrasts"]] <- rval_contrasts()

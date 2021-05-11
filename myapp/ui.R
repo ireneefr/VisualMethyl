@@ -64,36 +64,40 @@ shinyUI(
           menuSubItem("Exploratory Analysis", tabName = "exploratory_analysis"),
           menuSubItem("DMPs/DMRs", tabName = "dmp_dmr"),
           menuSubItem("Functional Enrichment", tabName = "functional_enrichment"),
-          menuSubItem("Survival", tabName = "survival")#,
-          #menuSubItem("Predicted Models", tabName = "predicted_models"),
-          #menuSubItem("External Sources", tabName = "external_sources"),
-          #menuSubItem("Genome Browser", tabName = "genome_browser")
+          menuSubItem("Survival", tabName = "survival")
         ), "analysis"),
         menuItem("Export", tabName = "export"),
-        menuItem("Help", tabName = "help")
+        menuItem("Help", tabName = "help"),
+        actionButton("help_tour", label = "HELP TOUR")
       )
     ),
 
     dashboardBody(
       includeCSS("www/style.css"),
       includeCSS("js/introjs.min.css"),
+      includeCSS("js/sweetalert2.min.css"),
       #includeCSS("js/introjs_style.css"),
       includeScript("js/intro.min.js"),
+      includeScript("js/sweetalert2.min.js"),
       includeScript("js/tour.js"),
       useShinyFeedback(),
       tabItems(
         tabItem(
           tabName = "data",
           verticalLayout(
-            box(id = "firstbox",
-              title = HTML("INPUT DATA", as.character(actionButton("help_tour", label = "HELP TOUR", style = "margin-left:10px"))), width = 12, collapsible = FALSE, status = "primary",
+            box(id = "firstbox", style = "margin-left: 20px; margin-right: 20px",
+              title = "INPUT DATA", width = 12, collapsible = FALSE, status = "primary",
               div(id = "div_upload_data",
+                  fluidRow(
+                    br(),
+                  conditionalPanel("!input.select_example",
                 fileInput("input_data", p("Upload input data (.zip)", span(icon("info-circle"), id = "info_input")), multiple = FALSE, accept = ".zip"),
                 tippy::tippy_this(elementId = "info_input", tooltip = "INFO DATA", placement = "right-start")
-            ),
-              uiOutput("ui_input_data"),
-              tippy::tippy_this(elementId = "ui_input_data", tooltip = "LOAD DATA", placement = "right"),
-              actionButton("b_example", "Load example")
+            ))),
+            fluidRow(uiOutput("ui_input_data"), br()),
+            fluidRow(
+              materialSwitch(inputId = "select_example", label = "Example Data", value = FALSE, status = "info", width = "100%")
+            )
             ),
             fluidRow(
               style = "margin-left: 2px; margin-right: 2px",
@@ -496,14 +500,35 @@ shinyUI(
                     labelWidth = "80px",
                     value = FALSE
                   ))),
-                  fluidRow(
-                  shinyjs::disabled(
-                    actionButton("button_limma_calculatemodel", "Generate Model")
-                  ))),
-
-                  uiOutput("button_limma_calculatedifs_container")
                   
-                ),
+                  fluidRow(br(),
+                           div(id="div_contrast_options",
+                                 
+                                 h4("Contrasts options"),
+                                 
+                                 switchInput(
+                                   inputId = "select_limma_trend",
+                                   label = "eBayes Trend",
+                                   labelWidth = "80px",
+                                   value = FALSE
+                                 ),
+                                 
+                                 switchInput(
+                                   inputId = "select_limma_robust",
+                                   label = "eBayes Robust",
+                                   labelWidth = "80px",
+                                   value = FALSE
+                                 )),
+                            # actionButton("button_limma_calculatedifs", "Calc. Contrasts")),
+                  uiOutput("ebayes_help")
+                  ),
+                  fluidRow(br(),
+                  shinyjs::disabled(
+                    actionButton("button_limma_calculatemodel", "Calculate")
+                  ))
+                  #uiOutput("button_limma_calculatedifs_container")
+                  
+                )),
                 mainPanel(
                   width = 9,
                   fluidPage(
