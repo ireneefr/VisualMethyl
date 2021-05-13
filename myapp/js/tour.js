@@ -7,15 +7,12 @@ Shiny.addCustomMessageHandler("intro_steps",
     intro.setOptions({
       exitOnOverlayClick: false,
       showBullets: false,
+      disableInteraction: true,
       steps: [
       
       {
         title: "TOUR INTROJS",
         intro: "This is ................."
-      },
-      {
-        element: document.querySelector("#div_upload_data"),
-        intro: "Upload methylation data"
       },
       {
         element: document.querySelector("#ui_input_data"),
@@ -73,10 +70,8 @@ Shiny.addCustomMessageHandler("intro_steps",
 
 Shiny.addCustomMessageHandler("intro_start", 
   function(message){
-    intro.onexit(function() {
-      if(intro._currentStep != 5){
-  alert("exit of introduction");}
-}).onchange(function(targetElement) {
+    
+    intro.onchange(function(targetElement) {
 /*
           if (intro._currentStep==1) {
             //document.querySelector(".introjs-nextbutton").style.display = "none";
@@ -94,20 +89,22 @@ Shiny.addCustomMessageHandler("intro_start",
                 "none";
                
           } */
-          if(intro._currentStep==0){
-            intro.setOptions({'nextLabel': 'Start tour'});
+          if(this._currentStep==0){
+            $('a[data-value=\"data\"]').trigger('click');
+            intro.setOptions({'nextLabel': 'Start tour', "disableInteraction": "true"});
           }
-          if(intro._currentStep==1){
-            intro.setOptions({'nextLabel': 'Next'});
+          if(this._currentStep==1){
+            intro.setOptions({'nextLabel': 'Load Data', "disableInteraction": "true"});
+            document.querySelector(".introjs-prevbutton").style.display = "none";
+            
           }
-          if(intro._currentStep==2){
-            intro.setOptions({'nextLabel': 'Next'});
+          if(this._currentStep==2){
+            $("#b_input_data").click();
+            intro.setOptions({'nextLabel': 'Next', "disableInteraction": "false"});
+            document.querySelector(".introjs-prevbutton").style.display = "block";
           }
-          if(intro._currentStep==3){
-            intro.setOptions({'nextLabel': 'Next'});
-          }
-          if(intro._currentStep==4){
-            intro.setOptions({'nextLabel': 'Continue to Analysis'});
+          if(this._currentStep==3){
+            intro.setOptions({'nextLabel': 'Continue to Analysis', "disableInteraction": "true"});
             /*
             if ($("#button_input_next").prop("disabled")){
               document.querySelector(".introjs-nextbutton").style.display = "none";
@@ -117,7 +114,7 @@ Shiny.addCustomMessageHandler("intro_start",
             }*/
           }
 
-          if (intro._currentStep==5) {
+          if (this._currentStep==4) {
              //$('a[data-value=\"data\"]').removeClass('active');
              //$('a[data-value=\"analysis\"]').addClass('active');
              $('#button_input_next').click();
@@ -148,7 +145,11 @@ Shiny.addCustomMessageHandler("intro_start",
 Shiny.addCustomMessageHandler("intro_steps_continue1",
 
   function(message){
-    intro.setOptions({steps: [
+    intro.setOptions({
+      exitOnOverlayClick: false,
+      showBullets: false,
+      disableInteraction: true,
+      steps: [
       
       {
         element: document.querySelector("#b_qc"),
@@ -181,14 +182,16 @@ Shiny.addCustomMessageHandler("intro_continue1",
   function(message){
     intro.onchange(function(targetElement) {
       if (intro._currentStep==0){
-        intro.setOptions({'nextLabel': 'Go to Quality Control'});
+        intro.setOptions({'nextLabel': 'Go to Quality Control', "disableInteraction": "true"});
       }
           if (intro._currentStep==1) {
              $('#b_qc').click();
              intro.setOptions({'nextLabel': 'Next'});
+             document.querySelector(".introjs-prevbutton").style.display = "none";
           }
           if(intro._currentStep==2){
             intro.setOptions({'nextLabel': 'Run Normalzation'});
+            document.querySelector(".introjs-prevbutton").style.display = "block";
           }
           if (intro._currentStep==3){
             $("#button_minfi_select").click();
@@ -203,11 +206,15 @@ Shiny.addCustomMessageHandler("intro_continue1",
 Shiny.addCustomMessageHandler("intro_steps_continue2",
 
   function(message){
-    intro.setOptions({steps: [
+    intro.setOptions({
+      exitOnOverlayClick: false,
+      showBullets: false,
+      //disableInteraction: true,
+      steps: [
       
       {
         element: document.querySelector("#vertical"),
-        intro: "Samples table",
+        intro: "Quality Control Plots",
         position: "left"
       },
       {
@@ -224,10 +231,10 @@ Shiny.addCustomMessageHandler("intro_steps_continue2",
         intro: "Next DMP/DMR"
       },
       {
-        element: document.querySelector("#div_model_options"),
-        intro: "Select options to generate the model"
+        element: document.querySelector("#div_dmp_calculation_options"),
+        intro: "Select options to generate the model and to calculate the contrasts"
       },
-      {
+      { 
         intro: "Select contrast options"
       }
       
@@ -243,23 +250,23 @@ Shiny.addCustomMessageHandler("intro_continue2",
   function(message){
     intro.onchange(function(targetElement) {
       if (intro._currentStep==0){
-        intro.setOptions({'nextLabel': 'Finish Quality Control'});
+        intro.setOptions({'nextLabel': 'Finish Quality Control', "disableInteraction": "false"});
       }
           if (intro._currentStep==1) {
               $('a[data-value=\"analysis\"]').trigger('click');
-              intro.setOptions({'nextLabel': 'Go to Exploratory Analysis'});
+              intro.setOptions({'nextLabel': 'Go to Exploratory Analysis', "disableInteraction": "true"});
           }
           if (intro._currentStep==2) {
               $("#b_exploratory_analysis").click();
-              intro.setOptions({'nextLabel': 'Finish Exploratory Analysis'});
+              intro.setOptions({'nextLabel': 'Finish Exploratory Analysis', "disableInteraction": "false"});
           }
           if (intro._currentStep==3) {
               $('a[data-value=\"analysis\"]').trigger('click');
-              intro.setOptions({'nextLabel': 'Go to DMP/DMR'});
+              intro.setOptions({'nextLabel': 'Go to DMP/DMR', "disableInteraction": "true"});
           }
           if (intro._currentStep==4) {
               $("#b_dmp_dmr").click();
-              intro.setOptions({'nextLabel': 'Generate Model'});
+              intro.setOptions({'nextLabel': 'Calculate', "disableInteraction": "true"});
           }
           if (intro._currentStep==5) {
               $("#button_limma_calculatemodel").click();
@@ -296,47 +303,19 @@ intro.onafterchange(function(targetElement) {
     }
 */
 
+
+
+
+
+
 Shiny.addCustomMessageHandler("intro_steps_continue3",
 
   function(message){
-    intro.setOptions({steps: [
-      
-      {
-        element: document.querySelector("#div_contrast_options"),
-        intro: "Select contrast options"
-      },
-      {
-        element: document.querySelector("#b_exploratory_analysis"),
-        intro: "Next exploratory analysis"
-      }
-    ]});
-    
-  }
-);
-
-Shiny.addCustomMessageHandler("intro_continue3", 
-  function(message){
-    intro.onchange(function(targetElement) {
-      if (intro._currentStep==0){
-        intro.setOptions({'nextLabel': 'Calculate Contrasts'});
-      }
-          if (intro._currentStep==1) {
-              $("#button_limma_calculatedifs").click();
-              intro.exit();
-              intro.setOptions({'nextLabel': 'Finish DMPs'});
-          }
-       }).start();
-  }
-);
-
-
-
-
-
-Shiny.addCustomMessageHandler("intro_steps_continue4",
-
-  function(message){
-    intro.setOptions({steps: [
+    intro.setOptions({
+      exitOnOverlayClick: false,
+      showBullets: false,
+      disableInteraction: true,
+      steps: [
       
       {
         element: document.querySelector("#table_limma_difcpgs"),
@@ -367,7 +346,7 @@ Shiny.addCustomMessageHandler("intro_steps_continue4",
 
 
 
-Shiny.addCustomMessageHandler("intro_continue4", 
+Shiny.addCustomMessageHandler("intro_continue3", 
   function(message){
     intro.onchange(function(targetElement) {
       if (intro._currentStep==0){
@@ -378,7 +357,7 @@ Shiny.addCustomMessageHandler("intro_continue4",
           }
           if (intro._currentStep==2) {
               $("#button_limma_tablecalc").click();
-              intro.setOptions({'nextLabel': 'Finish DMPs'});
+              intro.setOptions({'nextLabel': 'Finish DMPs', "disableInteraction": "false"});
           }
           if (intro._currentStep==3) {
               $('a[data-value=\"DMRs\"]').trigger('click');
@@ -396,10 +375,14 @@ Shiny.addCustomMessageHandler("intro_continue4",
 
 
 
-Shiny.addCustomMessageHandler("intro_steps_continue5",
+Shiny.addCustomMessageHandler("intro_steps_continue4",
 
   function(message){
-    intro.setOptions({steps: [
+    intro.setOptions({
+      exitOnOverlayClick: false,
+      showBullets: false,
+      disableInteraction: true,
+      steps: [
       
       {
         element: document.querySelector("#div_dmr_table"),
@@ -427,10 +410,6 @@ Shiny.addCustomMessageHandler("intro_steps_continue5",
         intro: "Next Survival"
       },
       {
-        element: document.querySelector("#div_upload_clinical"),
-        intro: "Upload clinical data"
-      },
-      {
         element: document.querySelector("#ui_clinical_data"),
         intro: "Load clinical data"
       },
@@ -450,7 +429,7 @@ Shiny.addCustomMessageHandler("intro_steps_continue5",
 
 
 
-Shiny.addCustomMessageHandler("intro_continue5", 
+Shiny.addCustomMessageHandler("intro_continue4", 
   function(message){
     intro.onchange(function(targetElement) {
       if (intro._currentStep==0){
@@ -461,7 +440,7 @@ Shiny.addCustomMessageHandler("intro_continue5",
           }
           if (intro._currentStep==2) {
               $("#button_dmrs_tablecalc").click();
-              intro.setOptions({'nextLabel': 'Finish DMRs'});
+              intro.setOptions({'nextLabel': 'Finish DMRs', "disableInteraction": "false"});
           }
           if (intro._currentStep==3) {
               $('a[data-value=\"analysis\"]').trigger('click');
@@ -469,7 +448,7 @@ Shiny.addCustomMessageHandler("intro_continue5",
           }
           if (intro._currentStep==4) {
               $("#b_functional_enrichment").click();
-              intro.setOptions({'nextLabel': 'Finish Functional Enrichment'});
+              intro.setOptions({'nextLabel': 'Finish Functional Enrichment', "disableInteraction": "false"});
           }
           if (intro._currentStep==5) {
               $('a[data-value=\"analysis\"]').trigger('click');
@@ -477,15 +456,13 @@ Shiny.addCustomMessageHandler("intro_continue5",
           }
           if (intro._currentStep==6) {
               $("#b_survival").click();
-              intro.setOptions({'nextLabel': 'Next'});
+              intro.setOptions({'nextLabel': 'Load Clinical Data'});
           }
           if (intro._currentStep==7) {
-              intro.setOptions({'nextLabel': 'Next'});
-          }
-          if (intro._currentStep==8) {
+              $("#b_clinical_data").click();
               intro.setOptions({'nextLabel': 'Continue to Survival'});
           }
-          if (intro._currentStep==9) {
+          if (intro._currentStep==8) {
               $("#b_clinical_next").click();
               intro.exit();
           }
@@ -497,10 +474,14 @@ Shiny.addCustomMessageHandler("intro_continue5",
 
 
 
-Shiny.addCustomMessageHandler("intro_steps_continue6",
+Shiny.addCustomMessageHandler("intro_steps_continue5",
 
   function(message){
-    intro.setOptions({steps: [
+    intro.setOptions({
+      exitOnOverlayClick: false,
+      showBullets: false,
+      disableInteraction: true,
+      steps: [
       
       {
         element: document.querySelector("#div_clin_meth_options"),
@@ -527,7 +508,7 @@ Shiny.addCustomMessageHandler("intro_steps_continue6",
 
 
 
-Shiny.addCustomMessageHandler("intro_continue6", 
+Shiny.addCustomMessageHandler("intro_continue5", 
   function(message){
     intro.onchange(function(targetElement) {
       if (intro._currentStep==0){
@@ -535,7 +516,7 @@ Shiny.addCustomMessageHandler("intro_continue6",
       }
           if (intro._currentStep==1) {
               $("#b_run_survival").click();
-              intro.setOptions({'nextLabel': 'Finish Survival'});
+              intro.setOptions({'nextLabel': 'Finish Survival', "disableInteraction": "false"});
           }
           if (intro._currentStep==2) {
               $('a[data-value=\"export\"]').trigger('click');
@@ -554,10 +535,14 @@ Shiny.addCustomMessageHandler("intro_continue6",
 
 
 
-Shiny.addCustomMessageHandler("intro_steps_continue7",
+Shiny.addCustomMessageHandler("intro_steps_continue6",
 
   function(message){
-    intro.setOptions({steps: [
+    intro.setOptions({
+      exitOnOverlayClick: false,
+      showBullets: false,
+      disableInteraction: true,
+      steps: [
       {
         title: "TOUR INTROJS FINISHED",
         intro: "end"
@@ -570,7 +555,7 @@ Shiny.addCustomMessageHandler("intro_steps_continue7",
 
 
 
-Shiny.addCustomMessageHandler("intro_continue7", 
+Shiny.addCustomMessageHandler("intro_continue6", 
   function(message){
     intro.start();
   }
