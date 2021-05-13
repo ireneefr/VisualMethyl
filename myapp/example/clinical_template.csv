@@ -1,0 +1,7 @@
+Sample,Time,Status,Sex,Age,Level
+MAC A,100,1,M,77,1
+MO B,2000,1,M,68,7
+MAC C,350,0,M,1,2
+MO A,555,0,F,2,6
+MO C,287,1,F,1,1
+MAC B,1784,0,F,2,6
