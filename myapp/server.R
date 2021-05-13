@@ -35,9 +35,11 @@ shinyServer(function(input, output, session) {
     
     
     observeEvent(input$help_tour,{
+        print("in")
         updateMaterialSwitch(session, "select_example", value = TRUE)
         session$sendCustomMessage(type = "intro_steps", message = list(""))
         session$sendCustomMessage(type = "intro_start", message = list(""))
+        print("out")
     })
     
     observeEvent(rval_rgset(), {
@@ -65,16 +67,13 @@ shinyServer(function(input, output, session) {
     observeEvent(rval_mcsea(), {
         if(input$help_tour > 0){
             updateMaterialSwitch(session, "select_clin_example", value = TRUE)
-            if(input$select_clin_example == TRUE){
-                updateSelectInput(session, "select_clinical_timevar", selected = "Time")
-                updateSelectInput(session, "select_clinical_statusvar", selected = "Status")
-            }
+            
             session$sendCustomMessage(type = "intro_steps_continue4", message = list(""))
             session$sendCustomMessage(type = "intro_continue4", message = list(""))
         }
     }) 
     
-    observeEvent(clinical_sheet_target(), {
+    observeEvent(list(clinical_sheet_target(), surv_annotation()), {
         if(input$help_tour > 0){
             session$sendCustomMessage(type = "intro_steps_continue5", message = list(""))
             session$sendCustomMessage(type = "intro_continue5", message = list(""))
@@ -88,6 +87,11 @@ shinyServer(function(input, output, session) {
         }
     })
 
+    
+    
+    
+    
+    
     
     
     observe({
@@ -2402,13 +2406,14 @@ shinyServer(function(input, output, session) {
     
     
     ###### SURVIVAL #####
+    
     output$clinical_template <- downloadHandler(
         filename = paste("clinical_template", ".csv", sep = ""),
         content = ifelse(rval_sheet_target_done() == TRUE, function(file) {write.csv(data.frame(Sample = rval_sheet_target()[[input$select_input_samplenamevar]], Time = NA, Status = NA), file, row.names = FALSE)},
                          function(file) {write.csv(data.frame(Sample = NA, Time = NA, Status = NA), file, row.names = FALSE)})
     )
     
-    # Input button
+    # Load clinical button
     output$ui_clinical_data <- renderUI({
         if (!is.null(input$input_clinical$datapath) | input$select_clin_example == TRUE) {
             return(actionButton("b_clinical_data", "Load Clinical Data"))
@@ -2418,28 +2423,29 @@ shinyServer(function(input, output, session) {
     })
     
     # input_clinical: enable b_clinical_data
-    observeEvent(input$input_clinical, shinyjs::enable("b_clinical_data"))
+    #observeEvent(input$input_clinical, shinyjs::enable("b_clinical_data"))
+    
     
     clinical_sheet <- eventReactive(input$b_clinical_data, {
-        print("hello")
         
         if(input$select_clin_example == TRUE){
             clin_datapath <- paste0(getwd(), "/example/clinical_template.csv")
-        }
-        else{
+        } else{
+            validate(need(tools::file_ext(input$input_data$datapath) == "csv", "File extension should be .csv"))
             clin_datapath <- input$input_clinical$datapath
         }
         
-        validate(need(try(file <- read.csv(file = clin_datapath)), 
-                      "Error reading the file !!!"))
-        #file <- read.csv(input$input_clinical$datapath)
-        #validate(need(tools::file_ext(input$input_data$datapath) == "csv", "File extension should be .csv"))
-        validate(
-            need(
+        validate(need(
+            try(file <- read.csv(file = clin_datapath)), 
+            "Error reading the file !!!"
+            ))
+        
+        file <- read.csv(clin_datapath)
+        
+        validate(need(
                 is.data.frame(file),
                 "Clinical Data is not correct. Please, check it."
-            )
-        )
+            ))
         #validate(
         #    need(
         #        colnames(file) == rval_sheet_target()[[input$select_input_samplenamevar]],
@@ -2459,7 +2465,22 @@ shinyServer(function(input, output, session) {
             label = "Select Sample Names Column:",
             choices = colnames(clinical_sheet())
         )
-        
+        if(input$select_clin_example == TRUE){
+            updateSelectInput(
+                session,
+                "select_clinical_timevar",
+                label = "Select Time Column:",
+                choices = colnames(clinical_sheet()),
+                selected = "Time"
+            )
+            updateSelectInput(
+                session,
+                "select_clinical_statusvar",
+                label = "Select Status Column:",
+                choices = colnames(clinical_sheet()),
+                selected = "Status"
+            )
+        } else{
         updateSelectInput(
             session,
             "select_clinical_timevar",
@@ -2472,43 +2493,37 @@ shinyServer(function(input, output, session) {
             label = "Select Status Column:",
             choices = colnames(clinical_sheet())
         )
+        }
         shinyjs::enable("b_clinical_next") # Enable button continue
-    })
-    
-    clinical_sheet_target <- eventReactive(input$b_clinical_next, {
-        if(rval_sheet_target_done() == TRUE){
-            print("sheet target")
-            print(rval_sheet_target())
-            print("clinical")
-            print(file)
-            print("merge")
-            print(input$select_input_samplenamevar)
-            clinical <- merge(x = clinical_sheet(), y = rval_sheet_target(), by.x = input$select_clinical_samplenamevar, by.y = input$select_input_samplenamevar)
-        }
-        else{
-            clinical <- clinical_sheet()
-        }
-        print("CLINICAL TARGET")
-        print(clinical)
-        clinical
     })
     
     output$ui_clinical_different <- renderUI({
         if(input$select_clinical_samplenamevar==input$select_clinical_timevar | input$select_clinical_samplenamevar==input$select_clinical_statusvar | input$select_clinical_timevar==input$select_clinical_statusvar){
             shinyjs::disable("b_clinical_next")
             return(helpText("Columns of Sample, Time and Status must be different", style = "font-size:10px"))
-        }
-        else{
+        } else{
             shinyjs::enable("b_clinical_next")
             return()
         }
     })
     
+    
+
+    clinical_sheet_target <- eventReactive(input$b_clinical_next, {
+        if(rval_sheet_target_done() == TRUE){
+            clinical <- merge(x = clinical_sheet(), y = rval_sheet_target(), by.x = input$select_clinical_samplenamevar, by.y = input$select_input_samplenamevar)
+        } else{
+            clinical <- clinical_sheet()
+        }
+        
+        print(clinical)
+        clinical
+    })
+    
     # When you press b_clinical_next, the options are updated
     observeEvent(input$b_clinical_next, {
         
-        showModal(modalDialog(
-            title = NULL, footer = NULL,
+        showModal(modalDialog(title = NULL, footer = NULL,
             div(
                 img(src="https://upload.wikimedia.org/wikipedia/commons/7/7d/Pedro_luis_romani_ruiz.gif"),
                 p("Generating survival options..."),
@@ -2521,13 +2536,59 @@ shinyServer(function(input, output, session) {
             max = 3,
             value = 1,
             {
+                output$ui_meth_data_disabled <- renderUI({
+                    if(rval_gset_done() == TRUE){
+                        updateSwitchInput(session, "select_meth_data", value = TRUE, disabled = FALSE)
+                        if(input$help_tour > 0 & input$select_clin_example == TRUE){
+                            updateSelectizeInput(
+                                session,
+                                "select_gene",
+                                label = "Select Gene:",
+                                choices = sort(unique(unlist(strsplit(rval_annotation()$UCSC_RefGene_Name, ";")))),
+                                options = list(maxOptions = 10)
+                            )
+                            updateSliderInput(
+                                session,
+                                "slider_meth_data_val",
+                                value = 0.77
+                            )
+                        } else{
+                            updateSelectizeInput(
+                                session,
+                                "select_gene",
+                                label = "Select Gene:",
+                                choices = sort(unique(unlist(strsplit(rval_annotation()$UCSC_RefGene_Name, ";")))),
+                                options = list(maxOptions = 10)
+                            )
+                        }
+                        print("meth data yes")
+                        return()
+                    }
+                    else{
+                        updateSwitchInput(session, "select_meth_data", value = FALSE, disabled = TRUE)
+                        print("meth data no")
+                        return(helpText(HTML("Methylation options are disabled <br> because", as.character(actionLink("norm_link", label = "normalization")), "is not done."), style = "font-size:11px;align-content:center"))
+                    }
+                })
                 
-                updateSelectInput(
-                    session,
-                    "select_clinical_infovar",
-                    label = "Select First Clinical Information Column:",
-                    choices = c("None", colnames(clinical_sheet_target())[!(colnames(clinical_sheet_target()) %in% c(input$select_clinical_samplenamevar, input$select_clinical_timevar, input$select_clinical_statusvar))])
-                )
+                if(input$help_tour > 0 & input$select_clin_example == TRUE){
+                    updateSelectInput(
+                        session,
+                        "select_clinical_infovar",
+                        label = "Select First Clinical Information Column:",
+                        choices = c("None", colnames(clinical_sheet_target())[!(colnames(clinical_sheet_target()) %in% c(input$select_clinical_samplenamevar, input$select_clinical_timevar, input$select_clinical_statusvar))]),
+                        selected = "Sex"
+                    )
+                } else{
+                    updateSelectInput(
+                        session,
+                        "select_clinical_infovar",
+                        label = "Select First Clinical Information Column:",
+                        choices = c("None", colnames(clinical_sheet_target())[!(colnames(clinical_sheet_target()) %in% c(input$select_clinical_samplenamevar, input$select_clinical_timevar, input$select_clinical_statusvar))])
+                    )
+                }
+
+                print("survival options")
 
                 removeModal()
                 shinyjs::enable("b_run_survival") # Enable button continue
@@ -2573,6 +2634,7 @@ shinyServer(function(input, output, session) {
             output$clin2_active <- renderText("")
             outputOptions(output, 'clin2_active', suspendWhenHidden=FALSE) 
         }
+        print("clin info 1")
     })
     
     observeEvent(input$select_clinical_infovar2, ignoreNULL = TRUE, {
@@ -2605,51 +2667,35 @@ shinyServer(function(input, output, session) {
             output$clin2_num <- renderText("")
             outputOptions(output, 'clin2_num', suspendWhenHidden=FALSE) 
         }
+        print("clin info 2")
     })
-    
-    
-    
-    
-    output$ui_meth_data_disabled <- renderUI({
-        if(rval_gset_done() == TRUE){
-            updateSwitchInput(session, "select_meth_data", value = TRUE, disabled = FALSE)
-            updateSelectizeInput(
-                session,
-                "select_gene",
-                label = "Select Gene:",
-                choices = sort(unique(unlist(strsplit(rval_annotation()$UCSC_RefGene_Name, ";"))))
-            )
-            return()
-        }
-        else{
-            updateSwitchInput(session, "select_meth_data", value = FALSE, disabled = TRUE)
-            return(helpText(HTML("Methylation options are disabled <br> because", as.character(actionLink("norm_link", label = "normalization")), "is not done."), style = "font-size:11px;align-content:center"))
-        }
-    })
+
     
     output$ui_group_island <- renderUI({
         if (input$select_group_island == "Genomic Region") {
+            print("group genomic")
             return(selectInput("select_region", label = "Select Genomic Region:", 
                                choices = c("None", sort(unique(unlist(strsplit(rval_annotation()$UCSC_RefGene_Group, ";"))))), 
-                   selected = "None"))
-        } 
-        else if (input$select_group_island == "Relation to Island") {
+                               selected = "None"))
+        } else if (input$select_group_island == "Relation to Island") {
+            print("group relation")
             return(selectInput("select_island", label = "Select Relation to Island:",
                                choices = c("None", sort(unique(unlist(strsplit(rval_annotation()$Relation_to_Island, ";"))))),
                                selected = "None"))
-        }
-        else {
+        } else {
+            print("group no")
             return()
         }
     })
     
-   observeEvent(surv_ann_gene(), {
+   observeEvent(surv_annotation(), {
        if(input$select_group_island == "Genomic Region"){
        updateSelectInput(
            session,
            "select_region",
            choices = c("None", sort(unique(unlist(strsplit(surv_annotation()$UCSC_RefGene_Group, ";")))))
        )
+           print("annotation region")
        }
        if(input$select_group_island == "Relation to Island"){
        updateSelectInput(
@@ -2657,16 +2703,9 @@ shinyServer(function(input, output, session) {
            "select_island",
            choices = c("None", sort(unique(unlist(strsplit(surv_annotation()$Relation_to_Island, ";")))))
        )
+           print("annotation relation")
        }
    })
-    
-   surv_ann_gene <- reactive({
-       a_gene <- rval_annotation()[grep(input$select_gene, rval_annotation()$UCSC_RefGene_Name), ]
-       print("a_gene")
-       print(head(a_gene))
-       a_gene
-   })
-   
    
     surv_annotation <- reactive({
         a1 <- rval_annotation()[grep(input$select_gene, rval_annotation()$UCSC_RefGene_Name), ]
@@ -2674,26 +2713,21 @@ shinyServer(function(input, output, session) {
         if(input$select_group_island == "Genomic Region"){
         if(input$select_region == "None"){
         a2 <- a1
-        }
-        else{
+        } else{
             a2 <- a1[grep(input$select_region, a1$UCSC_RefGene_Group), ]
-        }
-        }
-        else{
+        }} else{
             a2 <- a1
         }
         
         if(input$select_group_island == "Relation to Island"){
         if(input$select_island == "None"){
             a3 <- a2
-        }
-        else{
+        } else{
             a3 <- a2[grep(input$select_island, a2$Relation_to_Island), ]
-        }
-        }
-        else{
+        }} else{
             a3 <- a2
         }
+        print("annotation a3")
         a3
     })
     
@@ -2827,21 +2861,13 @@ shinyServer(function(input, output, session) {
             }
             
             ann <- rbind(rval_gset_getBeta()[rownames(surv_data),], beta_median = apply(rval_gset_getBeta()[rownames(surv_data),], 2, median, na.rm = TRUE))
-            print("ann")
-            print(ann)
             surv <- cbind(new_clinical_sheet, beta_median = t(ann["beta_median",]))
             
-            print(surv$beta_median[surv$beta_median >= input$slider_meth_data_val])
-            print(surv$beta_median)
-            #print(surv[beta_median])
-            print("HYPER/HYPO")
             surv$beta_median[surv$beta_median >= input$slider_meth_data_val] <- "Hyper"
             surv$beta_median[surv$beta_median < input$slider_meth_data_val] <- "Hypo"
-            #surv$beta_median[surv$beta_median >= input$slider_meth_data_val] <- 1
-            #surv$beta_median[surv$beta_median < input$slider_meth_data_val] <- 0
+
             surv$beta_median <- as.factor(surv$beta_median)
-            print(unique(surv$beta_median))
-            print(length(unique(surv$beta_median)))
+
             if(length(unique(surv$beta_median)) < 2){
                 showModal(
                     modalDialog(
@@ -2853,22 +2879,14 @@ shinyServer(function(input, output, session) {
                 )
                 return()
             }
-            print("surv")
-            print(surv)
-            
-            
+
             if(surv_clin == "None"){
                 log.rank.test <- survival::survdiff(survival::Surv(eval(parse(text = surv_time)), eval(parse(text = surv_status))) ~ beta_median, data = surv)
                 cox.fit <- summary(survival::coxph(survival::Surv(eval(parse(text = surv_time)), eval(parse(text = surv_status))) ~ beta_median, data = surv))
                 s_fit <- survminer::surv_fit(survival::Surv(eval(parse(text = surv_time)), eval(parse(text = surv_status)))  ~ beta_median, data = surv)
-                print("CLASS")
-                print(class(surv))
-                print(surv_clin)
-                print(surv$Sex)
-                print(surv)
+
                 freq_surv <- compareGroups::compareGroups(as.formula(paste(input$select_input_groupingvar," ~ ",".")), data = surv)
                 freq_surv <- compareGroups::createTable(freq_surv)
-                print(freq_surv)
                 describe_surv <- Hmisc::describe(surv)
             }
             
@@ -2878,13 +2896,9 @@ shinyServer(function(input, output, session) {
                     log.rank.test <- survival::survdiff(survival::Surv(eval(parse(text = surv_time)), eval(parse(text = surv_status))) ~ beta_median + eval(parse(text = surv_clin)), data = surv)
                     cox.fit <- summary(survival::coxph(survival::Surv(eval(parse(text = surv_time)), eval(parse(text = surv_status))) ~ beta_median + eval(parse(text = surv_clin)), data = surv))
                     s_fit <- survminer::surv_fit(survival::Surv(eval(parse(text = surv_time)), eval(parse(text = surv_status)))  ~ beta_median + eval(parse(text = surv_clin)), data = surv)
-                    print("CLASS")
-                    print(class(surv))
-                    print(surv_clin)
-                    print(surv$Sex)
+
                     freq_surv <- compareGroups::compareGroups(as.formula(paste(input$select_input_groupingvar," ~ ",".")), data = surv)
                     freq_surv <- compareGroups::createTable(freq_surv)
-                    print(freq_surv)                   
                     describe_surv <- Hmisc::describe(surv)
                 }
                 
@@ -2892,36 +2906,20 @@ shinyServer(function(input, output, session) {
                     log.rank.test <- survival::survdiff(survival::Surv(eval(parse(text = surv_time)), eval(parse(text = surv_status))) ~ beta_median + eval(parse(text = surv_clin)) + eval(parse(text = surv_clin2)), data = surv)
                     cox.fit <- summary(survival::coxph(survival::Surv(eval(parse(text = surv_time)), eval(parse(text = surv_status))) ~ beta_median + eval(parse(text = surv_clin)) + eval(parse(text = surv_clin2)), data = surv))
                     s_fit <- survminer::surv_fit(survival::Surv(eval(parse(text = surv_time)), eval(parse(text = surv_status)))  ~ beta_median + eval(parse(text = surv_clin)) + eval(parse(text = surv_clin2)), data = surv)
-                    print("CLASS")
-                    print(class(surv))
-                    print(surv_clin)
-                    print(surv$Sex)
+
                     freq_surv <- compareGroups::compareGroups(as.formula(paste(input$select_input_groupingvar," ~ ",".")), data = surv)
                     freq_surv <- compareGroups::createTable(freq_surv)
-                    print(freq_surv)                  
                     describe_surv <- Hmisc::describe(surv)
                 }
             }
         }
         
-        #log.rank.test
-        print("log.rank.test")
-        print(log.rank.test)
-        
-        #cox.fit
-        print("cox.fit")
-        print(cox.fit)
         hz <- round(cox.fit$conf.int[1], 3)
         ci.95.low <- round(cox.fit$conf.int[3], 3)
         ci.95.up <- round(cox.fit$conf.int[4], 3)
         hz.pval <- round(cox.fit$logtest[3], 3)
         my_text <- paste0("HR=", hz, "(95% CI ", ci.95.low, " - ", ci.95.up, "); p=", hz.pval)
-        print("my_text")
-        print(my_text)
         
-        print("STRATA")
-        print(names(s_fit$strata))
-        print(s_fit$strata)
         names(s_fit$strata) <- gsub("eval(parse(text = surv_clin))=", "Clin1: ", names(s_fit$strata), fixed = TRUE)
         names(s_fit$strata) <- gsub("eval(parse(text = surv_clin2))=", "Clin2: ", names(s_fit$strata), fixed = TRUE)
         names(s_fit$strata) <- gsub("beta_median=", "Meth: ", names(s_fit$strata))
@@ -2939,17 +2937,10 @@ shinyServer(function(input, output, session) {
             risk.table.height = 0.35,
             pval = TRUE, 
             pval.method = TRUE)
-        print("STRATA")
-        print(names(s_fit$strata))
-        print(s_fit$strata)
         ggsurv$plot <- ggsurv$plot + ggplot2::labs(subtitle = my_text) + ggplot2::theme(plot.subtitle = element_text(size = 12))
-        #ggsurv
-        
-        #table_surv <- compareGroups::compareGroups(. ~ eval(parse(text = surv_clin)), data = surv)
-        #table_surv <- compareGroups::createTable(table_surv)
-        #
+
         if(input$select_meth_data){
-        return(list(plot = ggsurv, freq = freq_surv, descr = describe_surv))
+            return(list(plot = ggsurv, freq = freq_surv, descr = describe_surv))
         } else {
             return(list(plot = ggsurv, descr = describe_surv))
         }

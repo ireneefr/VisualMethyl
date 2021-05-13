@@ -533,9 +533,10 @@ shinyUI(
                     title = "DMP TABLE AND OPTIONS", width = 12, closable = FALSE, collapsible = FALSE, status = "primary",
                     fluidPage(
                     div(id = "div_dmp_table",
-                    fluidRow(
+                        fluidRow(
                     h4("DMP counts in each contrast"),
-                    tableOutput("table_limma_difcpgs") %>% shinycssloaders::withSpinner())),
+                    tableOutput("table_limma_difcpgs") %>% shinycssloaders::withSpinner())
+                    ),
                     div(id ="div_dmp_options",
                     fluidRow(
                       column(
@@ -769,11 +770,16 @@ shinyUI(
                 ),
                 mainPanel(
                   width = 9,
+                  fluidPage(
+                    fluidRow(
                   box(
                     title = "DMR TABLE AND OPTIONS", width = 12, closable = FALSE, collapsible = FALSE,
+                    fluidPage(
                     div(id = "div_dmr_table",
+                        fluidRow(
                     h4("DMRs counts in each contrast"),
-                    tableOutput("table_dmrs_count") %>% shinycssloaders::withSpinner()),
+                    tableOutput("table_dmrs_count") %>% shinycssloaders::withSpinner())
+                    ),
                     div(id = "div_dmr_options",
                     fluidRow(
                       column(
@@ -824,8 +830,8 @@ shinyUI(
                       ))),
                     fluidRow(
                       actionButton("button_dmrs_tablecalc", "Update")
-                    )
-                  ),
+                    ))
+                  )),
                   div(id = "div_dmr_plots",
                       fluidRow(
                   box(
@@ -952,7 +958,7 @@ shinyUI(
                     br(),
 
                     actionButton("button_dmrs_graphsingle", "Plot")
-                  )))
+                  ))))
                 )
               ))
             )
@@ -994,6 +1000,7 @@ shinyUI(
                     fileInput("input_clinical", HTML("Upload clinical data (.csv)", as.character(downloadLink("clinical_template", "Download template", style = "font-size:10px;padding-left:45px"))), multiple = FALSE, accept = ".csv")
                     )),
                     uiOutput("ui_clinical_data"),
+                    br(),
                     materialSwitch(inputId = "select_clin_example", label = "Example Clinical Data", value = FALSE, status = "info", width = "100%"),
                     conditionalPanel(
                       "input.b_clinical_data > 0",
@@ -1012,6 +1019,8 @@ shinyUI(
                     )
             ),
             mainPanel(width = 9,
+              fluidPage(
+                fluidRow(
               conditionalPanel("input.b_clinical_next > 0",
               box(title = "Options", width = 12, closable = FALSE, collapsible = TRUE, collapsed = FALSE, status = "primary",
                   div(id = "div_clin_meth_options",
@@ -1049,7 +1058,7 @@ shinyUI(
                        
                        conditionalPanel(
                          "input.select_meth_data",
-                         selectizeInput("select_gene", "", c(),  options = list(maxOptions = 10)),
+                         selectizeInput("select_gene", "", c()),
                          radioButtons("select_group_island", "Other options", choices = c("None", "Genomic Region", "Relation to Island"), selected = "None", inline = TRUE),
                          uiOutput("ui_group_island"),
                          textInput("cpg_input", "Select CpG site:")
@@ -1068,8 +1077,9 @@ shinyUI(
               )),
               fluidRow(
                        actionButton("b_run_survival", "Run Survival", class = "btn-primary"))
-              )),
+              ))),
               div(id = "div_survival_plots",
+                  fluidRow(
               box(title = "Kaplan-Meier", width = 12, closable = FALSE, collapsible = FALSE, status = "primary",
                   conditionalPanel("input.b_run_survival > 0",
                   withSpinner(plotOutput("plot_survival", height = "800px")))
@@ -1084,7 +1094,7 @@ shinyUI(
                 box(title = "Frequencies by Group", width = 12, closable = FALSE, collapsible = TRUE, collapsed = TRUE, status = "primary",
                     verbatimTextOutput("freq_surv_code")
                     )
-              ))
+              ))))
             )
           )
         ),
@@ -1105,6 +1115,7 @@ shinyUI(
           fluidPage(
             shinyjs::useShinyjs(),
             div(id = "div_export",
+                fluidRow(
             h3("Download Report"),
             column(
               2,
@@ -1193,7 +1204,7 @@ shinyUI(
                 selected = c()
               )
             )
-          ))
+          )))
         ),
         tabItem(
           tabName = "help",
