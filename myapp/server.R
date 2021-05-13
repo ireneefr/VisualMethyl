@@ -42,6 +42,7 @@ shinyServer(function(input, output, session) {
     
     observeEvent(rval_rgset(), {
         if(input$help_tour > 0){
+            updateSelectInput(session, "select_minfi_norm", selected = "Illumina")
             session$sendCustomMessage(type = "intro_steps_continue1", message = list(""))
             session$sendCustomMessage(type = "intro_continue1", message = list(""))
         }
@@ -54,38 +55,36 @@ shinyServer(function(input, output, session) {
         }
     })
     
-    observeEvent(rval_fit(), {
+    observeEvent(rval_filteredlist(), {
         if(input$help_tour > 0){
             session$sendCustomMessage(type = "intro_steps_continue3", message = list(""))
             session$sendCustomMessage(type = "intro_continue3", message = list(""))
         }
     })
     
-    observeEvent(rval_filteredlist(), {
+    observeEvent(rval_mcsea(), {
         if(input$help_tour > 0){
+            updateMaterialSwitch(session, "select_clin_example", value = TRUE)
+            if(input$select_clin_example == TRUE){
+                updateSelectInput(session, "select_clinical_timevar", selected = "Time")
+                updateSelectInput(session, "select_clinical_statusvar", selected = "Status")
+            }
             session$sendCustomMessage(type = "intro_steps_continue4", message = list(""))
             session$sendCustomMessage(type = "intro_continue4", message = list(""))
         }
-    })
+    }) 
     
-    observeEvent(rval_mcsea(), {
+    observeEvent(clinical_sheet_target(), {
         if(input$help_tour > 0){
             session$sendCustomMessage(type = "intro_steps_continue5", message = list(""))
             session$sendCustomMessage(type = "intro_continue5", message = list(""))
         }
     }) 
     
-    observeEvent(clinical_sheet_target(), {
+    observeEvent(rval_downloaded_report() == TRUE, {
         if(input$help_tour > 0){
             session$sendCustomMessage(type = "intro_steps_continue6", message = list(""))
             session$sendCustomMessage(type = "intro_continue6", message = list(""))
-        }
-    }) 
-    
-    observeEvent(rval_downloaded_report() == TRUE, {
-        if(input$help_tour > 0){
-            session$sendCustomMessage(type = "intro_steps_continue7", message = list(""))
-            session$sendCustomMessage(type = "intro_continue7", message = list(""))
         }
     })
 
@@ -339,12 +338,21 @@ shinyServer(function(input, output, session) {
             "select_input_samplenamevar",
             choices = colnames(rval_sheet())
         )
-        
-        updateSelectInput(
+        if(input$help_tour > 0){
+            updateSelectInput(
+                session,
+                "select_input_groupingvar",
+                choices = colnames(rval_sheet()),
+                selected = "Sample_Group"
+            )
+        }else{
+            updateSelectInput(
             session,
             "select_input_groupingvar",
             choices = colnames(rval_sheet())
         )
+        }
+        
         updateSelectInput(
             session,
             "select_input_donorvar",
@@ -2402,9 +2410,7 @@ shinyServer(function(input, output, session) {
     
     # Input button
     output$ui_clinical_data <- renderUI({
-        if (!is.null(input$input_clinical$datapath)) {
-            print(input$input_clinical$datapath)
-            print(read.csv(input$input_clinical$datapath))
+        if (!is.null(input$input_clinical$datapath) | input$select_clin_example == TRUE) {
             return(actionButton("b_clinical_data", "Load Clinical Data"))
         } else {
             return()
@@ -2416,7 +2422,15 @@ shinyServer(function(input, output, session) {
     
     clinical_sheet <- eventReactive(input$b_clinical_data, {
         print("hello")
-        validate(need(try(file <- read.csv(file = input$input_clinical$datapath)), 
+        
+        if(input$select_clin_example == TRUE){
+            clin_datapath <- paste0(getwd(), "/example/clinical_template.csv")
+        }
+        else{
+            clin_datapath <- input$input_clinical$datapath
+        }
+        
+        validate(need(try(file <- read.csv(file = clin_datapath)), 
                       "Error reading the file !!!"))
         #file <- read.csv(input$input_clinical$datapath)
         #validate(need(tools::file_ext(input$input_data$datapath) == "csv", "File extension should be .csv"))

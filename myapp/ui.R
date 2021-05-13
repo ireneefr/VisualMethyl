@@ -75,10 +75,8 @@ shinyUI(
     dashboardBody(
       includeCSS("www/style.css"),
       includeCSS("js/introjs.min.css"),
-      includeCSS("js/sweetalert2.min.css"),
       #includeCSS("js/introjs_style.css"),
       includeScript("js/intro.min.js"),
-      includeScript("js/sweetalert2.min.js"),
       includeScript("js/tour.js"),
       useShinyFeedback(),
       tabItems(
@@ -140,8 +138,9 @@ shinyUI(
                 "input.b_input_data > 0",
                 box(
                   title = "SAMPLES TABLE", collapsible = FALSE, status = "primary", width = 9,
-                  div(id="div_samples_table",
-                  withSpinner(DT::DTOutput("samples_table")))
+                  fluidPage(div(id="div_samples_table",
+                      
+                  withSpinner(DT::DTOutput("samples_table"))))
                 )
               )
             )
@@ -288,8 +287,7 @@ shinyUI(
 
               shinyjs::disabled(actionButton("button_minfi_select", "Run Normalization", class = "btn-primary")),
               h4(),
-              textOutput("text_minfi_probes"),
-              actionButton("help_tour2", "HELP TOUR")
+              textOutput("text_minfi_probes")
             ),
 
             mainPanel(id = "vertical",
@@ -460,7 +458,7 @@ shinyUI(
                 sidebarPanel(
                   width = 3,
                   fluidPage(
-                  div(id = "div_model_options",
+                  div(id = "div_dmp_calculation_options",
                   fluidRow(
                     h4("Linear Model Options"),
                   pickerInput(
@@ -499,11 +497,9 @@ shinyUI(
                     label = "Array Weights",
                     labelWidth = "80px",
                     value = FALSE
-                  ))),
+                  )),
                   
                   fluidRow(br(),
-                           div(id="div_contrast_options",
-                                 
                                  h4("Contrasts options"),
                                  
                                  switchInput(
@@ -518,10 +514,10 @@ shinyUI(
                                    label = "eBayes Robust",
                                    labelWidth = "80px",
                                    value = FALSE
-                                 )),
+                                 ),
                             # actionButton("button_limma_calculatedifs", "Calc. Contrasts")),
                   uiOutput("ebayes_help")
-                  ),
+                  )),
                   fluidRow(br(),
                   shinyjs::disabled(
                     actionButton("button_limma_calculatemodel", "Calculate")
@@ -994,9 +990,11 @@ shinyUI(
           fluidPage(
             sidebarPanel(width = 3, 
                     div(id = "div_upload_clinical",
+                        conditionalPanel("!input.select_clin_example",
                     fileInput("input_clinical", HTML("Upload clinical data (.csv)", as.character(downloadLink("clinical_template", "Download template", style = "font-size:10px;padding-left:45px"))), multiple = FALSE, accept = ".csv")
-                    ),
+                    )),
                     uiOutput("ui_clinical_data"),
+                    materialSwitch(inputId = "select_clin_example", label = "Example Clinical Data", value = FALSE, status = "info", width = "100%"),
                     conditionalPanel(
                       "input.b_clinical_data > 0",
                       br(),
