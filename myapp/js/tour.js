@@ -102,6 +102,7 @@ Shiny.addCustomMessageHandler("intro_start",
             $("#b_input_data").click();
             intro.setOptions({'nextLabel': 'Next', "disableInteraction": "false"});
             document.querySelector(".introjs-prevbutton").style.display = "block";
+            intro.refresh();
           }
           if(this._currentStep==3){
             intro.setOptions({'nextLabel': 'Continue to Analysis', "disableInteraction": "true"});
@@ -480,7 +481,7 @@ Shiny.addCustomMessageHandler("intro_steps_continue5",
     intro.setOptions({
       exitOnOverlayClick: false,
       showBullets: false,
-      disableInteraction: true,
+      //disableInteraction: true,
       steps: [
       
       {
@@ -488,8 +489,13 @@ Shiny.addCustomMessageHandler("intro_steps_continue5",
         intro: "Clinical and methylation options"
       },
       {
+        element: document.querySelector("#div_clin_meth_options"),
+        intro: "Clinical and methylation options"
+      },
+      {
         element: document.querySelector("#div_survival_plots"),
-        intro: "Survival plots"
+        intro: "Survival plots",
+        position: "left"
       },
       {
         element: document.querySelector("#div_export"),
@@ -514,15 +520,19 @@ Shiny.addCustomMessageHandler("intro_continue5",
       if (intro._currentStep==0){
         intro.setOptions({'nextLabel': 'Run Survival'});
       }
-          if (intro._currentStep==1) {
+      if (intro._currentStep==1){
+        intro.setOptions({'nextLabel': 'Run Survival'});
+      }
+          if (intro._currentStep==2) {
               $("#b_run_survival").click();
               intro.setOptions({'nextLabel': 'Finish Survival', "disableInteraction": "false"});
           }
-          if (intro._currentStep==2) {
+          if (intro._currentStep==3) {
               $('a[data-value=\"export\"]').trigger('click');
               intro.setOptions({'nextLabel': 'Download Report'});
           }
-          if (intro._currentStep==3) {
+          if (intro._currentStep==4) {
+            $("#complete_report_html").click();
               intro.exit();
           }
        }).start();
