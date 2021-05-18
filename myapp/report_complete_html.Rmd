@@ -569,9 +569,11 @@ params$plot_volcano
 ```
 
 
-```{r filt_res, echo=FALSE, eval=!is.null(params$dmrs_contrasts), results="asis"}
+```{r sep, echo=FALSE, eval=!is.null(params$dmrs_contrasts), results="asis"}
 cat("<br>")
+```
 
+```{r filt_res, echo=FALSE, eval=!is.null(params$dmrs_contrasts), results="asis"}
 cat("\n### DMRs")
 cat("\n#### Options (DMRs)")
 cat("\nFor each contrast (", paste(params$dmrs_contrasts, collapse=", "))

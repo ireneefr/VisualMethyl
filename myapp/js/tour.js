@@ -11,20 +11,23 @@ Shiny.addCustomMessageHandler("intro_steps",
       steps: [
       
       {
-        title: "TOUR INTROJS",
+        title: "<h1 style='text-align:center;'>Welcome to <b>VisualMethyl</b></h1><br><h4 style='text-align:center;'>A shiny web application for interactive DNA methylation analysis and visualization</h4>",
         intro: "This is ................."
       },
       {
         element: document.querySelector("#ui_input_data"),
-        intro: "Load data"
+        title: "Input Data",
+        intro: "First, you have to upload the data, which must be in .zip format containing the IDAT files and the sample sheet in .csv.<br>In this case, we are going to load the example data."
       },
       {
         element: document.querySelector("#div_samples_table"),
-        intro: "Samples table"
+        title: "Samples Table",
+        intro: "In this box, there is the Samples Table where you can inspect the data loaded."
       },
       {
         element: document.querySelector("#div_select_options"),
-        intro: "Select options",
+        title: "Selection Options",
+        intro: "Before the analysis, you have to select the correct column of the sample sheet in each option.<br>In this example, the grouping variable is <i>Sample_Group</i> and there is no Donor/Patient so is selected <i>Sample_Name</i> (Sample Names column).",
         position: "right"
       },
       {
@@ -96,16 +99,17 @@ Shiny.addCustomMessageHandler("intro_start",
           if(this._currentStep==1){
             intro.setOptions({'nextLabel': 'Load Data', "disableInteraction": "true"});
             document.querySelector(".introjs-prevbutton").style.display = "none";
+            $("#b_input_data").click();
             
           }
           if(this._currentStep==2){
-            $("#b_input_data").click();
+            
             intro.setOptions({'nextLabel': 'Next', "disableInteraction": "false"});
             document.querySelector(".introjs-prevbutton").style.display = "block";
-            intro.refresh();
           }
           if(this._currentStep==3){
             intro.setOptions({'nextLabel': 'Continue to Analysis', "disableInteraction": "true"});
+            document.querySelector(".introjs-prevbutton").style.display = "block";
             /*
             if ($("#button_input_next").prop("disabled")){
               document.querySelector(".introjs-nextbutton").style.display = "none";
@@ -136,13 +140,6 @@ Shiny.addCustomMessageHandler("intro_start",
 
 
 
-
-
-
-
-
-
-
 Shiny.addCustomMessageHandler("intro_steps_continue1",
 
   function(message){
@@ -154,16 +151,12 @@ Shiny.addCustomMessageHandler("intro_steps_continue1",
       
       {
         element: document.querySelector("#b_qc"),
-        intro: "Quality Control"
+        intro: "Next Step"
       },
       {
-        element: document.querySelector("#div_norm_type"),
-        intro: "Select type of normalization"//,
-        //position: "right"
-      },
-      {
-        element: document.querySelector("#div_norm_options"),
-        intro: "Other options",
+        element: document.querySelector("#div_norm"),
+        title: "Normalization Options",
+        intro: "To do the normalization, you have to select the type of normalization that you want to apply and determine other parameters. <br> For the current data is selected the Illumina normalization and the other parameters with the default values. <hr> <small style='color:steelblue;'> For more information you can consult <b>Help</b> section </small>",
         position: "right"
       },
       {
@@ -183,18 +176,15 @@ Shiny.addCustomMessageHandler("intro_continue1",
   function(message){
     intro.onchange(function(targetElement) {
       if (intro._currentStep==0){
+        $('a[data-value=\"analysis\"]').trigger('click');
         intro.setOptions({'nextLabel': 'Go to Quality Control', "disableInteraction": "true"});
       }
-          if (intro._currentStep==1) {
-             $('#b_qc').click();
-             intro.setOptions({'nextLabel': 'Next'});
-             document.querySelector(".introjs-prevbutton").style.display = "none";
-          }
-          if(intro._currentStep==2){
+          if(intro._currentStep==1){
+            $('a[data-value=\"qc\"]').trigger('click');
             intro.setOptions({'nextLabel': 'Run Normalzation'});
-            document.querySelector(".introjs-prevbutton").style.display = "block";
+            //document.querySelector(".introjs-prevbutton").style.display = "none";
           }
-          if (intro._currentStep==3){
+          if (intro._currentStep==2){
             $("#button_minfi_select").click();
             intro.exit();
           }
@@ -210,30 +200,33 @@ Shiny.addCustomMessageHandler("intro_steps_continue2",
     intro.setOptions({
       exitOnOverlayClick: false,
       showBullets: false,
-      //disableInteraction: true,
+      disableInteraction: false,
       steps: [
       
       {
         element: document.querySelector("#vertical"),
-        intro: "Quality Control Plots",
+        title: "Quality Control Plots",
+        intro: "There are several graphics to inspect the data and compare raw data with normalized data. <hr> <b style='color:steelblue;'>Click + to expand the boxes and see the content</b>",
         position: "left"
       },
       {
         element: document.querySelector("#b_exploratory_analysis"),
-        intro: "Next exploratory analysis"
+        intro: "Next step"
       },
       {
         element: document.querySelector("#exploratory_plots"),
-        intro: "Exploratory Analysis Plot",
+        title: "Exploratory Analysis Plots",
+        intro: "Other plots to examine the data in more detail. <hr> <b style='color:steelblue;'>Click + to expand the boxes and see the content</b>",
         position: "left"
       },
       {
         element: document.querySelector("#b_dmp_dmr"),
-        intro: "Next DMP/DMR"
+        intro: "Next step"
       },
       {
         element: document.querySelector("#div_dmp_calculation_options"),
-        intro: "Select options to generate the model and to calculate the contrasts"
+        title: "DMPs Calculation Options",
+        intro: "Before the DMPs calculation, is needed a model and you can select some options to generate it. Then, there are other options for the contrasts calculation. <br> For this example, we use the default options. <hr> <small style='color:steelblue;'> For more information you can consult <b>Help</b> section </small>"
       },
       { 
         intro: "Select contrast options"
@@ -251,22 +244,23 @@ Shiny.addCustomMessageHandler("intro_continue2",
   function(message){
     intro.onchange(function(targetElement) {
       if (intro._currentStep==0){
-        intro.setOptions({'nextLabel': 'Finish Quality Control', "disableInteraction": "false"});
+        intro.setOptions({'nextLabel': 'Finish Quality Control'});
       }
           if (intro._currentStep==1) {
               $('a[data-value=\"analysis\"]').trigger('click');
               intro.setOptions({'nextLabel': 'Go to Exploratory Analysis', "disableInteraction": "true"});
+              document.querySelector(".introjs-prevbutton").style.display = "none";
           }
           if (intro._currentStep==2) {
-              $("#b_exploratory_analysis").click();
-              intro.setOptions({'nextLabel': 'Finish Exploratory Analysis', "disableInteraction": "false"});
+              $('a[data-value=\"exploratory_analysis\"]').trigger('click');
+              intro.setOptions({'nextLabel': 'Finish Exploratory Analysis'});
           }
           if (intro._currentStep==3) {
               $('a[data-value=\"analysis\"]').trigger('click');
               intro.setOptions({'nextLabel': 'Go to DMP/DMR', "disableInteraction": "true"});
           }
           if (intro._currentStep==4) {
-              $("#b_dmp_dmr").click();
+              $('a[data-value=\"dmp_dmr\"]').trigger('click');
               intro.setOptions({'nextLabel': 'Calculate', "disableInteraction": "true"});
           }
           if (intro._currentStep==5) {
@@ -315,29 +309,27 @@ Shiny.addCustomMessageHandler("intro_steps_continue3",
     intro.setOptions({
       exitOnOverlayClick: false,
       showBullets: false,
-      disableInteraction: true,
+      disableInteraction: false,
       steps: [
       
       {
-        element: document.querySelector("#table_limma_difcpgs"),
-        intro: "Table DMPs"
-      },
-      {
-        element: document.querySelector("#div_dmp_options"),
-        intro: "Options DMPs that can be updated"
+        element: document.querySelector("#div_dmp_table_options"),
+        title: "DMPs Table and Options",
+        intro: "In this section, you can see the DMPs table and some options that can be modified and updated. <br> For this example, we use the default values."
       },
       {
         element: document.querySelector("#div_dmp_plots"),
-        intro: "DMP Plot",
+        title: "DMPs Plots",
+        intro: "The DMPs results are represented in different plots that you can explore. <hr> <b style='color:steelblue;'>Click + to expand the boxes and see the content</b>",
         position: "left"
       },
       {
         element: document.querySelector("#div_dmr_calculation_options"),
-        intro: "Options to calculate DMRs"
+        title: "DMRs Calculation Options",
+        intro: "For the DMRs calculation, you can select some options. <br> For this example, we select only <i>promoters</i> and use the default options for the rest. <hr> <small style='color:steelblue;'> For more information you can consult <b>Help</b> section </small>"
       },
       {
-        element: document.querySelector("#div_model_options"),
-        intro: "Select options to generate the model"
+        intro: ""
       }
     ]});
     
@@ -354,17 +346,15 @@ Shiny.addCustomMessageHandler("intro_continue3",
         intro.setOptions({'nextLabel': 'Next'});
       }
           if (intro._currentStep==1) {
-              intro.setOptions({'nextLabel': 'Next'});
-          }
-          if (intro._currentStep==2) {
               $("#button_limma_tablecalc").click();
               intro.setOptions({'nextLabel': 'Finish DMPs', "disableInteraction": "false"});
           }
-          if (intro._currentStep==3) {
+          if (intro._currentStep==2) {
               $('a[data-value=\"DMRs\"]').trigger('click');
               intro.setOptions({'nextLabel': 'Calculate DMR'});
+              document.querySelector(".introjs-prevbutton").style.display = "none";
           }
-          if (intro._currentStep==4) {
+          if (intro._currentStep==3) {
               $("#button_dmrs_calculate").click();
               intro.exit();
           }
@@ -382,45 +372,45 @@ Shiny.addCustomMessageHandler("intro_steps_continue4",
     intro.setOptions({
       exitOnOverlayClick: false,
       showBullets: false,
-      disableInteraction: true,
+      disableInteraction: false,
       steps: [
       
       {
-        element: document.querySelector("#div_dmr_table"),
-        intro: "Table DMRs"
-      },
-      {
-        element: document.querySelector("#div_dmr_options"),
-        intro: "Options DMRs that can be updated"
+        element: document.querySelector("#div_dmr_table_options"),
+        title: "DMRs Table and Options",
+        intro: "In this section, you can see the DMRs table and some options that can be modified and updated. <br> For this example, we use the default values."
       },
       {
         element: document.querySelector("#div_dmr_plots"),
-        intro: "DMR Plot",
+        title: "DMRs Plots",
+        intro: "The DMRs results are represented in different plots that you can explore. <hr> <b style='color:steelblue;'>Click + to expand the boxes and see the content</b>",
         position: "left"
       },
       {
         element: document.querySelector("#b_functional_enrichment"),
-        intro: "Next Functional Enrichment"
+        intro: "Next step"
       },
       {
-        element: document.querySelector("#div_functional_enrichment_plots"),
-        intro: "Next Functional Enrichment"
+        element: document.querySelector("#functional_enrichment_plots"),
+        title: "Functional Enrichment",
+        intro: "There are some plots of different biological ontologies to visualize the functional enrichment. <hr> <b style='color:steelblue;'>Click + to expand the boxes and see the content</b>"
       },
       {
         element: document.querySelector("#b_survival"),
-        intro: "Next Survival"
+        intro: "Next step"
       },
       {
         element: document.querySelector("#ui_clinical_data"),
-        intro: "Load clinical data"
+        title: "Load Clinical Data",
+        intro: "Clinical data must be in a .csv file. <br> In this case, we are going to load the example data."
       },
       {
         element: document.querySelector("#div_clinical_options"),
-        intro: "Clinical data options"
+        title: "Clinical data options",
+        intro: "Before doing the survival analysis, you have to select the correct column of the clinical data table in each option."
       },
       {
-        element: document.querySelector("#div_clinical_options"),
-        intro: "Clinical data options"
+        intro: ""
       }
     ]});
     
@@ -437,33 +427,33 @@ Shiny.addCustomMessageHandler("intro_continue4",
         intro.setOptions({'nextLabel': 'Next'});
       }
           if (intro._currentStep==1) {
-              intro.setOptions({'nextLabel': 'Next'});
+              $("#button_dmrs_tablecalc").click();
+              intro.setOptions({'nextLabel': 'Finish DMRs'});
           }
           if (intro._currentStep==2) {
-              $("#button_dmrs_tablecalc").click();
-              intro.setOptions({'nextLabel': 'Finish DMRs', "disableInteraction": "false"});
-          }
-          if (intro._currentStep==3) {
               $('a[data-value=\"analysis\"]').trigger('click');
               intro.setOptions({'nextLabel': 'Go to Functional Enrichment'});
+              document.querySelector(".introjs-prevbutton").style.display = "none";
+          }
+          if (intro._currentStep==3) {
+              $('a[data-value=\"functional_enrichment\"]').trigger('click');
+              intro.setOptions({'nextLabel': 'Finish Functional Enrichment'});
+              document.querySelector(".introjs-prevbutton").style.display = "block";
           }
           if (intro._currentStep==4) {
-              $("#b_functional_enrichment").click();
-              intro.setOptions({'nextLabel': 'Finish Functional Enrichment', "disableInteraction": "false"});
-          }
-          if (intro._currentStep==5) {
               $('a[data-value=\"analysis\"]').trigger('click');
               intro.setOptions({'nextLabel': 'Go to Survival'});
           }
-          if (intro._currentStep==6) {
-              $("#b_survival").click();
+          if (intro._currentStep==5) {
+              $('a[data-value=\"survival\"]').trigger('click');
+              $("#b_clinical_data").click();
               intro.setOptions({'nextLabel': 'Load Clinical Data'});
           }
-          if (intro._currentStep==7) {
-              $("#b_clinical_data").click();
+          if (intro._currentStep==6) {
+              //$("#b_clinical_data").click();
               intro.setOptions({'nextLabel': 'Continue to Survival'});
           }
-          if (intro._currentStep==8) {
+          if (intro._currentStep==7) {
               $("#b_clinical_next").click();
               intro.exit();
           }
@@ -481,30 +471,31 @@ Shiny.addCustomMessageHandler("intro_steps_continue5",
     intro.setOptions({
       exitOnOverlayClick: false,
       showBullets: false,
-      //disableInteraction: true,
+      disableInteraction: false,
       steps: [
       
       {
-        element: document.querySelector("#div_clin_meth_options"),
-        intro: "Clinical and methylation options"
+        intro: ""
       },
       {
         element: document.querySelector("#div_clin_meth_options"),
-        intro: "Clinical and methylation options"
+        title: "Clinical and Methylation Options",
+        intro: "In this section, you have to select the variables for survival. <br> For this example, <i>Sex</i> variable from clinical data and the methylation data computed before. <hr> <small style='color:steelblue;'><i>It is also possible to perform a survival analysis without methylation data</i></small>"
       },
       {
         element: document.querySelector("#div_survival_plots"),
-        intro: "Survival plots",
+        title: "Survival Plots",
+        intro: "The Kaplan-Meier plot is obtained and other useful information. <hr> <b style='color:steelblue;'>Click + to expand the boxes and see the content</b>",
         position: "left"
       },
       {
         element: document.querySelector("#div_export"),
-        intro: "Download Report",
+        title: "Download Report",
+        intro: "Finally, you can download a report with the results obtained in HTML format.",
         position: "left"
       },
       {
-        element: document.querySelector("#b_functional_enrichment"),
-        intro: "Next Functional Enrichment"
+        intro: ""
       }
     ]});
     
@@ -522,14 +513,17 @@ Shiny.addCustomMessageHandler("intro_continue5",
       }
       if (intro._currentStep==1){
         intro.setOptions({'nextLabel': 'Run Survival'});
+        document.querySelector(".introjs-prevbutton").style.display = "none";
       }
           if (intro._currentStep==2) {
               $("#b_run_survival").click();
               intro.setOptions({'nextLabel': 'Finish Survival', "disableInteraction": "false"});
+              document.querySelector(".introjs-prevbutton").style.display = "block";
           }
           if (intro._currentStep==3) {
               $('a[data-value=\"export\"]').trigger('click');
               intro.setOptions({'nextLabel': 'Download Report'});
+              document.querySelector(".introjs-prevbutton").style.display = "none";
           }
           if (intro._currentStep==4) {
             $("#complete_report_html").click();

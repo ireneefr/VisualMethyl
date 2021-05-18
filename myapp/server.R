@@ -59,6 +59,7 @@ shinyServer(function(input, output, session) {
     
     observeEvent(rval_filteredlist(), {
         if(input$help_tour > 0){
+            updatePickerInput(session, "select_dmrs_regions", selected = "promoters")
             session$sendCustomMessage(type = "intro_steps_continue3", message = list(""))
             session$sendCustomMessage(type = "intro_continue3", message = list(""))
         }
@@ -1220,25 +1221,36 @@ shinyServer(function(input, output, session) {
         globaldifs
     })
     
-    # Calculation of differences (eBayes)
-    rval_finddifcpgs <- eventReactive(rval_fit(), {
+    
+    trend_val <- reactive(
         if (any(vapply(rval_fit(), function(x) {
             any(is.na(unlist(x)) |
                 unlist(x) == Inf | unlist(x) == -Inf)
         }, logical(1)))) {
             trend <- FALSE
-            robust <- FALSE
         }else{
             trend <- input$select_limma_trend
+        })
+    robust_val <- reactive(
+        if (any(vapply(rval_fit(), function(x) {
+            any(is.na(unlist(x)) |
+                unlist(x) == Inf | unlist(x) == -Inf)
+        }, logical(1)))) {
+            robust <- FALSE
+        }else{
             robust <- input$select_limma_robust
-        }
+        })
+    
+    # Calculation of differences (eBayes)
+    rval_finddifcpgs <- eventReactive(rval_fit(), {
+        
         try({
             dif_cpgs <- find_dif_cpgs(
                 design = rval_fit()$design,
                 fit = rval_fit(),
                 contrasts = rval_contrasts(),
-                trend = as.logical(trend),
-                robust = as.logical(robust),
+                trend = as.logical(trend_val()),
+                robust = as.logical(robust_val()),
                 cores = n_cores
             )
         })
@@ -1750,50 +1762,6 @@ shinyServer(function(input, output, session) {
     
     output$manhattan_plot <- renderPlot(manhattan_graph())
     output$volcano_plot <- renderPlot(volcano_graph())
-    
-    
-    
-    ##### CIRCOS #####
-    
-    observeEvent(rval_filteredlist(),
-    updatePickerInput(
-        session,
-        "select_chr_circos",
-        selected = unique(rval_annotation()$chr),
-        choices = unique(rval_annotation()$chr)
-    ))
-    
-    
-    
-    circos_plot <- eventReactive(list(rval_filteredlist(), input$button_circos_update), {
-        
-        labelname <- data.frame(chr = rval_annotation()$chr, start = rval_annotation()$pos, end = rval_annotation()$pos, label = rval_annotation()$Name)
-
-        chr_remove <- unique(labelname$chr[!(labelname$chr %in% input$select_chr_circos)])
-        print(chr_remove)
-        chr_remove <- c(chr_remove, "chrX", "chrY")
-        labelname[labelname$chr %in% input$select_chr_circos,]
-        
-        list <- rval_filteredlist()$`MAC-MO`
-        label_list <- labelname[labelname$label %in% list$cpg,]
-        
-        data(UCSC.HG19.Human.CytoBandIdeogram)
-        RCircos::RCircos.Set.Core.Components(cyto.info = UCSC.HG19.Human.CytoBandIdeogram, chr.exclude = chr_remove)  
-        
-        RCircos::RCircos.Set.Plot.Area()
-        RCircos::RCircos.Chromosome.Ideogram.Plot()
-        
-        name.col <- 4
-        side <- "in"
-        track.num <- 1
-        RCircos::RCircos.Gene.Connector.Plot(label_list, track.num, side)
-        track.num <- 2
-        RCircos::RCircos.Gene.Name.Plot(label_list, name.col,track.num, side)
-    })
-    
-    
-    output$circos <- renderPlot(circos_plot())
-    
 
     
     
@@ -1811,7 +1779,7 @@ shinyServer(function(input, output, session) {
                 session,
                 "select_dmrs_contrasts",
                 selected = rval_contrasts(),
-                choices = rval_contrasts(),
+                choices = rval_contrasts()
             )
             updatePickerInput(
                 session,
@@ -2325,22 +2293,32 @@ shinyServer(function(input, output, session) {
     
     kegg <- eventReactive(cluster_profiler(), {
         kegg <- clusterProfiler::enrichKEGG(gene = cluster_profiler()$ENTREZID, organism = 'hsa', pvalueCutoff = 0.05)
+        print("kegg")
+        print(kegg)
         kegg
     })
     reactome <- eventReactive(cluster_profiler(), {
         reactome <- ReactomePA::enrichPathway(cluster_profiler()$ENTREZID)
+        print("reactome")
+        print(reactome)
         reactome
     })
     go_mf <- eventReactive(cluster_profiler(), {
         mf <- clusterProfiler::enrichGO(gene = cluster_profiler()$ENTREZID, OrgDb = org.Hs.eg.db, ont = "MF", pAdjustMethod = "BH", pvalueCutoff = 0.01, qvalueCutoff = 0.05, readable = TRUE)
+        print("mf")
+        print(mf)
         mf
     })
     go_bp <- eventReactive(cluster_profiler(), {
         bp <- clusterProfiler::enrichGO(gene = cluster_profiler()$ENTREZID, OrgDb = org.Hs.eg.db, ont = "BP", pAdjustMethod = "BH", pvalueCutoff = 0.01, qvalueCutoff = 0.05, readable = TRUE)
+        print("bp")
+        print(bp)
         bp
     })
     go_cc <- eventReactive(cluster_profiler(), {
         cc <- clusterProfiler::enrichGO(gene = cluster_profiler()$ENTREZID, OrgDb = org.Hs.eg.db, ont = "CC", pAdjustMethod = "BH", pvalueCutoff = 0.01, qvalueCutoff = 0.05, readable = TRUE)
+        print("cc")
+        print(cc)
         cc
     })
     gmt_kegg <- eventReactive(cluster_profiler(), {
@@ -3100,8 +3078,8 @@ shinyServer(function(input, output, session) {
                         params[["limma_covar"]] <- input$checkbox_limma_covariables
                         params[["limma_inter"]] <- input$checkbox_limma_interactions
                         params[["limma_arrayweights"]] <- input$select_limma_weights
-                        params[["limma_ebayes_trend"]] <- trend
-                        params[["limma_ebayes_robust"]] <- robust
+                        params[["limma_ebayes_trend"]] <- trend_val()
+                        params[["limma_ebayes_robust"]] <- robust_val()
                         params[["rval_design"]] <- rval_fit()$design
                         params[["rval_voi"]] <- rval_voi()
                         params[["rval_contrasts"]] <- rval_contrasts()

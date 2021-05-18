@@ -106,12 +106,12 @@ shinyUI(
                   collapsible = FALSE, status = "primary",
                   width = 3,
                   div(id = "div_select_options",
-                  selectInput(inputId = "select_input_samplenamevar", label = p("Sample Names:", span(icon("info-circle"), id = "info_names")), c()),
+                  selectInput(inputId = "select_input_samplenamevar", label = p("Sample Name:", span(icon("info-circle"), id = "info_names")), c()),
                   tippy::tippy_this(elementId = "info_names", tooltip = "Select Sample Names Column. Names must be unique", placement = "right"),
-                  selectInput("select_input_groupingvar", label = p("Variable of Interest:", span(icon("info-circle"), id = "info_group")), c()),
+                  selectInput("select_input_groupingvar", label = p("Grouping Variable:", span(icon("info-circle"), id = "info_group")), c()),
                   tippy::tippy_this(elementId = "info_group", tooltip = "Select Variable of Interest", placement = "right"),
-                  selectInput("select_input_donorvar", label = p("Donor:", span(icon("info-circle"), id = "info_donor")), c()),
-                  tippy::tippy_this(elementId = "info_donor", tooltip = "Select Donor Column. If there is no Donor, select Sample Names Column", placement = "right"),
+                  selectInput("select_input_donorvar", label = p("Donor/Patient:", span(icon("info-circle"), id = "info_donor")), c()),
+                  tippy::tippy_this(elementId = "info_donor", tooltip = "Select Donor/Patient Column. If there is no Donor/Patient, select Sample Names Column", placement = "right"),
                   pickerInput(
                     inputId = "selected_samples",
                     label = p("Select Samples to Process:", span(icon("info-circle"), id = "info_samples")),
@@ -241,9 +241,8 @@ shinyUI(
             # Box1
             sidebarPanel(
               width = 3,
-              div(id="div_norm_type",
-              selectInput("select_minfi_norm", "Select Normalization", norm_options)),
-              div(id = "div_norm_options",
+              div(id="div_norm",
+              selectInput("select_minfi_norm", "Select Normalization", norm_options),
               div(
                 margin_left = "50px",
                 switchInput(
@@ -443,9 +442,6 @@ shinyUI(
                 withSpinner(plotOutput("plot_chr")),
                 withSpinner(plotOutput("plot_relation_to_island")),
                 withSpinner(plotOutput("plot_group"))
-                # ),
-                # box(title = "CIRCOS", collapsible = TRUE, collapsed = TRUE, status = "primary",
-                #        h1("circos")
               )
             )
           )
@@ -532,12 +528,10 @@ shinyUI(
                   box(
                     title = "DMP TABLE AND OPTIONS", width = 12, closable = FALSE, collapsible = FALSE, status = "primary",
                     fluidPage(
-                    div(id = "div_dmp_table",
+                      div(id = "div_dmp_table_options",
                         fluidRow(
                     h4("DMP counts in each contrast"),
-                    tableOutput("table_limma_difcpgs") %>% shinycssloaders::withSpinner())
-                    ),
-                    div(id ="div_dmp_options",
+                    tableOutput("table_limma_difcpgs") %>% shinycssloaders::withSpinner()),
                     fluidRow(
                       column(
                         6,
@@ -693,22 +687,6 @@ shinyUI(
                     title = "DMP VOLCANO", width = 12, closable = FALSE, collapsible = TRUE, collapsed = TRUE, status = "primary",
                     selectInput(inputId = "select_anncontrast_volcano", label = "", choices = "", selected = ""),
                     withSpinner(plotOutput("volcano_plot"))
-                  ),
-                  box(
-                    title = "DMP CIRCOS", width = 12, closable = FALSE, collapsible = TRUE, collapsed = TRUE, status = "primary",
-                    pickerInput(
-                      inputId = "select_chr_circos",
-                      label = "Select chr. to plot",
-                      choices = c(),
-                      options = list(
-                        `actions-box` = TRUE,
-                        size = 10,
-                        `selected-text-format` = "count > 3"
-                      ),
-                      multiple = TRUE
-                    ),
-                    actionButton("button_circos_update", label = "Update"),
-                    withSpinner(plotOutput("circos", height = "800px"))
                   )))
                 ))
               )),
@@ -775,12 +753,10 @@ shinyUI(
                   box(
                     title = "DMR TABLE AND OPTIONS", width = 12, closable = FALSE, collapsible = FALSE,
                     fluidPage(
-                    div(id = "div_dmr_table",
+                    div(id = "div_dmr_table_options",
                         fluidRow(
                     h4("DMRs counts in each contrast"),
-                    tableOutput("table_dmrs_count") %>% shinycssloaders::withSpinner())
-                    ),
-                    div(id = "div_dmr_options",
+                    tableOutput("table_dmrs_count") %>% shinycssloaders::withSpinner()),
                     fluidRow(
                       column(
                         6,
@@ -827,10 +803,10 @@ shinyUI(
                         sliderInput("slider_dmrs_deltab", "Min. DeltaBeta", 0, 1, 0),
                         sliderInput("slider_dmrs_adjpvalue", "Max. FDR", 0, 1, 0.05),
                         sliderInput("slider_dmrs_pvalue", "Max. p-value", 0, 1, 1)
-                      ))),
+                      )),
                     fluidRow(
                       actionButton("button_dmrs_tablecalc", "Update")
-                    ))
+                    )))
                   )),
                   div(id = "div_dmr_plots",
                       fluidRow(
@@ -966,8 +942,8 @@ shinyUI(
         ),
         tabItem(
           tabName = "functional_enrichment",
-          fluidPage(
-            div(id = "div_functional_enrichment_plots",
+          fluidPage(id="functional_enrichment_plots",
+            verticalLayout(
             box(
               title = "KEGG", width = 12, closable = FALSE, collapsible = TRUE, collapsed = TRUE, status = "primary",
               withSpinner(plotOutput("plot_kegg"))
