@@ -239,7 +239,7 @@ create_pca <- function(Bvalues,
                        color = NULL) {
   pca_data <- stats::prcomp(t(stats::na.omit(Bvalues)))
   pca_info <- as.data.frame(summary(pca_data)[["importance"]])
-  
+
   pca_data <- as.data.frame(pca_data$x)
   pca_data <- cbind(pca_data, pheno_info)
   

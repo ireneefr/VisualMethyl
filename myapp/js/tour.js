@@ -31,8 +31,7 @@ Shiny.addCustomMessageHandler("intro_steps",
         position: "right"
       },
       {
-        element: document.querySelector("#b_qc"),
-        intro: "Quality Control"
+        intro: ""
       }
       
       
@@ -160,8 +159,7 @@ Shiny.addCustomMessageHandler("intro_steps_continue1",
         position: "right"
       },
       {
-        element: document.querySelector("#vertical"),
-        intro: "Samples table"
+        intro: ""
       }
       
     ]});
@@ -229,7 +227,7 @@ Shiny.addCustomMessageHandler("intro_steps_continue2",
         intro: "Before the DMPs calculation, is needed a model and you can select some options to generate it. Then, there are other options for the contrasts calculation. <br> For this example, we use the default options. <hr> <small style='color:steelblue;'> For more information you can consult <b>Help</b> section </small>"
       },
       { 
-        intro: "Select contrast options"
+        intro: ""
       }
       
     ]});
@@ -475,7 +473,7 @@ Shiny.addCustomMessageHandler("intro_steps_continue5",
       steps: [
       
       {
-        intro: ""
+        intro: "next"
       },
       {
         element: document.querySelector("#div_clin_meth_options"),

@@ -2850,7 +2850,7 @@ shinyServer(function(input, output, session) {
                 showModal(
                     modalDialog(
                         title = "Methylation data error",
-                        "There is only one methylation level",
+                        "There is only one methylation level. Try to modify the beta threshold to obtain the two levels",
                         easyClose = TRUE,
                         footer = NULL
                     )
