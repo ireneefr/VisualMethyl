@@ -11,8 +11,9 @@ Shiny.addCustomMessageHandler("intro_steps",
       steps: [
       
       {
-        title: "<h1 style='text-align:center;'>Welcome to <b>VisualMethyl</b></h1><br><h4 style='text-align:center;'>A shiny web application for interactive DNA methylation analysis and visualization</h4>",
-        intro: "This is ................."
+        title: //"<h1 style='text-align:center;'>Welcome to <b>VisualMethyl</b></h1><br><h4 style='text-align:center;'>A shiny web application for interactive DNA methylation analysis and visualization</h4>",
+        "Welcome to VisualMethyl tour",
+        intro: "VisualMethyl is a shiny web application for interactive DNA methylation analysis and visualization. <br> Follow the steps to complete the tour. <hr> <small style='color:steelblue;'> For more information you can consult <b>Help</b> section </small>"
       },
       {
         element: document.querySelector("#ui_input_data"),

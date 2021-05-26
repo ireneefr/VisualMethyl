@@ -475,7 +475,7 @@ shinyServer(function(input, output, session) {
                     easyClose = TRUE,
                     footer = NULL
                 )
-            )
+        )
         }
         
         # Check prior conditions to read data
@@ -888,7 +888,7 @@ shinyServer(function(input, output, session) {
     
     output$graph_minfi_pcaplot <- plotly::renderPlotly(rval_plot_pca()[["graph"]])
     output$table_minfi_pcaplot <- DT::renderDT(
-        format(rval_plot_pca()[["info"]], digits = 2),
+        DT::datatable(rval_plot_pca()[["info"]]),
         rownames = TRUE,
         selection = NULL,
         style = "bootstrap",
