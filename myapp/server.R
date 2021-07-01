@@ -941,7 +941,7 @@ shinyServer(function(input, output, session) {
         updatePickerInput(
             session,
             "select_limma_voi",
-            label = "Select Variable of Interest",
+            label = "Variable of Interest",
             choices = colnames(rval_clean_sheet_target())[vapply(rval_clean_sheet_target(), is.factor, logical(1))],
             selected = input$select_input_groupingvar
         )
@@ -949,7 +949,7 @@ shinyServer(function(input, output, session) {
         updatePickerInput(
             session,
             "checkbox_limma_covariables",
-            label = "Select linear model covariables",
+            label = "Linear model covariables",
             choices = colnames(rval_clean_sheet_target()),
             selected = input$select_input_donorvar
         )
@@ -967,7 +967,7 @@ shinyServer(function(input, output, session) {
         updatePickerInput(
             session,
             "checkbox_limma_interactions",
-            label = "Select linear model interactions",
+            label = "Linear model interactions",
             choices = interactions,
             selected = input$select_input_donorvar
         )
@@ -2394,8 +2394,10 @@ shinyServer(function(input, output, session) {
     # Load clinical button
     output$ui_clinical_data <- renderUI({
         if (!is.null(input$input_clinical$datapath) | input$select_clin_example == TRUE) {
+            print("INSIDE UI")
             return(actionButton("b_clinical_data", "Load Clinical Data"))
         } else {
+            print("INSIDE UI 2")
             return()
         }
     })
@@ -2405,12 +2407,20 @@ shinyServer(function(input, output, session) {
     
     
     clinical_sheet <- eventReactive(input$b_clinical_data, {
-        
+        print("IN")
         if(input$select_clin_example == TRUE){
+            print("if")
             clin_datapath <- paste0(getwd(), "/example/clinical_template.csv")
+            print(clin_datapath)
         } else{
-            validate(need(tools::file_ext(input$input_data$datapath) == "csv", "File extension should be .csv"))
+            
+            print("else")
+            ext <- tools::file_ext(input$input_clinical$datapath)
+            print(ext)
+            validate(need(tools::file_ext(input$input_clinical$datapath) == "csv", "File extension should be .csv"))
+            print("validation")
             clin_datapath <- input$input_clinical$datapath
+            print(clin_datapath)
         }
         
         validate(need(
@@ -2440,21 +2450,21 @@ shinyServer(function(input, output, session) {
         updateSelectInput(
             session,
             "select_clinical_samplenamevar",
-            label = "Select Sample Names Column:",
+            label = "Sample Name:",
             choices = colnames(clinical_sheet())
         )
         if(input$select_clin_example == TRUE){
             updateSelectInput(
                 session,
                 "select_clinical_timevar",
-                label = "Select Time Column:",
+                label = "Time:",
                 choices = colnames(clinical_sheet()),
                 selected = "Time"
             )
             updateSelectInput(
                 session,
                 "select_clinical_statusvar",
-                label = "Select Status Column:",
+                label = "Status:",
                 choices = colnames(clinical_sheet()),
                 selected = "Status"
             )
@@ -2462,13 +2472,13 @@ shinyServer(function(input, output, session) {
         updateSelectInput(
             session,
             "select_clinical_timevar",
-            label = "Select Time Column:",
+            label = "Time:",
             choices = colnames(clinical_sheet())
         )
         updateSelectInput(
             session,
             "select_clinical_statusvar",
-            label = "Select Status Column:",
+            label = "Status:",
             choices = colnames(clinical_sheet())
         )
         }
