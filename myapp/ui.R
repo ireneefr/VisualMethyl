@@ -301,12 +301,12 @@ shinyUI(
                 box(
                   title = "FAILED PROBES", width = 12, collapsible = TRUE, collapsed = TRUE, status = "primary",
                   column(
-                    width = 9,
+                    width = 12,
                     h4("Failure Rate Plot"),
                     withSpinner(plotly::plotlyOutput("failure_rate_plot"))
                   ),
                   column(
-                    width = 3,
+                    width = 12,
                     h4("Failure Rate Table"),
                     withSpinner(DT::DTOutput("failure_rate_table"))
                   )
@@ -323,12 +323,12 @@ shinyUI(
                 box(
                   title = "PREDICTED SEX", width = 12, collapsible = TRUE, collapsed = TRUE, status = "primary",
                   column(
-                    width = 9,
+                    width = 12,
                     h4("X vs Y chromosomes signal plot"),
                     withSpinner(plotly::plotlyOutput("graph_minfi_sex"))
                   ),
                   column(
-                    width = 3,
+                    width = 12,
                     h4("Sex table"),
                     withSpinner(DT::DTOutput("table_minfi_sex"))
                   )
