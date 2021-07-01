@@ -39,7 +39,6 @@ convertMenuItem <- function(mi, tabName) {
   }
   mi
 }
-library(cicerone)
 
 library(shiny)
 library(shinydashboard)
@@ -114,7 +113,7 @@ shinyUI(
                   tippy::tippy_this(elementId = "info_donor", tooltip = "Select Donor/Patient Column. If there is no Donor/Patient, select Sample Names Column", placement = "right"),
                   pickerInput(
                     inputId = "selected_samples",
-                    label = p("Select Samples to Process:", span(icon("info-circle"), id = "info_samples")),
+                    label = p("Samples to Process:", span(icon("info-circle"), id = "info_samples")),
                     choices = c(),
                     options = list(
                       `actions-box` = TRUE,
@@ -242,7 +241,7 @@ shinyUI(
             sidebarPanel(
               width = 3,
               div(id="div_norm",
-              selectInput("select_minfi_norm", "Select Normalization", norm_options),
+              selectInput("select_minfi_norm", "Normalization", norm_options),
               div(
                 margin_left = "50px",
                 switchInput(
@@ -335,7 +334,7 @@ shinyUI(
                   )
                 ),
                 box(
-                  title = "DENSITY PLOT", width = 12, collapsible = TRUE, collapsed = TRUE, status = "primary",
+                  title = "DENSITY PLOTS", width = 12, collapsible = TRUE, collapsed = TRUE, status = "primary",
                   selectInput("probeType", "Choose a probe type for the density curves:",
                     choices = c("I-Green", "I-Red", "II"),
                     selected = "I-Green"
@@ -459,14 +458,14 @@ shinyUI(
                     h4("Linear Model Options"),
                   pickerInput(
                     inputId = "select_limma_voi",
-                    label = "Select Variable of Interest",
+                    label = "Grouping Variable",
                     choices = c(),
                     multiple = FALSE
                   ),
 
                   pickerInput(
                     inputId = "checkbox_limma_covariables",
-                    label = "Select linear model covariables",
+                    label = "Linear model covariables",
                     choices = c(),
                     multiple = TRUE,
                     options = list(
@@ -478,7 +477,7 @@ shinyUI(
 
                   pickerInput(
                     inputId = "checkbox_limma_interactions",
-                    label = "Select linear model interactions",
+                    label = "Linear model interactions",
                     choices = c(),
                     multiple = TRUE,
                     options = list(
