@@ -24,7 +24,7 @@ shinyServer(function(input, output, session) {
 
     # Max size
     options(shiny.maxRequestSize = 8000 * 1024^2) # 5MB getShinyOption("shiny.maxRequestSize") | 30*1024^2 = 30MB
-    n_cores <- parallel::detectCores() / 2
+    n_cores <- parallel::detectCores() - 1
     
     
     #intro <- data.frame(element = c("#select_minfi_norm-label", "#button_minfi_select"), intro = c("This is norm", "This is button"))
@@ -894,11 +894,13 @@ shinyServer(function(input, output, session) {
         style = "bootstrap",
         options = list(
             autoWidth = TRUE,
-            paging = FALSE,
+            paging = TRUE,
             scrollX = TRUE,
             lengthChange = FALSE,
             searching = FALSE,
-            info = FALSE
+            info = FALSE,
+            lengthMenu = 5,
+            pageLength = 5
         )
     )
     
