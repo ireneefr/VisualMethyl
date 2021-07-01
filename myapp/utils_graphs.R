@@ -239,7 +239,8 @@ create_pca <- function(Bvalues,
                        color = NULL) {
   pca_data <- stats::prcomp(t(stats::na.omit(Bvalues)))
   pca_info <- as.data.frame(summary(pca_data)[["importance"]])
-
+  pca_info <- round(pca_info, 3)
+  
   pca_data <- as.data.frame(pca_data$x)
   pca_data <- cbind(pca_data, pheno_info)
   
@@ -451,10 +452,19 @@ create_hyper_hypo <- function(rgset, bvalues, b, samples){
     theme_bw() +
     theme(legend.title=element_blank())
 
+  c$Relation_to_Island <- as.character(c$Relation_to_Island)
+  c$Relation_to_Island <- factor(c$Relation_to_Island, levels = c("N_Shelf", "N_Shore", "Island", "S_Shore", "S_Shelf", "OpenSea"))
+  
   plot_relation_to_island <- ggplot(c, aes(x = Relation_to_Island)) +
     geom_bar(aes(fill = beta_median), position = position_dodge()) +
     theme_bw() +
     theme(legend.title=element_blank())
+  
+  print(data_group$groups)
+  data_group$groups <- as.character(data_group$groups)
+  print(data_group$groups)
+  data_group$groups <- factor(data_group$groups, levels=c("5'UTR", "TSS1500", "TSS200", "1stExon", "Body", "ExonBnd", "3'UTR"))
+  print(data_group$groups)
   
   plot_group <- ggplot(data_group, aes(x = groups, y = count)) +
     geom_bar(stat = "identity", aes(fill = hyper_hypo), position = position_dodge()) +
@@ -911,6 +921,7 @@ create_dmps_heatdata <- function(filtered_data, contrasts2plot, removebatch, des
 
 
 create_dmrs_heatdata <- function(mcsea_result, bvalues, regions, contrasts, removebatch, design, voi) {
+  print("creating heatmap")
   mcsea_result <- mcsea_result[contrasts]
   associations <- paste0(regions, "_association")
   
